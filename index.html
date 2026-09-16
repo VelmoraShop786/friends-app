@@ -503,6 +503,27 @@
 <script>
   const extraViews = ['view-forgot-request', 'view-forgot-otp', 'view-forgot-reset'];
 
+  let selectedAvatarFile = null;
+
+  document.getElementById('avatar-input').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    selectedAvatarFile = file;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const preview = document.getElementById('avatar-preview');
+      preview.style.backgroundImage = `url('${ev.target.result}')`;
+      preview.style.backgroundSize = 'cover';
+      preview.style.backgroundPosition = 'center';
+      preview.textContent = '';
+      const plus = document.createElement('div');
+      plus.className = 'avatar-plus';
+      plus.textContent = '+';
+      preview.appendChild(plus);
+    };
+    reader.readAsDataURL(file);
+  });
+
   function showForm(which){
     const isLogin = which === 'login';
     extraViews.forEach(id => document.getElementById(id).style.display = 'none');
@@ -743,12 +764,23 @@
     const contact = document.getElementById('signup-email').value.trim();
     const idNumber = generatePlainIdNumber();
 
+    let avatarUrl = null;
+    if(selectedAvatarFile){
+      const path = 'avatars/' + user.id + '-' + Date.now() + '-' + selectedAvatarFile.name;
+      const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, selectedAvatarFile, { upsert:true });
+      if(!upErr){
+        const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
+        avatarUrl = pub.publicUrl;
+      }
+    }
+
     const { error: profileError } = await supabaseClient.from('profiles').insert({
       id: user.id,
       name: name,
       id_number: idNumber,
       email: isPhone ? null : contact,
-      phone: isPhone ? contact : null
+      phone: isPhone ? contact : null,
+      avatar_url: avatarUrl
     });
 
     btn.disabled = false; btn.textContent = 'Create account';

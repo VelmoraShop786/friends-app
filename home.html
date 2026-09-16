@@ -278,7 +278,8 @@
 
   <!-- YOU -->
   <div class="screen active" id="screen-you">
-    <div class="you-avatar">Me</div>
+    <div class="you-avatar" onclick="document.getElementById('my-avatar-input').click()" style="cursor:pointer;">Me</div>
+    <input type="file" id="my-avatar-input" accept="image/*" style="display:none" onchange="changeMyAvatar(this.files[0])">
     <div class="you-name copyable">You</div>
     <div class="you-id copyable">ID: 123456</div>
     <div class="you-card" onclick="showToast('Edit profile — coming soon')"><span>Edit profile</span><span class="arrow">›</span></div>
@@ -396,11 +397,38 @@
     currentProfile = profile;
 
     const initial = (profile.name || '?').charAt(0).toUpperCase();
-    document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => el.textContent = initial);
+    document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, profile.avatar_url, initial));
     document.querySelector('.you-name').textContent = profile.name || 'You';
     document.querySelector('.you-id').textContent = 'ID: ' + profile.id_number;
     const myIdEl = document.getElementById('my-id');
     if(myIdEl) myIdEl.textContent = profile.id_number;
+  }
+
+  function applyAvatarDisplay(el, avatarUrl, initial){
+    if(avatarUrl){
+      el.style.backgroundImage = `url('${avatarUrl}')`;
+      el.style.backgroundSize = 'cover';
+      el.style.backgroundPosition = 'center';
+      el.textContent = '';
+    } else {
+      el.style.backgroundImage = 'none';
+      el.textContent = initial;
+    }
+  }
+
+  async function changeMyAvatar(file){
+    if(!file || !currentUser) return;
+    showToast('Uploading photo...');
+    const path = 'avatars/' + currentUser.id + '-' + Date.now() + '-' + file.name;
+    const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
+    if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
+    const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
+    const { error: dbErr } = await supabaseClient.from('profiles').update({ avatar_url: pub.publicUrl }).eq('id', currentUser.id);
+    if(dbErr){ showToast('Could not save photo.'); return; }
+    currentProfile.avatar_url = pub.publicUrl;
+    const initial = (currentProfile.name || '?').charAt(0).toUpperCase();
+    document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, pub.publicUrl, initial));
+    showToast('Profile picture updated');
   }
 
   function showScreen(name){
