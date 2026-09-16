@@ -721,37 +721,57 @@
   // Voice seats — now backed by the room_seats table (real-time across users)
   let seats = Array.from({length:10}, () => ({ taken:false }));
 
-  // All members currently in the room (demo data — could be up to the app's 50-user cap)
-  const roomMembers = [
-    { initial:'A', name:'Ayesha', id:'208813' }, { initial:'B', name:'Bilal', id:'941027' },
-    { initial:'H', name:'Hamza', id:'556214' }, { initial:'S', name:'Sara', id:'372910' },
-    { initial:'Z', name:'Zain', id:'118845' }, { initial:'M', name:'Mahnoor', id:'664231' },
-    { initial:'K', name:'Kamran', id:'809172' }, { initial:'F', name:'Fatima', id:'253690' }
-  ];
-  const myProfile = { initial:'Me', name:'You', id:'123456' };
+  // Online members — real, via Supabase Realtime Presence (tracks who has the room open)
+  let onlineMembers = []; // {id, name, initial}
+
+  function setupPresence(){
+    const channel = supabaseClient.channel('room-presence-main', {
+      config: { presence: { key: currentUser.id } }
+    });
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      onlineMembers = Object.values(state).map(entries => {
+        const e = entries[0];
+        return { id: e.id, name: e.name, initial: (e.name || '?').charAt(0).toUpperCase() };
+      });
+      renderMembersStack();
+    });
+    channel.subscribe(async (status) => {
+      if(status === 'SUBSCRIBED'){
+        await channel.track({ id: currentUser.id, name: currentProfile.name });
+      }
+    });
+  }
 
   function findProfile(name){
-    if(name === 'You' || name === 'Me') return myProfile;
-    return roomMembers.find(m => m.name === name) || { initial:'?', name, id:'—' };
+    if(name === 'You' || name === 'Me'){
+      return { initial:'Me', name: currentProfile?.name || 'You', id: currentProfile?.id_number || '' };
+    }
+    const m = onlineMembers.find(x => x.name === name);
+    return m ? { initial:m.initial, name:m.name, id:'' } : { initial:'?', name, id:'—' };
   }
 
   function renderMembersStack(){
     const stack = document.getElementById('members-stack');
-    stack.innerHTML = roomMembers.map(m => `<div class="stack-avatar" onclick="openProfileModal('${m.name}')">${m.initial}</div>`).join('');
-    document.getElementById('member-count-badge').textContent = roomMembers.length;
+    const others = onlineMembers.filter(m => m.id !== currentUser.id);
+    stack.innerHTML = others.map(m => `<div class="stack-avatar" onclick="openProfileModal('${escapeHtml(m.name)}')">${m.initial}</div>`).join('');
+    document.getElementById('member-count-badge').textContent = onlineMembers.length;
   }
 
   function openMembersModal(){
-    document.getElementById('modal-user-count').textContent = roomMembers.length;
-    document.getElementById('members-modal-list').innerHTML = roomMembers.map(m => `
-      <div class="modal-member-row" onclick="openProfileModal('${m.name}')">
-        <div class="avatar">${m.initial}</div>
+    document.getElementById('modal-user-count').textContent = onlineMembers.length;
+    document.getElementById('members-modal-list').innerHTML = onlineMembers.map(m => {
+      const isMe = m.id === currentUser.id;
+      const label = isMe ? 'You' : m.name;
+      return `
+      <div class="modal-member-row" onclick="openProfileModal('${escapeHtml(label)}')">
+        <div class="avatar">${isMe ? 'Me' : m.initial}</div>
         <div>
-          <div class="name copyable">${m.name}</div>
+          <div class="name copyable">${escapeHtml(label)}</div>
           <div class="sub">Member</div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     document.getElementById('members-modal').classList.add('show');
   }
   function closeMembersModal(){
@@ -1022,14 +1042,36 @@
     loadSeats();
   }
 
-  let messages = [
-    { from:'them', name:'Ayesha', initial:'A', text:'Assalam o alaikum sab!' },
-    { from:'them', name:'Bilal', initial:'B', text:'Walaikum salam 🙂' },
-    { from:'me', text:'kal ka plan kya hai?' },
-    { from:'them', name:'Sara', initial:'S', text:'seat 7 pe aa jao baat karte hain' }
-  ];
-
+  let messages = [];
   let currentReply = null; // { name, text }
+
+  async function loadMessages(){
+    const { data } = await supabaseClient
+      .from('room_messages')
+      .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name)')
+      .eq('room_id', 'main')
+      .order('created_at', { ascending: true })
+      .limit(150);
+    messages = (data || []).map(m => {
+      const senderName = m.profiles?.name || 'Unknown';
+      return {
+        from: m.sender_id === currentUser.id ? 'me' : 'them',
+        name: senderName,
+        initial: senderName.charAt(0).toUpperCase(),
+        text: m.content,
+        replyTo: m.reply_to_name ? { name: m.reply_to_name, text: m.reply_to_text } : null
+      };
+    });
+    renderMessages();
+  }
+
+  function subscribeMessages(){
+    supabaseClient.channel('room-messages-main')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'room_messages', filter:'room_id=eq.main' }, () => {
+        loadMessages();
+      })
+      .subscribe();
+  }
 
   function renderMessages(){
     const box = document.getElementById('messages');
@@ -1108,16 +1150,23 @@
     return div.innerHTML;
   }
 
-  function sendText(){
+  async function sendText(){
     const input = document.getElementById('text-input');
     const value = input.value.trim();
     if(!value) return;
-    const msg = { from:'me', text:value };
-    if(currentReply) msg.replyTo = currentReply;
-    messages.push(msg);
+    const payload = {
+      room_id: 'main',
+      sender_id: currentUser.id,
+      content: value
+    };
+    if(currentReply){
+      payload.reply_to_name = currentReply.name;
+      payload.reply_to_text = currentReply.text;
+    }
     input.value = '';
     cancelReply();
-    renderMessages();
+    const { error } = await supabaseClient.from('room_messages').insert(payload);
+    if(error) showToast('Could not send message.');
   }
 
   document.getElementById('text-input').addEventListener('keydown', function(e){
@@ -1140,12 +1189,13 @@
   (async function init(){
     const ok = await initAuth();
     if(!ok) return;
-    renderMembersStack();
+    setupPresence();
     await loadSeats();
     subscribeSeats();
     await loadRoomInfo();
     subscribeRoomInfo();
-    renderMessages();
+    await loadMessages();
+    subscribeMessages();
   })();
 </script>
 
