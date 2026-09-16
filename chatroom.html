@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Circle — Chat Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-deep: #05846a;
+    --teal: #06D6A0;
+    --teal-soft: #d3f3e8;
+    --blue: #118AB2;
+    --bg: #f6faf8;
+    --card: #ffffff;
+    --ink: #16332c;
+    --ink-soft: #5c7770;
+    --line: #dfeee8;
+    --theme-a: #0d3b30;
+    --theme-b: #06251d;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ height:100%; }
+  *, *::before, *::after{
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+  }
+  input, textarea{
+    -webkit-user-select:text; -moz-user-select:text; -ms-user-select:text; user-select:text;
+    -webkit-touch-callout:default;
+  }
+  .copyable, .copyable *{
+    -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
+    -webkit-touch-callout:default !important;
+  }
+  body{
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display:flex;
+    justify-content:center;
+  }
+
+  .phone{
+    width:100%;
+    max-width: 420px;
+    min-height:100vh;
+    background: linear-gradient(180deg, var(--theme-a) 0%, var(--theme-b) 100%);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* ---------- Top: room header ---------- */
+  .power-btn{
+    position:absolute;
+    top: 12px; right: 14px;
+    width:32px; height:32px;
+    border-radius:50%;
+    border:none;
+    background: rgba(255,255,255,0.14);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    z-index: 12;
+  }
+  .room-header{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding: 6px 4px 8px 0;
+    color: white;
+  }
+  .room-top-line{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 0 22px 22px 0;
+    padding: 3px 16px 3px 0;
+    width:fit-content;
+    max-width: calc(100% - 34px);
+  }
+  .room-name-id{
+    display:flex;
+    flex-direction:column;
+    gap:0px;
+  }
+  .room-title{ font-weight:700; font-size:0.85rem; line-height:1.2; }
+  .room-id{ font-size:0.66rem; opacity:0.75; line-height:1.2; }
+  .room-members-line{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding: 0px 0px 0 0;
+  }
+  .diamond-badge{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0.15));
+    border-radius: 0 14px 14px 0;
+    padding: 6px 14px 6px 10px;
+    font-size:0.78rem;
+    font-weight:700;
+    color: #7fe3ff;
+    flex-shrink:0;
+  }
+  .diamond-badge::after{
+    content: '›';
+    opacity:0.7;
+    margin-left:1px;
+  }
+  .exit-menu{
+    display:none;
+    position:absolute;
+    inset:0;
+    z-index: 45;
+  }
+  .exit-menu.show{ display:block; }
+  .exit-menu-backdrop{
+    position:absolute;
+    inset:0;
+    background: rgba(0,0,0,0.5);
+  }
+  .exit-menu-buttons{
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%, -50%);
+    display:flex;
+    gap: 40px;
+    z-index:1;
+  }
+  .exit-option{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+  }
+  .exit-option span{ color:white; font-weight:700; font-size:0.85rem; }
+  .exit-circle{
+    width:64px; height:64px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .exit-circle.keep{ background: linear-gradient(135deg, var(--teal), var(--teal-deep)); }
+  .exit-circle.leave{ background: linear-gradient(135deg, #ff6b6b, #b1362f); }
+  .room-avatar{
+    width:38px; height:38px;
+    border-radius:11px;
+    background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem;
+    flex-shrink:0;
+    border: 2px solid rgba(255,255,255,0.25);
+    position:relative;
+    cursor:pointer;
+    overflow:hidden;
+  }
+  .room-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .info-menu{
+    display:none;
+    flex-direction:column;
+    gap:2px;
+    position:absolute;
+    bottom: 66px;
+    right: 14px;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    z-index: 20;
+    min-width: 210px;
+  }
+  .info-menu.show{ display:flex; }
+  .info-menu button{
+    display:flex; align-items:center;
+    background:none; border:none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-family:'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    cursor:pointer;
+    text-align:left;
+  }
+  .info-menu button:hover{ background: var(--bg); }
+
+  .members-modal{
+    display:none;
+    position:absolute;
+    inset:0;
+    background: var(--bg);
+    z-index: 30;
+    flex-direction:column;
+  }
+  .members-modal.show{ display:flex; }
+  .members-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 18px 18px 12px;
+    font-weight:700;
+    font-size: 1rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-close{
+    width:32px; height:32px;
+    border-radius:50%;
+    border:none;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+    font-size:0.9rem;
+    cursor:pointer;
+  }
+  .members-modal-list{
+    flex:1;
+    overflow-y:auto;
+    padding: 10px 14px 20px;
+  }
+  .modal-member-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+    cursor:pointer;
+  }
+  .modal-member-row .avatar{
+    width:42px; height:42px;
+    border-radius:50%;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+    font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .modal-member-row .name{ font-weight:600; font-size:0.92rem; }
+  .modal-member-row .sub{ font-size:0.76rem; color: var(--ink-soft); }
+
+  .profile-modal{
+    display:none;
+    position:absolute;
+    inset:0;
+    background: var(--bg);
+    z-index: 35;
+    flex-direction:column;
+  }
+  .profile-modal.show{ display:flex; }
+  .profile-modal-header{ padding: 18px; }
+  .profile-modal-body{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top: 30px;
+  }
+  .profile-modal-avatar{
+    width:96px; height:96px;
+    border-radius:50%;
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    color:white;
+    font-size:2rem;
+    font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px;
+  }
+  .profile-modal-name{ font-weight:700; font-size:1.2rem; color: var(--ink); margin-bottom:4px; }
+  .profile-modal-id{ font-size:0.85rem; color: var(--ink-soft); }
+  .icon-btn{
+    width:34px; height:34px;
+    border-radius:50%;
+    border:none;
+    background: rgba(255,255,255,0.12);
+    color: white;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+
+  .avatars-count-group{
+    position:absolute;
+    top: 50px;
+    right: 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    z-index: 11;
+  }
+  .members-stack{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    overflow-x:auto;
+    max-width: 140px;
+    min-width:0;
+  }
+  .members-stack::-webkit-scrollbar{ display:none; }
+  .members-stack .stack-avatar{
+    width: 30px; height:30px;
+    border-radius:50%;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+    font-size:0.68rem;
+    font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .member-count-badge{
+    width: 34px; height:34px;
+    border-radius:50%;
+    border:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(255,255,255,0.14);
+    color:white;
+    font-size:0.75rem;
+    font-weight:700;
+    flex-shrink:0;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+  }
+
+  /* ---------- Voice seats grid ---------- */
+  .seats-wrap{ padding: 18px 18px 14px; }
+  .seats-grid{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px 10px;
+  }
+
+  .seat-action-menu{
+    display:none;
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform: translate(-50%, -50%);
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px;
+    width: 260px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    z-index: 40;
+  }
+  .seat-action-menu.show{ display:block; }
+  .seat-menu-title{
+    font-weight:700;
+    font-size:0.95rem;
+    color: var(--ink);
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .seat-menu-actions{ display:flex; gap:10px; }
+  .seat-menu-actions button{
+    flex:1;
+    border:none;
+    padding: 10px;
+    border-radius: 10px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.85rem;
+    cursor:pointer;
+  }
+  .seat-menu-cancel{ background: var(--bg); color: var(--ink-soft); }
+  .seat-menu-leave{ background:#fbecec; color:#b1362f; }
+  .seat-menu-take{ background: var(--teal-deep); color:white; }
+  .seat-menu-lock{ background: var(--teal-soft); color: var(--teal-deep); }
+  .seat{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    background:none;
+    border:none;
+  }
+  .seat-circle{
+    width: 52px; height:52px;
+    border-radius:50%;
+    background: rgba(255,255,255,0.22);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: rgba(255,255,255,0.9);
+    position:relative;
+    overflow:hidden;
+  }
+  .seat-circle img{ width:100%; height:100%; object-fit:cover; }
+  .seat-label{
+    font-size:0.72rem;
+    color: rgba(255,255,255,0.75);
+    font-weight:600;
+  }
+  .seat.taken .seat-circle{
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(6,214,160,0.25);
+  }
+  .seat.speaking .seat-circle{
+    animation: pulse 1.2s infinite;
+  }
+  .seat.locked .seat-circle{
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.35);
+  }
+  .seat.locked .seat-label{ opacity:0.75; }
+  @keyframes pulse{
+    0%,100%{ box-shadow: 0 0 0 3px rgba(6,214,160,0.35); }
+    50%{ box-shadow: 0 0 0 7px rgba(6,214,160,0.12); }
+  }
+
+  /* ---------- Announcement banner ---------- */
+  .banner{
+    margin: 4px 18px 14px;
+    background: rgba(255,255,255,0.1);
+    border-left: 3px solid var(--teal);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.8rem;
+    line-height:1.4;
+  }
+
+  /* ---------- Text chat feed (now part of the same themed screen) ---------- */
+  .chat-panel{
+    flex:1;
+    background: transparent;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    margin-top: 4px;
+  }
+  .messages{
+    flex:1;
+    overflow-y:auto;
+    padding: 16px 8px 8px 10px;
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
+  .msg-row{ position:relative; touch-action:pan-y; }
+  .msg-row-inner{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap: 3px;
+    transition: transform 0.15s ease;
+    max-width:100%;
+  }
+  .msg-name-row{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .reply-icon{
+    width:22px; height:22px;
+    border-radius:50%;
+    background: rgba(255,255,255,0.2);
+    color:white;
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    opacity:0;
+    transition: opacity 0.15s ease;
+    font-size:0.75rem;
+    position:absolute;
+    top:0; right:8px;
+  }
+  .reply-icon.show{ opacity:1; }
+  .sender-name{
+    font-size:0.92rem;
+    font-weight:700;
+    color: var(--teal);
+    flex-shrink:0;
+  }
+  .sender-name.me{ color:#ffd166; }
+  .msg-avatar{
+    width:28px; height:28px;
+    border-radius:50%;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+    font-size:0.78rem;
+    font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .bubble{
+    display:inline-block;
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    line-height:1.35;
+    background: rgba(0,0,0,0.32);
+    color: white;
+    cursor:pointer;
+  }
+  .quoted-reply{
+    border-left: 3px solid var(--teal);
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 5px 8px;
+    margin-bottom: 5px;
+    font-size: 0.76rem;
+    opacity:0.9;
+    text-align:left;
+  }
+  .quoted-reply .q-name{ font-weight:700; }
+
+  .reply-preview-bar{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding: 8px 12px;
+    margin: 0 12px;
+    background: rgba(255,255,255,0.92);
+    border-left: 3px solid var(--teal-deep);
+    border-radius: 8px 8px 0 0;
+  }
+  .reply-preview-bar.show{ display:flex; }
+  .reply-preview-bar .rp-text{ font-size:0.8rem; color: var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .reply-preview-bar .rp-name{ font-weight:700; color: var(--teal-deep); }
+  .reply-preview-bar button{
+    background:none; border:none; color: var(--ink-soft); font-size:1rem; cursor:pointer; flex-shrink:0;
+  }
+
+  .composer{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+  }
+  .composer input[type=text]{
+    flex:1;
+    border: none;
+    background: rgba(255,255,255,0.92);
+    border-radius: 20px;
+    padding: 11px 16px;
+    font-family:'Inter', sans-serif;
+    font-size: 0.88rem;
+    outline:none;
+    unicode-bidi: plaintext;
+    color: var(--ink);
+  }
+  .send-btn{
+    width:38px; height:38px;
+    border-radius:50%;
+    border:none;
+    background: var(--teal-deep);
+    color:white;
+    cursor:pointer;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn-light{
+    width:36px; height:36px;
+    border-radius:50%;
+    border:none;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+    font-size: 1rem;
+    cursor:pointer;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .toast{
+    position:fixed;
+    bottom: 78px;
+    left:50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color:white;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.2s ease;
+    z-index:10;
+  }
+  .toast.show{ opacity:0.95; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <button class="power-btn" onclick="toggleExitMenu()" title="Exit room">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v7"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/></svg>
+  </button>
+
+  <div class="room-header">
+    <div class="room-top-line">
+      <div class="room-avatar" id="room-avatar" onclick="tryChangeRoomPicture()" title="Room picture">
+        <span id="room-avatar-fallback">👥</span>
+      </div>
+      <input type="file" id="room-pic-input" accept="image/*" style="display:none">
+      <div class="room-name-id">
+        <span class="room-title copyable">The Circle</span>
+        <span class="room-id copyable">ID: 11711</span>
+      </div>
+    </div>
+    <div class="room-members-line">
+      <div class="diamond-badge" title="Coming soon">💎 0</div>
+      <div class="avatars-count-group">
+        <div class="members-stack" id="members-stack" title="Scroll to see all members"></div>
+        <button class="member-count-badge" id="member-count-badge" onclick="openMembersModal()" title="See all members">8</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="exit-menu" id="exit-menu">
+    <div class="exit-menu-backdrop" onclick="toggleExitMenu()"></div>
+    <div class="exit-menu-buttons">
+      <div class="exit-option" onclick="confirmKeep()">
+        <div class="exit-circle keep">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>
+        </div>
+        <span>Keep</span>
+      </div>
+      <div class="exit-option" onclick="confirmExit()">
+        <div class="exit-circle leave">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v7"/><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/></svg>
+        </div>
+        <span>Exit</span>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="theme-pic-input" accept="image/*" style="display:none">
+
+  <div class="members-modal" id="members-modal">
+    <div class="members-modal-header">
+      <span>Online Users: <strong id="modal-user-count">8</strong></span>
+      <button class="modal-close" onclick="closeMembersModal()">✕</button>
+    </div>
+    <div class="members-modal-list" id="members-modal-list"></div>
+  </div>
+
+  <div class="profile-modal" id="profile-modal">
+    <div class="profile-modal-header">
+      <button class="back-link" onclick="closeProfileModal()" style="margin:0;">← Back</button>
+    </div>
+    <div class="profile-modal-body">
+      <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
+      <div class="profile-modal-name copyable" id="profile-modal-name">Ayesha</div>
+      <div class="profile-modal-id copyable" id="profile-modal-id">ID: 208813</div>
+    </div>
+  </div>
+
+  <div class="info-menu" id="info-menu">
+    <button onclick="showToast('Room info panel — coming soon'); toggleInfoMenu(false);">ℹ️ &nbsp;Room info</button>
+    <button onclick="tryChangeRoomTheme()">🖼️ &nbsp;Set room theme (from gallery)</button>
+  </div>
+
+  <div class="seats-wrap">
+    <div class="seats-grid" id="seats-grid"></div>
+  </div>
+
+  <div class="seat-action-menu" id="seat-action-menu">
+    <div class="seat-menu-title" id="seat-menu-title">Leave this seat?</div>
+    <div class="seat-menu-actions" id="seat-menu-actions">
+      <button class="seat-menu-cancel" onclick="closeSeatMenu()">Cancel</button>
+      <button class="seat-menu-leave" onclick="confirmLeaveSeat()">Leave seat</button>
+    </div>
+  </div>
+
+  <div class="banner">Welcome to The Circle 🌿 Please be kind and respect each other while talking.</div>
+
+  <div class="chat-panel">
+    <div class="messages" id="messages"></div>
+
+    <div class="reply-preview-bar" id="reply-preview-bar">
+      <div style="min-width:0;">
+        <div class="rp-name" id="rp-name"></div>
+        <div class="rp-text" id="rp-text"></div>
+      </div>
+      <button onclick="cancelReply()">✕</button>
+    </div>
+
+    <div class="composer">
+      <input type="text" id="text-input" placeholder="Say something..." dir="auto">
+      <button class="send-btn" onclick="sendText()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+      <button class="icon-btn-light" title="Room info" onclick="toggleInfoMenu()">ⓘ</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  let currentUser = null;
+  let currentProfile = null;
+
+  async function initAuth(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session){
+      location.href = 'index.html';
+      return false;
+    }
+    currentUser = session.user;
+    const { data: profile } = await supabaseClient
+      .from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = profile;
+    return true;
+  }
+
+  // Voice seats — now backed by the room_seats table (real-time across users)
+  let seats = Array.from({length:10}, () => ({ taken:false }));
+
+  // All members currently in the room (demo data — could be up to the app's 50-user cap)
+  const roomMembers = [
+    { initial:'A', name:'Ayesha', id:'208813' }, { initial:'B', name:'Bilal', id:'941027' },
+    { initial:'H', name:'Hamza', id:'556214' }, { initial:'S', name:'Sara', id:'372910' },
+    { initial:'Z', name:'Zain', id:'118845' }, { initial:'M', name:'Mahnoor', id:'664231' },
+    { initial:'K', name:'Kamran', id:'809172' }, { initial:'F', name:'Fatima', id:'253690' }
+  ];
+  const myProfile = { initial:'Me', name:'You', id:'123456' };
+
+  function findProfile(name){
+    if(name === 'You' || name === 'Me') return myProfile;
+    return roomMembers.find(m => m.name === name) || { initial:'?', name, id:'—' };
+  }
+
+  function renderMembersStack(){
+    const stack = document.getElementById('members-stack');
+    stack.innerHTML = roomMembers.map(m => `<div class="stack-avatar" onclick="openProfileModal('${m.name}')">${m.initial}</div>`).join('');
+    document.getElementById('member-count-badge').textContent = roomMembers.length;
+  }
+
+  function openMembersModal(){
+    document.getElementById('modal-user-count').textContent = roomMembers.length;
+    document.getElementById('members-modal-list').innerHTML = roomMembers.map(m => `
+      <div class="modal-member-row" onclick="openProfileModal('${m.name}')">
+        <div class="avatar">${m.initial}</div>
+        <div>
+          <div class="name copyable">${m.name}</div>
+          <div class="sub">Member</div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('members-modal').classList.add('show');
+  }
+  function closeMembersModal(){
+    document.getElementById('members-modal').classList.remove('show');
+  }
+
+  function openProfileModal(name){
+    const p = findProfile(name);
+    document.getElementById('profile-modal-avatar').textContent = p.initial;
+    document.getElementById('profile-modal-name').textContent = p.name;
+    document.getElementById('profile-modal-id').textContent = 'ID: ' + p.id;
+    document.getElementById('profile-modal').classList.add('show');
+  }
+  function closeProfileModal(){
+    document.getElementById('profile-modal').classList.remove('show');
+  }
+
+  // ---------- Permission: only the room admin (or someone the admin approves) can customize ----------
+  // Demo flag — in the real app this comes from the backend based on the logged-in user's role.
+  const canCustomizeRoom = true;
+
+  function toggleExitMenu(){
+    document.getElementById('exit-menu').classList.toggle('show');
+  }
+
+  function confirmKeep(){
+    // User stays "in" the room in whatever state they're in (seated or not) — just navigate back to home.
+    location.href = 'home.html';
+  }
+
+  async function confirmExit(){
+    // Fully leave: clear any seat the user holds, then navigate back to home.
+    await supabaseClient.from('room_seats').update({ occupied_by: null })
+      .eq('room_id','main').eq('occupied_by', currentUser.id);
+    location.href = 'home.html';
+  }
+
+  function tryChangeRoomPicture(){
+    if(!canCustomizeRoom){
+      showToast('Only the room admin or approved members can change the room picture.');
+      return;
+    }
+    document.getElementById('room-pic-input').click();
+  }
+
+  function tryChangeRoomTheme(){
+    toggleInfoMenu(false);
+    if(!canCustomizeRoom){
+      showToast('Only the room admin or approved members can change the room theme.');
+      return;
+    }
+    document.getElementById('theme-pic-input').click();
+  }
+
+  function applyThemeBackground(dataUrl){
+    document.querySelector('.phone').style.background =
+      `linear-gradient(180deg, rgba(6,37,29,0.55), rgba(6,37,29,0.55)), url('${dataUrl}') center/cover no-repeat`;
+  }
+
+  async function loadRoomInfo(){
+    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id','main').single();
+    if(room?.picture_url) applyRoomPicture(room.picture_url);
+    if(room?.theme_url) applyThemeBackground(room.theme_url);
+  }
+
+  function subscribeRoomInfo(){
+    supabaseClient.channel('room-info-main')
+      .on('postgres_changes', { event:'*', schema:'public', table:'rooms', filter:'id=eq.main' }, payload => {
+        const room = payload.new;
+        if(room?.picture_url) applyRoomPicture(room.picture_url);
+        if(room?.theme_url) applyThemeBackground(room.theme_url);
+      })
+      .subscribe();
+  }
+
+  document.getElementById('room-pic-input').addEventListener('change', async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    showToast('Uploading room picture...');
+    const path = 'room-pictures/main-' + Date.now() + '-' + file.name;
+    const { error: upErr } = await supabaseClient.storage.from('media').upload(path, file, { upsert:true });
+    if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
+    const { data: pub } = supabaseClient.storage.from('media').getPublicUrl(path);
+    const { error: dbErr } = await supabaseClient.from('rooms').update({ picture_url: pub.publicUrl }).eq('id','main');
+    if(dbErr){ showToast('Could not save picture.'); return; }
+    applyRoomPicture(pub.publicUrl);
+    showToast('Room picture updated');
+  });
+
+  document.getElementById('theme-pic-input').addEventListener('change', async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    showToast('Uploading room theme...');
+    const path = 'room-themes/main-' + Date.now() + '-' + file.name;
+    const { error: upErr } = await supabaseClient.storage.from('media').upload(path, file, { upsert:true });
+    if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
+    const { data: pub } = supabaseClient.storage.from('media').getPublicUrl(path);
+    const { error: dbErr } = await supabaseClient.from('rooms').update({ theme_url: pub.publicUrl }).eq('id','main');
+    if(dbErr){ showToast('Could not save theme.'); return; }
+    applyThemeBackground(pub.publicUrl);
+    showToast('Room theme updated from gallery');
+  });
+
+  function toggleInfoMenu(forceState){
+    const menu = document.getElementById('info-menu');
+    if(typeof forceState === 'boolean'){
+      menu.classList.toggle('show', forceState);
+    } else {
+      menu.classList.toggle('show');
+    }
+  }
+
+  function renderSeats(){
+    const grid = document.getElementById('seats-grid');
+    const lockSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><path d="M12 2a5 5 0 0 0-5 5v3H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-1V7a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3z"/></svg>';
+    const micSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>';
+    grid.innerHTML = seats.map((s, i) => `
+      <button class="seat ${s.taken ? 'taken' : ''} ${s.speaking ? 'speaking' : ''} ${s.locked ? 'locked' : ''}" onclick="handleSeatClick(${i})">
+        <div class="seat-circle">
+          ${s.locked ? lockSvg : (s.taken ? s.initial : micSvg)}
+        </div>
+        <div class="seat-label">${s.locked ? 'Locked' : (s.taken ? '' : (i+1))}</div>
+      </button>
+    `).join('');
+  }
+
+  function buildSeatsFromRows(rows){
+    const arr = Array.from({length:10}, () => ({ taken:false }));
+    (rows || []).forEach(r => {
+      const idx = r.seat_number - 1;
+      if(idx < 0 || idx > 9) return;
+      if(r.locked){
+        arr[idx] = { taken:false, locked:true };
+      } else if(r.occupied_by){
+        const isMe = r.occupied_by === currentUser.id;
+        arr[idx] = {
+          taken:true,
+          initial: isMe ? 'Me' : (r.profiles?.name || '?').charAt(0).toUpperCase(),
+          speaking:true
+        };
+      }
+    });
+    return arr;
+  }
+
+  async function loadSeats(){
+    const { data: rows } = await supabaseClient
+      .from('room_seats')
+      .select('seat_number, occupied_by, locked, profiles:occupied_by(name)')
+      .eq('room_id', 'main')
+      .order('seat_number');
+    seats = buildSeatsFromRows(rows);
+    renderSeats();
+  }
+
+  function subscribeSeats(){
+    supabaseClient.channel('room-seats-main')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_seats', filter: 'room_id=eq.main' }, () => {
+        loadSeats();
+      })
+      .subscribe();
+  }
+
+  function handleSeatClick(i){
+    const s = seats[i];
+
+    if(s.locked){
+      if(canCustomizeRoom){
+        openSeatMenu(i, 'locked');
+      } else {
+        showToast('This seat is locked.');
+      }
+      return;
+    }
+
+    if(s.taken){
+      if(s.initial === 'Me'){
+        openSeatMenu(i, 'leave');
+      } else {
+        showToast('This seat is already taken.');
+      }
+      return;
+    }
+
+    openSeatMenu(i, 'empty');
+  }
+
+  function openSeatMenu(i, mode){
+    const menu = document.getElementById('seat-action-menu');
+    const title = document.getElementById('seat-menu-title');
+    const actions = document.getElementById('seat-menu-actions');
+    menu.dataset.seatIndex = i;
+
+    if(mode === 'leave'){
+      title.textContent = 'Leave seat ' + (i+1) + '?';
+      actions.innerHTML = `
+        <button class="seat-menu-cancel" onclick="closeSeatMenu()">Cancel</button>
+        <button class="seat-menu-leave" onclick="confirmLeaveSeat()">Leave seat</button>
+      `;
+    } else if(mode === 'locked'){
+      title.textContent = 'Seat ' + (i+1) + ' is locked';
+      actions.innerHTML = `
+        <button class="seat-menu-cancel" onclick="closeSeatMenu()">Cancel</button>
+        <button class="seat-menu-leave" onclick="unlockSeat(${i})">Unlock seat</button>
+      `;
+    } else {
+      title.textContent = 'Seat ' + (i+1);
+      let btns = `<button class="seat-menu-take" onclick="takeSeat(${i})">Take seat</button>`;
+      if(canCustomizeRoom){
+        btns += `<button class="seat-menu-lock" onclick="lockSeat(${i})">Lock seat</button>`;
+      }
+      actions.innerHTML = btns;
+    }
+    menu.classList.add('show');
+  }
+
+  function closeSeatMenu(){
+    document.getElementById('seat-action-menu').classList.remove('show');
+  }
+
+  async function takeSeat(i){
+    const seatNumber = i + 1;
+    closeSeatMenu();
+    // A user can only occupy one seat at a time — clear any seat they currently hold
+    await supabaseClient.from('room_seats').update({ occupied_by: null })
+      .eq('room_id','main').eq('occupied_by', currentUser.id);
+    const { error } = await supabaseClient.from('room_seats')
+      .update({ occupied_by: currentUser.id })
+      .eq('room_id','main').eq('seat_number', seatNumber).eq('locked', false)
+      .is('occupied_by', null);
+    if(error){
+      showToast('Could not take that seat.');
+      return;
+    }
+    showToast('You joined seat ' + seatNumber + ' — mic on');
+    loadSeats();
+  }
+
+  async function lockSeat(i){
+    const seatNumber = i + 1;
+    closeSeatMenu();
+    await supabaseClient.from('room_seats')
+      .update({ locked:true, occupied_by:null })
+      .eq('room_id','main').eq('seat_number', seatNumber);
+    showToast('Seat ' + seatNumber + ' locked');
+    loadSeats();
+  }
+
+  async function unlockSeat(i){
+    const seatNumber = i + 1;
+    closeSeatMenu();
+    await supabaseClient.from('room_seats')
+      .update({ locked:false })
+      .eq('room_id','main').eq('seat_number', seatNumber);
+    showToast('Seat ' + seatNumber + ' unlocked');
+    loadSeats();
+  }
+
+  async function confirmLeaveSeat(){
+    const menu = document.getElementById('seat-action-menu');
+    const i = Number(menu.dataset.seatIndex);
+    const seatNumber = i + 1;
+    closeSeatMenu();
+    await supabaseClient.from('room_seats')
+      .update({ occupied_by: null })
+      .eq('room_id','main').eq('seat_number', seatNumber);
+    showToast('You left the seat');
+    loadSeats();
+  }
+
+  let messages = [
+    { from:'them', name:'Ayesha', initial:'A', text:'Assalam o alaikum sab!' },
+    { from:'them', name:'Bilal', initial:'B', text:'Walaikum salam 🙂' },
+    { from:'me', text:'kal ka plan kya hai?' },
+    { from:'them', name:'Sara', initial:'S', text:'seat 7 pe aa jao baat karte hain' }
+  ];
+
+  let currentReply = null; // { name, text }
+
+  function renderMessages(){
+    const box = document.getElementById('messages');
+    box.innerHTML = messages.map((m, i) => {
+      const senderName = m.from === 'me' ? 'You' : m.name;
+      const initial = m.from === 'me' ? 'Me' : (m.initial || senderName.charAt(0));
+      const quoted = m.replyTo ? `<div class="quoted-reply"><div class="q-name">${escapeHtml(m.replyTo.name)}</div>${escapeHtml(m.replyTo.text)}</div>` : '';
+      return `
+      <div class="msg-row" data-index="${i}" data-name="${escapeHtml(senderName)}" data-text="${escapeHtml(m.text)}">
+        <div class="msg-row-inner">
+          <div class="reply-icon">↩</div>
+          <div class="msg-name-row">
+            <span class="msg-avatar" onclick="openProfileModal('${escapeHtml(senderName)}')">${initial}</span>
+            <span class="sender-name copyable ${m.from === 'me' ? 'me' : ''}">${escapeHtml(senderName)}</span>
+          </div>
+          <span class="bubble">${quoted}${escapeHtml(m.text)}</span>
+        </div>
+      </div>
+    `;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+    attachSwipeHandlers();
+  }
+
+  function attachSwipeHandlers(){
+    document.querySelectorAll('.msg-row').forEach(row => {
+      const inner = row.querySelector('.msg-row-inner');
+      const icon = row.querySelector('.reply-icon');
+      let startX = 0, dragging = false, dx = 0;
+
+      function start(x){ startX = x; dragging = true; }
+      function move(x){
+        if(!dragging) return;
+        dx = x - startX;
+        const clamped = dx > 0 ? Math.min(dx, 60) : 0;
+        inner.style.transform = `translateX(${clamped}px)`;
+        icon.classList.toggle('show', clamped > 24);
+      }
+      function end(){
+        if(!dragging) return;
+        dragging = false;
+        if(dx > 40){
+          startReply(row.dataset.name, row.dataset.text);
+        }
+        inner.style.transform = 'translateX(0)';
+        icon.classList.remove('show');
+        dx = 0;
+      }
+
+      inner.addEventListener('touchstart', e => start(e.touches[0].clientX), {passive:true});
+      inner.addEventListener('touchmove', e => move(e.touches[0].clientX), {passive:true});
+      inner.addEventListener('touchend', end);
+      inner.addEventListener('mousedown', e => start(e.clientX));
+      inner.addEventListener('mousemove', e => move(e.clientX));
+      inner.addEventListener('mouseup', end);
+      inner.addEventListener('mouseleave', end);
+    });
+  }
+
+  function startReply(name, text){
+    currentReply = { name, text };
+    document.getElementById('rp-name').textContent = name;
+    document.getElementById('rp-text').textContent = text;
+    document.getElementById('reply-preview-bar').classList.add('show');
+    document.getElementById('text-input').focus();
+  }
+
+  function cancelReply(){
+    currentReply = null;
+    document.getElementById('reply-preview-bar').classList.remove('show');
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function sendText(){
+    const input = document.getElementById('text-input');
+    const value = input.value.trim();
+    if(!value) return;
+    const msg = { from:'me', text:value };
+    if(currentReply) msg.replyTo = currentReply;
+    messages.push(msg);
+    input.value = '';
+    cancelReply();
+    renderMessages();
+  }
+
+  document.getElementById('text-input').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') sendText();
+  });
+
+  function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function applyRoomPicture(dataUrl){
+    document.getElementById('room-avatar').innerHTML = '<img src="' + dataUrl + '">';
+  }
+
+  // Room picture upload handled by the Storage-backed listener above (loadRoomInfo/subscribeRoomInfo)
+
+  (async function init(){
+    const ok = await initAuth();
+    if(!ok) return;
+    renderMembersStack();
+    await loadSeats();
+    subscribeSeats();
+    await loadRoomInfo();
+    subscribeRoomInfo();
+    renderMessages();
+  })();
+</script>
+
+</body>
+</html>

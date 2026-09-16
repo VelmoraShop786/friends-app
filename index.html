@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join the Circle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-deep: #05846a;
+    --teal: #06D6A0;
+    --teal-soft: #d3f3e8;
+    --blue: #118AB2;
+    --bg: #f6faf8;
+    --card: #ffffff;
+    --ink: #16332c;
+    --ink-soft: #5c7770;
+    --line: #dfeee8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  *, *::before, *::after{
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+  }
+  input, textarea{
+    -webkit-user-select:text; -moz-user-select:text; -ms-user-select:text; user-select:text;
+    -webkit-touch-callout:default;
+  }
+  .copyable, .copyable *{
+    -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
+    -webkit-touch-callout:default !important;
+  }
+  body{
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 24px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    opacity: 0.5;
+    z-index:0;
+  }
+  .blob1{ width:420px; height:420px; background: var(--teal-soft); top:-140px; left:-140px; }
+  .blob2{ width:260px; height:260px; background: #eaf6f1; bottom:-80px; right:-60px; }
+
+  .wrap{
+    position:relative;
+    z-index:1;
+    display:flex;
+    width:100%;
+    max-width: 920px;
+    background: var(--card);
+    border-radius: 28px;
+    overflow:hidden;
+    box-shadow: 0 30px 60px -30px rgba(5,84,60,0.25);
+  }
+
+  .side{
+    flex: 1 1 42%;
+    background: linear-gradient(160deg, var(--teal-deep), var(--teal) 70%);
+    padding: 48px 40px;
+    color: white;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+  }
+  .side h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 2.1rem;
+    line-height:1.15;
+    max-width: 260px;
+  }
+  .bubbles{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top: 40px;
+  }
+  .bubble{
+    background: rgba(255,255,255,0.16);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    max-width: 200px;
+    line-height:1.4;
+  }
+  .bubble.right{ align-self:flex-end; background: rgba(255,255,255,0.28); }
+  .side .tagline{
+    font-size: 0.85rem;
+    opacity: 0.85;
+    line-height:1.5;
+  }
+
+  .form-side{
+    flex: 1 1 58%;
+    padding: 48px 44px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+
+  .tabs{
+    display:flex;
+    gap: 4px;
+    background: var(--teal-soft);
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 32px;
+    width: fit-content;
+  }
+  .tab{
+    border:none;
+    background:transparent;
+    padding: 8px 20px;
+    border-radius: 9px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.9rem;
+    color: var(--teal-deep);
+    cursor:pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .tab.active{
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 2px 6px rgba(5,84,60,0.12);
+  }
+
+  h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 1.6rem;
+    margin-bottom: 6px;
+  }
+  .sub{
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    margin-bottom: 28px;
+  }
+
+  form{ display:none; flex-direction:column; gap:16px; }
+  form.active{ display:flex; }
+
+  label{
+    font-size: 0.82rem;
+    font-weight:600;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    display:block;
+  }
+  .field{ display:flex; flex-direction:column; }
+  input{
+    border: 1.5px solid var(--line);
+    background: #fbfdfc;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family:'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--ink);
+    outline:none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  input:focus{
+    border-color: var(--teal);
+    background: #ffffff;
+  }
+  input:focus-visible{
+    outline: 2px solid var(--blue);
+    outline-offset: 1px;
+  }
+
+  .avatar-row{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .avatar-circle{
+    width: 110px; height:110px;
+    border-radius:50%;
+    background: var(--teal-soft);
+    border: 1.5px dashed var(--teal);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 0.78rem;
+    font-weight:600;
+    color: var(--teal-deep);
+    text-align:center;
+    line-height:1.3;
+    cursor:pointer;
+    flex-shrink:0;
+    position:relative;
+  }
+  .avatar-circle img{
+    width:100%; height:100%;
+    object-fit:cover;
+    border-radius:50%;
+    position:absolute;
+    top:0; left:0;
+  }
+  .avatar-plus{
+    position:absolute;
+    bottom: -4px; right: -4px;
+    width: 32px; height:32px;
+    border-radius:50%;
+    background: var(--teal-deep);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 1.2rem;
+    font-weight:700;
+    border: 3px solid var(--card);
+    pointer-events:none;
+    z-index:2;
+  }
+  .avatar-note{ font-size: 0.8rem; color: var(--ink-soft); }
+
+  .id-toggle{
+    display:flex;
+    gap: 4px;
+    background: var(--teal-soft);
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    width: fit-content;
+  }
+  .id-toggle button{
+    border:none;
+    background:transparent;
+    padding: 6px 16px;
+    border-radius: 7px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.8rem;
+    color: var(--teal-deep);
+    cursor:pointer;
+  }
+  .id-toggle button.active{
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 2px 4px rgba(5,84,60,0.1);
+  }
+
+  .submit-btn{
+    margin-top: 8px;
+    border:none;
+    background: var(--teal-deep);
+    color:white;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.95rem;
+    padding: 13px;
+    border-radius: 10px;
+    cursor:pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .submit-btn:hover{ background: #046c56; }
+  .submit-btn:active{ transform: scale(0.98); }
+  .submit-btn:focus-visible{ outline: 2px solid var(--blue); outline-offset:2px; }
+
+  .switch-line{
+    text-align:center;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-top: 20px;
+  }
+  .switch-line button{
+    background:none; border:none; color: var(--blue);
+    font-weight:600; cursor:pointer; font-size:0.85rem;
+    font-family:'Inter', sans-serif;
+  }
+
+  .status{
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display:none;
+    margin-bottom: 4px;
+  }
+  .status.show{ display:block; }
+  .status.error{ background:#fde8e8; color:#b1362f; }
+  .status.success{ background: var(--teal-soft); color: var(--teal-deep); }
+
+  .otp-row{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .otp-row input{
+    width: 48px;
+    height: 56px;
+    text-align:center;
+    font-size: 1.3rem;
+    font-weight:600;
+    padding: 0;
+  }
+  .resend-line{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  .resend-line button{
+    background:none; border:none; color: var(--blue);
+    font-weight:600; cursor:pointer; font-size:0.85rem;
+    font-family:'Inter', sans-serif; padding:0;
+  }
+  .back-link{
+    background:none; border:none; color: var(--ink-soft);
+    font-family:'Inter', sans-serif; font-size:0.85rem;
+    cursor:pointer; padding:0; margin-bottom:18px;
+    width: fit-content;
+    display:flex; align-items:center; gap:6px;
+  }
+  .back-link:hover{ color: var(--ink); }
+  .forgot-link{
+    text-align:right;
+    margin-top:-8px;
+  }
+  .forgot-link button{
+    background:none; border:none; color: var(--blue);
+    font-weight:600; cursor:pointer; font-size:0.82rem;
+    font-family:'Inter', sans-serif; padding:0;
+  }
+
+  @media (max-width: 720px){
+    .wrap{ flex-direction:column; }
+    .side{ padding: 32px 28px; }
+    .side h1{ font-size:1.6rem; max-width:none; }
+    .bubbles{ margin-top:24px; }
+    .form-side{ padding:36px 28px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div class="wrap">
+  <div class="side">
+    <div>
+      <h1>Where the group actually talks.</h1>
+      <div class="bubbles">
+        <div class="bubble">did anyone feed the group chat today 👀</div>
+        <div class="bubble right">always me lol</div>
+      </div>
+    </div>
+    <p class="tagline">One room for everyone, private inboxes for the real talk, and a members-only space for the inner circle.</p>
+  </div>
+
+  <div class="form-side">
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="showForm('login')">Log in</button>
+      <button class="tab" id="tab-signup" onclick="showForm('signup')">Sign up</button>
+    </div>
+
+    <div id="login-heading">
+      <h2>Welcome back</h2>
+      <p class="sub">Log in to pick up the conversation.</p>
+    </div>
+    <div id="signup-heading" style="display:none;">
+      <h2>Create your account</h2>
+      <p class="sub">Takes less than a minute.</p>
+    </div>
+
+    <div class="status" id="status-box"></div>
+
+    <form id="login-form" class="active">
+      <div class="id-toggle">
+        <button type="button" class="active" id="login-id-email" onclick="setIdMode('login','email')">Email</button>
+        <button type="button" id="login-id-phone" onclick="setIdMode('login','phone')">Phone number</button>
+      </div>
+      <div class="field">
+        <label for="login-email" id="login-id-label">Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" required>
+      </div>
+      <div class="forgot-link">
+        <button type="button" onclick="openForgotPassword()">Forgot password?</button>
+      </div>
+      <button type="submit" class="submit-btn">Log in</button>
+      <p class="switch-line">New here? <button type="button" onclick="showForm('signup')">Create an account</button></p>
+    </form>
+
+    <form id="signup-form">
+      <div class="avatar-row">
+        <div class="avatar-circle" id="avatar-preview" onclick="document.getElementById('avatar-input').click()">
+          Add profile picture
+          <div class="avatar-plus">+</div>
+        </div>
+        <input type="file" id="avatar-input" accept="image/*" style="display:none">
+        <span class="avatar-note">Optional — you can add this later too.</span>
+      </div>
+      <div class="field">
+        <label for="signup-name">Name</label>
+        <input type="text" id="signup-name" placeholder="Your name" required>
+      </div>
+      <div class="id-toggle">
+        <button type="button" class="active" id="signup-id-email" onclick="setIdMode('signup','email')">Email</button>
+        <button type="button" id="signup-id-phone" onclick="setIdMode('signup','phone')">Phone number</button>
+      </div>
+      <div class="field">
+        <label for="signup-email" id="signup-id-label">Email</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" required>
+      </div>
+
+      <button type="button" class="submit-btn" id="signup-send-code-btn" onclick="sendSignupCode()">Send code</button>
+
+      <div class="field" id="signup-otp-field" style="display:none;">
+        <label for="signup-otp">Verification code</label>
+        <input type="text" id="signup-otp" placeholder="Enter your OTP code" inputmode="numeric" maxlength="6">
+      </div>
+      <p class="sub" id="signup-otp-note" style="display:none; margin-top:-10px;"></p>
+      <button type="button" class="submit-btn" id="signup-verify-btn" style="display:none;" onclick="verifySignupCode()">Verify code</button>
+
+      <div class="field" id="signup-password-field" style="display:none;">
+        <label for="signup-password">Password</label>
+        <input type="password" id="signup-password" placeholder="At least 6 characters" minlength="6">
+      </div>
+      <button type="submit" class="submit-btn" id="signup-create-btn" style="display:none;">Create account</button>
+      <p class="switch-line">Already have an account? <button type="button" onclick="showForm('login')">Log in</button></p>
+    </form>
+
+    <!-- Forgot password: step 1, enter email/phone -->
+    <div id="view-forgot-request" style="display:none;">
+      <button class="back-link" onclick="showForm('login')">← Back to log in</button>
+      <h2>Reset your password</h2>
+      <p class="sub" id="forgot-request-sub">Enter the email on your account.</p>
+
+      <div class="field" id="forgot-phone-field" style="display:none;">
+        <label for="forgot-phone">Phone number</label>
+        <input type="tel" id="forgot-phone" placeholder="Enter your mobile number">
+      </div>
+
+      <div class="field">
+        <label for="forgot-email" id="forgot-email-label">Email</label>
+        <input type="email" id="forgot-email" placeholder="you@example.com">
+      </div>
+      <p class="sub" id="forgot-email-note" style="display:none; margin-top:-10px;">Password resets are only sent by email, even for accounts that log in with a phone number.</p>
+
+      <button type="button" class="submit-btn" id="forgot-send-btn" style="margin-top:12px;" onclick="sendForgotCode()">Send code</button>
+    </div>
+
+    <!-- Forgot password: step 2, verify OTP -->
+    <div id="view-forgot-otp" style="display:none;">
+      <button class="back-link" onclick="switchView('forgot-request')">← Back</button>
+      <h2>Enter the code</h2>
+      <p class="sub">We sent a 6-digit code — enter it below.</p>
+      <div class="otp-row">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+      </div>
+      <p class="resend-line">Didn't get a code? <button type="button" onclick="showStatus('Code resent.', 'success')">Resend</button></p>
+      <button type="button" class="submit-btn" id="forgot-verify-btn" style="margin-top:20px;" onclick="verifyForgotCode()">Verify code</button>
+    </div>
+
+    <!-- Forgot password: step 3, set new password -->
+    <div id="view-forgot-reset" style="display:none;">
+      <h2>Set a new password</h2>
+      <p class="sub">Choose something you'll remember.</p>
+      <div class="field">
+        <label for="new-password">New password</label>
+        <input type="password" id="new-password" placeholder="At least 6 characters" minlength="6">
+      </div>
+      <div class="field">
+        <label for="confirm-password">Confirm password</label>
+        <input type="password" id="confirm-password" placeholder="Re-enter password" minlength="6">
+      </div>
+      <button type="button" class="submit-btn" id="forgot-save-btn" style="margin-top:12px;" onclick="saveNewPassword()">Save new password</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  const extraViews = ['view-forgot-request', 'view-forgot-otp', 'view-forgot-reset'];
+
+  function showForm(which){
+    const isLogin = which === 'login';
+    extraViews.forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('login-form').classList.toggle('active', isLogin);
+    document.getElementById('signup-form').classList.toggle('active', !isLogin);
+    document.getElementById('login-heading').style.display = isLogin ? 'block' : 'none';
+    document.getElementById('signup-heading').style.display = isLogin ? 'none' : 'block';
+    document.getElementById('tab-login').classList.toggle('active', isLogin);
+    document.getElementById('tab-signup').classList.toggle('active', !isLogin);
+    document.querySelector('.tabs').style.display = 'flex';
+    if(!isLogin){
+      resetSignupOtpStep();
+    }
+    hideStatus();
+  }
+
+  function openForgotPassword(){
+    const isPhoneLogin = document.getElementById('login-id-phone').classList.contains('active');
+    const phoneField = document.getElementById('forgot-phone-field');
+    const emailLabel = document.getElementById('forgot-email-label');
+    const emailNote = document.getElementById('forgot-email-note');
+    const sub = document.getElementById('forgot-request-sub');
+
+    if(isPhoneLogin){
+      phoneField.style.display = 'flex';
+      emailLabel.textContent = 'Add an email to receive your reset code';
+      emailNote.style.display = 'block';
+      sub.textContent = "First, confirm the phone number on your account.";
+    } else {
+      phoneField.style.display = 'none';
+      emailLabel.textContent = 'Email';
+      emailNote.style.display = 'none';
+      sub.textContent = 'Enter the email on your account.';
+    }
+    switchView('forgot-request');
+  }
+
+  function switchView(viewId){
+    document.getElementById('login-form').classList.remove('active');
+    document.getElementById('signup-form').classList.remove('active');
+    document.getElementById('login-heading').style.display = 'none';
+    document.getElementById('signup-heading').style.display = 'none';
+    document.querySelector('.tabs').style.display = 'none';
+    extraViews.forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById('view-' + viewId).style.display = 'block';
+    hideStatus();
+  }
+
+  document.querySelectorAll('.otp-box').forEach(function(box, idx, all){
+    box.addEventListener('input', function(){
+      box.value = box.value.replace(/[^0-9]/g, '');
+      if(box.value && box.nextElementSibling && box.nextElementSibling.classList.contains('otp-box')){
+        box.nextElementSibling.focus();
+      }
+    });
+    box.addEventListener('keydown', function(e){
+      if(e.key === 'Backspace' && !box.value && box.previousElementSibling && box.previousElementSibling.classList.contains('otp-box')){
+        box.previousElementSibling.focus();
+      }
+    });
+  });
+
+  function maskContact(value, mode){
+    if(mode === 'phone'){
+      const digits = value.replace(/[^0-9]/g, '');
+      if(digits.length < 3) return value;
+      const last = digits.slice(-3);
+      return '•'.repeat(Math.max(digits.length - 3, 4)) + last;
+    } else {
+      const parts = value.split('@');
+      if(parts.length !== 2) return value;
+      const name = parts[0];
+      const shown = name.slice(0, 2);
+      return shown + '•'.repeat(Math.max(name.length - 2, 3)) + '@' + parts[1];
+    }
+  }
+
+  async function sendSignupCode(){
+    const isPhone = document.getElementById('signup-id-phone').classList.contains('active');
+    const value = document.getElementById('signup-email').value.trim();
+    if(!value){
+      showStatus(isPhone ? 'Enter your phone number first.' : 'Enter your email first.', 'error');
+      return;
+    }
+    const btn = document.getElementById('signup-send-code-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+
+    const payload = isPhone ? { phone: value } : { email: value };
+    const { error } = await supabaseClient.auth.signInWithOtp({ ...payload, options: { shouldCreateUser: true } });
+
+    btn.disabled = false; btn.textContent = 'Send code';
+
+    if(error){
+      showStatus(error.message, 'error');
+      return;
+    }
+
+    const masked = maskContact(value, isPhone ? 'phone' : 'email');
+    document.getElementById('signup-otp-note').textContent = 'We sent a code to ' + masked;
+    document.getElementById('signup-otp-note').style.display = 'block';
+    document.getElementById('signup-otp-field').style.display = 'flex';
+    document.getElementById('signup-verify-btn').style.display = 'block';
+    document.getElementById('signup-send-code-btn').style.display = 'none';
+    hideStatus();
+  }
+
+  async function verifySignupCode(){
+    const isPhone = document.getElementById('signup-id-phone').classList.contains('active');
+    const value = document.getElementById('signup-email').value.trim();
+    const code = document.getElementById('signup-otp').value.trim();
+    if(code.length < 4){
+      showStatus('Enter the code sent to you.', 'error');
+      return;
+    }
+    const btn = document.getElementById('signup-verify-btn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+
+    const payload = isPhone
+      ? { phone: value, token: code, type: 'sms' }
+      : { email: value, token: code, type: 'email' };
+    const { error } = await supabaseClient.auth.verifyOtp(payload);
+
+    btn.disabled = false; btn.textContent = 'Verify code';
+
+    if(error){
+      showStatus(error.message, 'error');
+      return;
+    }
+
+    document.getElementById('signup-otp-field').style.display = 'none';
+    document.getElementById('signup-otp-note').style.display = 'none';
+    document.getElementById('signup-verify-btn').style.display = 'none';
+    document.getElementById('signup-password-field').style.display = 'flex';
+    document.getElementById('signup-create-btn').style.display = 'block';
+    hideStatus();
+  }
+
+  function setIdMode(formPrefix, mode){
+    const input = document.getElementById(formPrefix + '-email');
+    const label = document.getElementById(formPrefix + '-id-label');
+    const emailBtn = document.getElementById(formPrefix + '-id-email');
+    const phoneBtn = document.getElementById(formPrefix + '-id-phone');
+
+    if(mode === 'email'){
+      input.type = 'email';
+      input.placeholder = 'you@example.com';
+      label.textContent = 'Email';
+      emailBtn.classList.add('active');
+      phoneBtn.classList.remove('active');
+    } else {
+      input.type = 'tel';
+      input.placeholder = 'Enter your mobile number';
+      label.textContent = 'Phone number';
+      phoneBtn.classList.add('active');
+      emailBtn.classList.remove('active');
+    }
+
+    if(formPrefix === 'signup'){
+      resetSignupOtpStep();
+    }
+  }
+
+  function resetSignupOtpStep(){
+    document.getElementById('signup-email').value = '';
+    document.getElementById('signup-otp').value = '';
+    document.getElementById('signup-otp-field').style.display = 'none';
+    document.getElementById('signup-otp-note').style.display = 'none';
+    document.getElementById('signup-verify-btn').style.display = 'none';
+    document.getElementById('signup-send-code-btn').style.display = 'block';
+    document.getElementById('signup-password-field').style.display = 'none';
+    document.getElementById('signup-create-btn').style.display = 'none';
+    hideStatus();
+  }
+
+  function showStatus(message, type){
+    const box = document.getElementById('status-box');
+    box.textContent = message;
+    box.className = 'status show ' + type;
+  }
+  function hideStatus(){
+    const box = document.getElementById('status-box');
+    box.className = 'status';
+  }
+
+  document.getElementById('avatar-input').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const preview = document.getElementById('avatar-preview');
+      preview.innerHTML = '<img src="' + ev.target.result + '" alt="">';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('login-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const isPhone = document.getElementById('login-id-phone').classList.contains('active');
+    const contact = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = e.target.querySelector('.submit-btn');
+    btn.disabled = true; btn.textContent = 'Logging in...';
+
+    const payload = isPhone ? { phone: contact, password } : { email: contact, password };
+    const { error } = await supabaseClient.auth.signInWithPassword(payload);
+
+    btn.disabled = false; btn.textContent = 'Log in';
+
+    if(error){
+      showStatus(error.message, 'error');
+      return;
+    }
+    showStatus('Logged in — taking you to the app...', 'success');
+    setTimeout(function(){ location.href = 'home.html'; }, 700);
+  });
+
+  document.getElementById('signup-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const password = document.getElementById('signup-password').value;
+    if(!password || password.length < 6){
+      showStatus('Password must be at least 6 characters.', 'error');
+      return;
+    }
+    const btn = document.getElementById('signup-create-btn');
+    btn.disabled = true; btn.textContent = 'Creating...';
+
+    const { error: pwError } = await supabaseClient.auth.updateUser({ password });
+    if(pwError){
+      btn.disabled = false; btn.textContent = 'Create account';
+      showStatus(pwError.message, 'error');
+      return;
+    }
+
+    const { data: userData } = await supabaseClient.auth.getUser();
+    const user = userData.user;
+    const name = document.getElementById('signup-name').value.trim();
+    const isPhone = document.getElementById('signup-id-phone').classList.contains('active');
+    const contact = document.getElementById('signup-email').value.trim();
+    const idNumber = generatePlainIdNumber();
+
+    const { error: profileError } = await supabaseClient.from('profiles').insert({
+      id: user.id,
+      name: name,
+      id_number: idNumber,
+      email: isPhone ? null : contact,
+      phone: isPhone ? contact : null
+    });
+
+    btn.disabled = false; btn.textContent = 'Create account';
+
+    if(profileError){
+      showStatus(profileError.message, 'error');
+      return;
+    }
+
+    showStatus('Account created — taking you to the app...', 'success');
+    setTimeout(function(){ location.href = 'home.html'; }, 700);
+  });
+
+  // ---- Forgot password: real Supabase flow ----
+  let resetEmail = '';
+
+  async function sendForgotCode(){
+    const email = document.getElementById('forgot-email').value.trim();
+    if(!email){
+      showStatus('Enter an email to receive the reset code.', 'error');
+      return;
+    }
+    const btn = document.getElementById('forgot-send-btn');
+    btn.disabled = true; btn.textContent = 'Sending...';
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+
+    btn.disabled = false; btn.textContent = 'Send code';
+
+    if(error){
+      showStatus(error.message, 'error');
+      return;
+    }
+    resetEmail = email;
+    switchView('forgot-otp');
+  }
+
+  async function verifyForgotCode(){
+    const boxes = document.querySelectorAll('.otp-box[data-group="forgot"]');
+    const code = Array.from(boxes).map(b => b.value).join('');
+    if(code.length < 6){
+      showStatus('Enter the full 6-digit code.', 'error');
+      return;
+    }
+    const btn = document.getElementById('forgot-verify-btn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+
+    const { error } = await supabaseClient.auth.verifyOtp({
+      email: resetEmail,
+      token: code,
+      type: 'recovery'
+    });
+
+    btn.disabled = false; btn.textContent = 'Verify code';
+
+    if(error){
+      showStatus(error.message, 'error');
+      return;
+    }
+    switchView('forgot-reset');
+  }
+
+  async function saveNewPassword(){
+    const pw = document.getElementById('new-password').value;
+    const confirmPw = document.getElementById('confirm-password').value;
+    if(!pw || pw.length < 6){
+      showStatus('Password must be at least 6 characters.', 'error');
+      return;
+    }
+    if(pw !== confirmPw){
+      showStatus('Passwords do not match.', 'error');
+      return;
+    }
+    const btn = document.getElementById('forgot-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const { error } = await supabaseClient.auth.updateUser({ password: pw });
+
+    btn.disabled = false; btn.textContent = 'Save new password';
+
+    if(error){
+      showStatus(error.message, 'error');
+      return;
+    }
+    await supabaseClient.auth.signOut();
+    showForm('login');
+    showStatus('Password updated — log in with your new password.', 'success');
+  }
+</script>
+
+</body>
+</html>

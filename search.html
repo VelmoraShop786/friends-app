@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Friends</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-deep: #05846a;
+    --teal: #06D6A0;
+    --teal-soft: #d3f3e8;
+    --blue: #118AB2;
+    --bg: #f6faf8;
+    --card: #ffffff;
+    --ink: #16332c;
+    --ink-soft: #5c7770;
+    --line: #dfeee8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  *, *::before, *::after{
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+  }
+  input, textarea{
+    -webkit-user-select:text; -moz-user-select:text; -ms-user-select:text; user-select:text;
+    -webkit-touch-callout:default;
+  }
+  .copyable, .copyable *{
+    -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
+    -webkit-touch-callout:default !important;
+  }
+  body{
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 24px 16px 60px;
+  }
+
+  .wrap{
+    width:100%;
+    max-width: 480px;
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom: 24px;
+  }
+  .back-btn{
+    width:38px; height:38px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    background:var(--card);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem;
+    color: var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 1.5rem;
+  }
+
+  .my-id-card{
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal) 80%);
+    color:white;
+    border-radius: 18px;
+    padding: 18px 20px;
+    margin-bottom: 26px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+  }
+  .my-id-card .label{
+    font-size: 0.78rem;
+    opacity:0.85;
+    margin-bottom: 4px;
+  }
+  .my-id-card .id-value{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+  }
+  .copy-btn{
+    background: rgba(255,255,255,0.22);
+    border:none;
+    color:white;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.8rem;
+    padding: 9px 16px;
+    border-radius: 10px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .copy-btn:hover{ background: rgba(255,255,255,0.32); }
+
+  .search-box{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .search-box input{
+    flex:1;
+    border: 1.5px solid var(--line);
+    background: #fbfdfc;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-family:'Inter', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    color: var(--ink);
+    outline:none;
+  }
+  .search-box input:focus{ border-color: var(--teal); background:#fff; }
+  .search-box input::placeholder{ letter-spacing: normal; }
+  .search-box button{
+    border:none;
+    background: var(--teal-deep);
+    color:white;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.9rem;
+    padding: 0 22px;
+    border-radius: 12px;
+    cursor:pointer;
+  }
+  .search-box button:hover{ background:#046c56; }
+  .hint{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 28px;
+  }
+
+  .section-title{
+    font-size: 0.82rem;
+    font-weight:700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    margin-top: 8px;
+  }
+
+  .result-card, .request-card{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .avatar{
+    width: 48px; height:48px;
+    border-radius:50%;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700;
+    font-size:1.1rem;
+    flex-shrink:0;
+  }
+  .info{ flex:1; min-width:0; }
+  .info .name{ font-weight:600; font-size:0.95rem; }
+  .info .id{ font-size:0.78rem; color: var(--ink-soft); }
+
+  .action-btn{
+    border:none;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size: 0.82rem;
+    padding: 9px 14px;
+    border-radius: 10px;
+    cursor:pointer;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .add-btn{ background: var(--teal-deep); color:white; }
+  .add-btn:hover{ background:#046c56; }
+  .add-btn.sent{ background: var(--teal-soft); color: var(--teal-deep); cursor:default; }
+
+  .req-actions{ display:flex; gap:8px; }
+  .accept-btn{ background: var(--teal-deep); color:white; }
+  .accept-btn:hover{ background:#046c56; }
+  .reject-btn{ background: #fbecec; color:#b1362f; }
+  .reject-btn:hover{ background:#f7dede; }
+
+  .empty-note{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    padding: 6px 2px 20px;
+  }
+
+  .status{
+    font-size: 0.82rem;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display:none;
+    margin: 10px 0 6px;
+  }
+  .status.show{ display:block; }
+  .status.error{ background:#fde8e8; color:#b1362f; }
+  .status.success{ background: var(--teal-soft); color: var(--teal-deep); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <button class="back-btn" onclick="history.back()">←</button>
+    <h1>Add Friends</h1>
+  </header>
+
+  <div class="my-id-card">
+    <div>
+      <div class="label">Your ID number</div>
+      <div class="id-value copyable" id="my-id">123456</div>
+    </div>
+    <button class="copy-btn" onclick="copyMyId()">Copy</button>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="Enter a 6–7 digit ID number" inputmode="numeric" maxlength="7">
+    <button onclick="searchById()">Search</button>
+  </div>
+  <p class="hint">Friends can be found by ID number only — usernames aren't searchable since they can change.</p>
+
+  <div class="status" id="status-box"></div>
+
+  <div id="search-result"></div>
+
+  <div class="section-title">Pending requests</div>
+  <div id="pending-requests">
+    <div class="request-card">
+      <div class="avatar">A</div>
+      <div class="info">
+        <div class="name copyable">Ayesha</div>
+        <div class="id copyable">ID: 208813</div>
+      </div>
+      <div class="req-actions">
+        <button class="action-btn accept-btn" onclick="respondRequest(this,'accepted')">Accept</button>
+        <button class="action-btn reject-btn" onclick="respondRequest(this,'declined')">Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Sent requests</div>
+  <div id="sent-requests">
+    <div class="result-card">
+      <div class="avatar">B</div>
+      <div class="info">
+        <div class="name copyable">Bilal</div>
+        <div class="id copyable">ID: 941027</div>
+      </div>
+      <button class="action-btn add-btn sent">Pending</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Demo directory — in the real app this will be looked up from the backend.
+  const demoUsers = {
+    "208813": { name: "Ayesha" },
+    "941027": { name: "Bilal" },
+    "556214": { name: "Hamza" }
+  };
+
+  function showStatus(message, type){
+    const box = document.getElementById('status-box');
+    box.textContent = message;
+    box.className = 'status show ' + type;
+  }
+  function hideStatus(){
+    document.getElementById('status-box').className = 'status';
+  }
+
+  function copyMyId(){
+    const id = document.getElementById('my-id').textContent;
+    navigator.clipboard?.writeText(id);
+    showStatus('ID copied — share it with a friend so they can add you.', 'success');
+  }
+
+  function searchById(){
+    const value = document.getElementById('search-input').value.trim();
+    const resultBox = document.getElementById('search-result');
+    resultBox.innerHTML = '';
+
+    if(!/^[0-9]{6,7}$/.test(value)){
+      showStatus('Enter a valid 6–7 digit ID number.', 'error');
+      return;
+    }
+
+    const user = demoUsers[value];
+    if(!user){
+      showStatus('No account found with that ID.', 'error');
+      return;
+    }
+
+    hideStatus();
+    const initial = user.name.charAt(0).toUpperCase();
+    resultBox.innerHTML =
+      '<div class="section-title">Result</div>' +
+      '<div class="result-card">' +
+        '<div class="avatar">' + initial + '</div>' +
+        '<div class="info"><div class="name copyable">' + user.name + '</div><div class="id copyable">ID: ' + value + '</div></div>' +
+        '<button class="action-btn add-btn" onclick="sendRequest(this)">Add</button>' +
+      '</div>';
+  }
+
+  function sendRequest(btn){
+    btn.textContent = 'Pending';
+    btn.classList.add('sent');
+    btn.disabled = true;
+    showStatus('Friend request sent.', 'success');
+  }
+
+  function respondRequest(btn, outcome){
+    const card = btn.closest('.request-card');
+    card.style.opacity = '0.5';
+    setTimeout(() => card.remove(), 300);
+    showStatus(outcome === 'accepted' ? 'Friend request accepted.' : 'Request declined.', 'success');
+  }
+</script>
+
+</body>
+</html>
