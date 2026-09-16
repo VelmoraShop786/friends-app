@@ -2,7 +2,14 @@
 const SUPABASE_URL = 'https://gzxncrqzsjmofvbdmhva.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_kRkmFYtYV62Yvuy5Zxzwbg_K5RlDKw5';
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
 
 // Generates a random 6-digit ID number that avoids "fancy"/patterned numbers
 // (e.g. all-same-digit like 111111, or obviously repeating blocks like 111555)

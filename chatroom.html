@@ -311,6 +311,7 @@
     border: 1.5px solid rgba(255,255,255,0.3);
     flex-shrink:0;
     cursor:pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
   }
   .member-count-badge{
     width: 34px; height:34px;
@@ -725,6 +726,14 @@
   let onlineMembers = []; // {id, name, initial}
 
   function setupPresence(){
+    // Show yourself immediately so the avatar never appears blank while presence syncs
+    onlineMembers = [{
+      id: currentUser.id,
+      name: currentProfile?.name || 'You',
+      initial: (currentProfile?.name || '?').charAt(0).toUpperCase()
+    }];
+    renderMembersStack();
+
     const channel = supabaseClient.channel('room-presence-main', {
       config: { presence: { key: currentUser.id } }
     });
@@ -753,8 +762,11 @@
 
   function renderMembersStack(){
     const stack = document.getElementById('members-stack');
-    const others = onlineMembers.filter(m => m.id !== currentUser.id);
-    stack.innerHTML = others.map(m => `<div class="stack-avatar" onclick="openProfileModal('${escapeHtml(m.name)}')">${m.initial}</div>`).join('');
+    stack.innerHTML = onlineMembers.map(m => {
+      const isMe = m.id === currentUser.id;
+      const label = isMe ? 'You' : m.name;
+      return `<div class="stack-avatar" onclick="openProfileModal('${escapeHtml(label)}')">${isMe ? 'Me' : m.initial}</div>`;
+    }).join('');
     document.getElementById('member-count-badge').textContent = onlineMembers.length;
   }
 
