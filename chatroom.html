@@ -832,9 +832,9 @@
     if(!file) return;
     showToast('Uploading room picture...');
     const path = 'room-pictures/main-' + Date.now() + '-' + file.name;
-    const { error: upErr } = await supabaseClient.storage.from('media').upload(path, file, { upsert:true });
+    const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
     if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
-    const { data: pub } = supabaseClient.storage.from('media').getPublicUrl(path);
+    const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
     const { error: dbErr } = await supabaseClient.from('rooms').update({ picture_url: pub.publicUrl }).eq('id','main');
     if(dbErr){ showToast('Could not save picture.'); return; }
     applyRoomPicture(pub.publicUrl);
@@ -846,9 +846,9 @@
     if(!file) return;
     showToast('Uploading room theme...');
     const path = 'room-themes/main-' + Date.now() + '-' + file.name;
-    const { error: upErr } = await supabaseClient.storage.from('media').upload(path, file, { upsert:true });
+    const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
     if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
-    const { data: pub } = supabaseClient.storage.from('media').getPublicUrl(path);
+    const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
     const { error: dbErr } = await supabaseClient.from('rooms').update({ theme_url: pub.publicUrl }).eq('id','main');
     if(dbErr){ showToast('Could not save theme.'); return; }
     applyThemeBackground(pub.publicUrl);
