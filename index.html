@@ -429,7 +429,7 @@
 
       <div class="field" id="signup-otp-field" style="display:none;">
         <label for="signup-otp">Verification code</label>
-        <input type="text" id="signup-otp" placeholder="Enter your OTP code" inputmode="numeric" maxlength="6">
+        <input type="text" id="signup-otp" placeholder="Enter your OTP code" inputmode="numeric" maxlength="8">
       </div>
       <p class="sub" id="signup-otp-note" style="display:none; margin-top:-10px;"></p>
       <button type="button" class="submit-btn" id="signup-verify-btn" style="display:none;" onclick="verifySignupCode()">Verify code</button>
@@ -468,6 +468,8 @@
       <h2>Enter the code</h2>
       <p class="sub">We sent a 6-digit code — enter it below.</p>
       <div class="otp-row">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
+        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
         <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
         <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
         <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
@@ -787,8 +789,8 @@
   async function verifyForgotCode(){
     const boxes = document.querySelectorAll('.otp-box[data-group="forgot"]');
     const code = Array.from(boxes).map(b => b.value).join('');
-    if(code.length < 6){
-      showStatus('Enter the full 6-digit code.', 'error');
+    if(code.length < 8){
+      showStatus('Enter the full 8-digit code.', 'error');
       return;
     }
     const btn = document.getElementById('forgot-verify-btn');
