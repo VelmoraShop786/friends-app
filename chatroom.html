@@ -815,9 +815,15 @@
   }
 
   async function confirmExit(){
-    // Fully leave: clear any seat the user holds, then navigate back to home.
+    // Fully leave: clear any seat the user holds, mark their room chat view as cleared, then navigate back to home.
     await supabaseClient.from('room_seats').update({ occupied_by: null })
       .eq('room_id','main').eq('occupied_by', currentUser.id);
+    const { error: clearErr } = await supabaseClient.from('room_chat_clears').upsert({
+      user_id: currentUser.id,
+      room_id: 'main',
+      cleared_at: new Date().toISOString()
+    }, { onConflict: 'user_id,room_id' });
+    if(clearErr) console.error('clear marker failed:', clearErr);
     location.href = 'home.html';
   }
 
@@ -1058,12 +1064,23 @@
   let currentReply = null; // { name, text }
 
   async function loadMessages(){
-    const { data } = await supabaseClient
+    const { data: clearRow } = await supabaseClient
+      .from('room_chat_clears')
+      .select('cleared_at')
+      .eq('user_id', currentUser.id)
+      .eq('room_id', 'main')
+      .maybeSingle();
+
+    let query = supabaseClient
       .from('room_messages')
       .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name)')
       .eq('room_id', 'main')
       .order('created_at', { ascending: true })
       .limit(150);
+
+    if(clearRow?.cleared_at) query = query.gt('created_at', clearRow.cleared_at);
+
+    const { data } = await query;
     messages = (data || []).map(m => {
       const senderName = m.profiles?.name || 'Unknown';
       return {
