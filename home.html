@@ -384,6 +384,19 @@
     }
     currentUser = session.user;
 
+    // Show cached profile instantly from localStorage while the real fetch happens
+    try{
+      const cached = JSON.parse(localStorage.getItem('profile-cache-' + currentUser.id) || 'null');
+      if(cached){
+        const initial = (cached.name || '?').charAt(0).toUpperCase();
+        document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, cached.avatar_url, initial));
+        document.querySelector('.you-name').textContent = cached.name || 'You';
+        document.querySelector('.you-id').textContent = 'ID: ' + cached.id_number;
+        const myIdEl = document.getElementById('my-id');
+        if(myIdEl) myIdEl.textContent = cached.id_number;
+      }
+    }catch(err){}
+
     const { data: profile, error } = await supabaseClient
       .from('profiles')
       .select('*')
@@ -402,6 +415,12 @@
     document.querySelector('.you-id').textContent = 'ID: ' + profile.id_number;
     const myIdEl = document.getElementById('my-id');
     if(myIdEl) myIdEl.textContent = profile.id_number;
+
+    try{
+      localStorage.setItem('profile-cache-' + currentUser.id, JSON.stringify({
+        name: profile.name, avatar_url: profile.avatar_url, id_number: profile.id_number
+      }));
+    }catch(err){}
   }
 
   function applyAvatarDisplay(el, avatarUrl, initial){
@@ -428,6 +447,11 @@
     currentProfile.avatar_url = pub.publicUrl;
     const initial = (currentProfile.name || '?').charAt(0).toUpperCase();
     document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, pub.publicUrl, initial));
+    try{
+      localStorage.setItem('profile-cache-' + currentUser.id, JSON.stringify({
+        name: currentProfile.name, avatar_url: pub.publicUrl, id_number: currentProfile.id_number
+      }));
+    }catch(err){}
     showToast('Profile picture updated');
   }
 
