@@ -87,7 +87,14 @@
     flex-direction:column;
     gap:0px;
   }
-  .room-title{ font-weight:700; font-size:0.85rem; line-height:1.2; }
+  .room-title{
+    font-weight:700; font-size:0.85rem; line-height:1.2;
+    max-width: 140px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .room-title::-webkit-scrollbar{ display:none; }
   .room-id{ font-size:0.66rem; opacity:0.75; line-height:1.2; }
   .room-members-line{
     display:flex;
@@ -271,6 +278,14 @@
   }
   .profile-modal-name{ font-weight:700; font-size:1.2rem; color: var(--ink); margin-bottom:4px; }
   .profile-modal-id{ font-size:0.85rem; color: var(--ink-soft); }
+  .id-row{ display:flex; align-items:center; gap:6px; }
+  .copy-icon{
+    display:flex; align-items:center; justify-content:center;
+    color: var(--teal-deep);
+    cursor:pointer;
+    opacity:0.8;
+  }
+  .copy-icon:active{ opacity:1; }
   .icon-btn{
     width:34px; height:34px;
     border-radius:50%;
@@ -399,6 +414,16 @@
     font-size:0.72rem;
     color: rgba(255,255,255,0.75);
     font-weight:600;
+    max-width: 62px;
+  }
+  .seat-name{
+    display:inline-block;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    vertical-align:bottom;
+    cursor:pointer;
   }
   .seat.taken .seat-circle{
     border-color: var(--teal);
@@ -606,8 +631,13 @@
       </div>
       <input type="file" id="room-pic-input" accept="image/*" style="display:none">
       <div class="room-name-id">
-        <span class="room-title copyable">The Circle</span>
-        <span class="room-id copyable">ID: 11711</span>
+        <span class="room-title copyable" id="room-title-display">Official Room</span>
+        <span class="id-row">
+          <span class="room-id copyable" id="room-id-display">ID: 111</span>
+          <span class="copy-icon" onclick="copyText(document.getElementById('room-id-display').textContent.replace('ID: ',''), 'Room ID')" title="Copy ID">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </span>
+        </span>
       </div>
     </div>
     <div class="room-members-line">
@@ -654,7 +684,12 @@
     <div class="profile-modal-body">
       <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
       <div class="profile-modal-name copyable" id="profile-modal-name">Ayesha</div>
-      <div class="profile-modal-id copyable" id="profile-modal-id">ID: 208813</div>
+      <span class="id-row" style="justify-content:center;">
+        <div class="profile-modal-id copyable" id="profile-modal-id">ID: 208813</div>
+        <span class="copy-icon" onclick="copyText(document.getElementById('profile-modal-id').textContent.replace('ID: ',''), 'ID')" title="Copy ID">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>
+      </span>
     </div>
   </div>
 
@@ -731,6 +766,7 @@
       id: currentUser.id,
       name: currentProfile?.name || 'You',
       avatarUrl: currentProfile?.avatar_url || null,
+      idNumber: currentProfile?.id_number || '',
       initial: (currentProfile?.name || '?').charAt(0).toUpperCase()
     }];
     renderMembersStack();
@@ -742,15 +778,25 @@
       const state = channel.presenceState();
       onlineMembers = Object.values(state).map(entries => {
         const e = entries[0];
-        return { id: e.id, name: e.name, avatarUrl: e.avatar_url || null, initial: (e.name || '?').charAt(0).toUpperCase() };
+        const initial = (e.name || '?').charAt(0).toUpperCase();
+        rememberProfile(e.name, { idNumber: e.id_number || '', avatarUrl: e.avatar_url || null, initial });
+        return { id: e.id, name: e.name, avatarUrl: e.avatar_url || null, idNumber: e.id_number || '', initial };
       });
       renderMembersStack();
     });
     channel.subscribe(async (status) => {
       if(status === 'SUBSCRIBED'){
-        await channel.track({ id: currentUser.id, name: currentProfile.name, avatar_url: currentProfile.avatar_url || null });
+        await channel.track({ id: currentUser.id, name: currentProfile.name, avatar_url: currentProfile.avatar_url || null, id_number: currentProfile.id_number });
       }
     });
+  }
+
+  // Registry of every profile we've seen (from presence, seats, or messages) — used so
+  // the profile popup always has the freshest known name/ID/avatar, whichever source saw it first.
+  let knownProfiles = {};
+  function rememberProfile(name, info){
+    if(!name) return;
+    knownProfiles[name] = { ...(knownProfiles[name] || {}), ...info };
   }
 
   function avatarHtml(avatarUrl, initial){
@@ -760,19 +806,23 @@
   }
 
   function findProfile(name){
-    if(name === 'You' || name === 'Me'){
-      return { initial:'Me', name: currentProfile?.name || 'You', id: currentProfile?.id_number || '', avatarUrl: currentProfile?.avatar_url || null };
+    if(currentProfile && name === currentProfile.name){
+      return { initial:'Me', name: currentProfile.name, id: currentProfile.id_number || '', avatarUrl: currentProfile.avatar_url || null };
     }
+    const known = knownProfiles[name];
     const m = onlineMembers.find(x => x.name === name);
-    return m ? { initial:m.initial, name:m.name, id:'', avatarUrl:m.avatarUrl } : { initial:'?', name, id:'—', avatarUrl:null };
+    const idNumber = (m && m.idNumber) || (known && known.idNumber) || '';
+    const avatarUrl = (m && m.avatarUrl) || (known && known.avatarUrl) || null;
+    const initial = (m && m.initial) || (known && known.initial) || (name ? name.charAt(0).toUpperCase() : '?');
+    if(!m && !known) return { initial:'?', name, id:'—', avatarUrl:null };
+    return { initial, name, id: idNumber || '—', avatarUrl };
   }
 
   function renderMembersStack(){
     const stack = document.getElementById('members-stack');
     stack.innerHTML = onlineMembers.map(m => {
       const isMe = m.id === currentUser.id;
-      const label = isMe ? 'You' : m.name;
-      return `<div class="stack-avatar" onclick="openProfileModal('${escapeHtml(label)}')">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>`;
+      return `<div class="stack-avatar" onclick="openProfileModal('${escapeHtml(m.name)}')">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>`;
     }).join('');
     document.getElementById('member-count-badge').textContent = onlineMembers.length;
   }
@@ -781,12 +831,11 @@
     document.getElementById('modal-user-count').textContent = onlineMembers.length;
     document.getElementById('members-modal-list').innerHTML = onlineMembers.map(m => {
       const isMe = m.id === currentUser.id;
-      const label = isMe ? 'You' : m.name;
       return `
-      <div class="modal-member-row" onclick="openProfileModal('${escapeHtml(label)}')">
+      <div class="modal-member-row" onclick="openProfileModal('${escapeHtml(m.name)}')">
         <div class="avatar">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>
         <div>
-          <div class="name copyable">${escapeHtml(label)}</div>
+          <div class="name copyable">${escapeHtml(m.name)}</div>
           <div class="sub">Member</div>
         </div>
       </div>`;
@@ -856,19 +905,32 @@
       `linear-gradient(180deg, rgba(6,37,29,0.55), rgba(6,37,29,0.55)), url('${dataUrl}') center/cover no-repeat`;
   }
 
-  async function loadRoomInfo(){
-    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id','111').single();
+  function applyRoomInfoToUI(room){
     if(room?.picture_url) applyRoomPicture(room.picture_url);
     if(room?.theme_url) applyThemeBackground(room.theme_url);
+    if(room?.name) document.getElementById('room-title-display').textContent = room.name;
+    if(room?.id) document.getElementById('room-id-display').textContent = 'ID: ' + room.id;
+  }
+
+  async function loadRoomInfo(){
+    // Show cached room info instantly while the real fetch happens
+    try{
+      const cached = JSON.parse(localStorage.getItem('room-info-cache-111') || 'null');
+      if(cached) applyRoomInfoToUI(cached);
+    }catch(err){}
+
+    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id','111').single();
+    applyRoomInfoToUI(room);
     canCustomizeRoom = !!(room && room.owner_id === currentUser.id);
+    try{ localStorage.setItem('room-info-cache-111', JSON.stringify(room)); }catch(err){}
   }
 
   function subscribeRoomInfo(){
     supabaseClient.channel('room-info-111')
       .on('postgres_changes', { event:'*', schema:'public', table:'rooms', filter:'id=eq.111' }, payload => {
         const room = payload.new;
-        if(room?.picture_url) applyRoomPicture(room.picture_url);
-        if(room?.theme_url) applyThemeBackground(room.theme_url);
+        applyRoomInfoToUI(room);
+        try{ localStorage.setItem('room-info-cache-111', JSON.stringify(room)); }catch(err){}
       })
       .subscribe();
   }
@@ -919,10 +981,18 @@
       if(s.locked) inner = lockSvg;
       else if(s.taken) inner = s.avatarUrl ? `<img src="${s.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : s.initial;
       else inner = micSvg;
+      let label;
+      if(s.locked){
+        label = 'Locked';
+      } else if(s.taken){
+        label = `<span class="seat-name" onclick="event.stopPropagation(); openProfileModal('${escapeHtml(s.name || '')}')">${escapeHtml(s.name || '')}</span>`;
+      } else {
+        label = (i+1);
+      }
       return `
       <button class="seat ${s.taken ? 'taken' : ''} ${s.speaking ? 'speaking' : ''} ${s.locked ? 'locked' : ''}" onclick="handleSeatClick(${i})">
         <div class="seat-circle">${inner}</div>
-        <div class="seat-label">${s.locked ? 'Locked' : (s.taken ? '' : (i+1))}</div>
+        <div class="seat-label">${label}</div>
       </button>
     `;}).join('');
   }
@@ -936,12 +1006,17 @@
         arr[idx] = { taken:false, locked:true };
       } else if(r.occupied_by){
         const isMe = r.occupied_by === currentUser.id;
+        const name = isMe ? (currentProfile?.name || 'You') : (r.profiles?.name || 'Unknown');
+        const idNumber = isMe ? (currentProfile?.id_number || '') : (r.profiles?.id_number || '');
         arr[idx] = {
           taken:true,
-          initial: isMe ? 'Me' : (r.profiles?.name || '?').charAt(0).toUpperCase(),
+          name,
+          idNumber,
+          initial: isMe ? 'Me' : name.charAt(0).toUpperCase(),
           avatarUrl: r.profiles?.avatar_url || null,
           speaking:true
         };
+        rememberProfile(name, { idNumber, avatarUrl: r.profiles?.avatar_url || null, initial: isMe ? 'Me' : name.charAt(0).toUpperCase() });
       }
     });
     return arr;
@@ -956,7 +1031,7 @@
 
     const { data: rows } = await supabaseClient
       .from('room_seats')
-      .select('seat_number, occupied_by, locked, profiles:occupied_by(name, avatar_url)')
+      .select('seat_number, occupied_by, locked, profiles:occupied_by(name, avatar_url, id_number)')
       .eq('room_id', '111')
       .order('seat_number');
     seats = buildSeatsFromRows(rows);
@@ -1098,7 +1173,7 @@
 
     let query = supabaseClient
       .from('room_messages')
-      .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name, avatar_url)')
+      .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name, avatar_url, id_number)')
       .eq('room_id', '111')
       .order('created_at', { ascending: true })
       .limit(150);
@@ -1108,11 +1183,14 @@
     const { data } = await query;
     messages = (data || []).map(m => {
       const senderName = m.profiles?.name || 'Unknown';
+      const initial = senderName.charAt(0).toUpperCase();
+      const avatarUrl = m.profiles?.avatar_url || null;
+      rememberProfile(senderName, { idNumber: m.profiles?.id_number || '', avatarUrl, initial });
       return {
         from: m.sender_id === currentUser.id ? 'me' : 'them',
         name: senderName,
-        initial: senderName.charAt(0).toUpperCase(),
-        avatarUrl: m.profiles?.avatar_url || null,
+        initial,
+        avatarUrl,
         text: m.content,
         replyTo: m.reply_to_name ? { name: m.reply_to_name, text: m.reply_to_text } : null
       };
@@ -1132,9 +1210,9 @@
   function renderMessages(){
     const box = document.getElementById('messages');
     box.innerHTML = messages.map((m, i) => {
-      const senderName = m.from === 'me' ? 'You' : m.name;
+      const senderName = m.name;
       const initial = m.from === 'me' ? 'Me' : (m.initial || senderName.charAt(0));
-      const avatarUrl = m.from === 'me' ? currentProfile?.avatar_url : m.avatarUrl;
+      const avatarUrl = m.avatarUrl;
       const quoted = m.replyTo ? `<div class="quoted-reply"><div class="q-name">${escapeHtml(m.replyTo.name)}</div>${escapeHtml(m.replyTo.text)}</div>` : '';
       return `
       <div class="msg-row" data-index="${i}" data-name="${escapeHtml(senderName)}" data-text="${escapeHtml(m.text)}">
@@ -1229,6 +1307,11 @@
   document.getElementById('text-input').addEventListener('keydown', function(e){
     if(e.key === 'Enter') sendText();
   });
+
+  function copyText(text, label){
+    navigator.clipboard?.writeText(text);
+    showToast((label || 'ID') + ' copied');
+  }
 
   function showToast(msg){
     const toast = document.getElementById('toast');

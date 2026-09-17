@@ -382,6 +382,13 @@
   }
   .profile-modal-name{ font-weight:700; font-size:1.2rem; color: var(--ink); margin-bottom:4px; }
   .profile-modal-id{ font-size:0.85rem; color: var(--ink-soft); }
+  .copy-icon{
+    display:flex; align-items:center; justify-content:center;
+    color: var(--teal-deep);
+    cursor:pointer;
+    opacity:0.8;
+  }
+  .copy-icon:active{ opacity:1; }
 </style>
 </head>
 <body>
@@ -448,7 +455,12 @@
     <div class="profile-modal-body">
       <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
       <div class="profile-modal-name copyable" id="profile-modal-name">Ayesha</div>
-      <div class="profile-modal-id copyable" id="profile-modal-id">ID: 208813</div>
+      <span class="id-row" style="display:flex;align-items:center;justify-content:center;gap:6px;">
+        <div class="profile-modal-id copyable" id="profile-modal-id">ID: 208813</div>
+        <span class="copy-icon" onclick="copyText(document.getElementById('profile-modal-id').textContent.replace('ID: ',''), 'ID')" title="Copy ID">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>
+      </span>
     </div>
   </div>
 
@@ -635,6 +647,11 @@
     renderMessages(currentChatId);
     showToast('Photo sent (demo — not uploaded anywhere yet)');
   });
+
+  function copyText(text, label){
+    navigator.clipboard?.writeText(text);
+    showToast((label || 'ID') + ' copied');
+  }
 
   function showToast(msg){
     const toast = document.getElementById('toast');
