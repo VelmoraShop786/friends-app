@@ -735,7 +735,7 @@
     }];
     renderMembersStack();
 
-    const channel = supabaseClient.channel('room-presence-main', {
+    const channel = supabaseClient.channel('room-presence-111', {
       config: { presence: { key: currentUser.id } }
     });
     channel.on('presence', { event: 'sync' }, () => {
@@ -808,9 +808,8 @@
     document.getElementById('profile-modal').classList.remove('show');
   }
 
-  // ---------- Permission: only the room admin (or someone the admin approves) can customize ----------
-  // Demo flag — in the real app this comes from the backend based on the logged-in user's role.
-  const canCustomizeRoom = true;
+  // ---------- Permission: only the room owner can customize ----------
+  let canCustomizeRoom = false;
 
   function toggleExitMenu(){
     document.getElementById('exit-menu').classList.toggle('show');
@@ -824,14 +823,14 @@
   async function confirmExit(){
     // Fully leave: clear any seat the user holds, mark their room chat view as cleared, then navigate back to home.
     await supabaseClient.from('room_seats').update({ occupied_by: null })
-      .eq('room_id','main').eq('occupied_by', currentUser.id);
+      .eq('room_id','111').eq('occupied_by', currentUser.id);
     const { error: clearErr } = await supabaseClient.from('room_chat_clears').upsert({
       user_id: currentUser.id,
-      room_id: 'main',
+      room_id: '111',
       cleared_at: new Date().toISOString()
     }, { onConflict: 'user_id,room_id' });
     if(clearErr) console.error('clear marker failed:', clearErr);
-    try{ localStorage.removeItem('room-messages-cache-main-' + currentUser.id); }catch(err){}
+    try{ localStorage.removeItem('room-messages-cache-111-' + currentUser.id); }catch(err){}
     location.href = 'home.html';
   }
 
@@ -858,14 +857,15 @@
   }
 
   async function loadRoomInfo(){
-    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id','main').single();
+    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id','111').single();
     if(room?.picture_url) applyRoomPicture(room.picture_url);
     if(room?.theme_url) applyThemeBackground(room.theme_url);
+    canCustomizeRoom = !!(room && room.owner_id === currentUser.id);
   }
 
   function subscribeRoomInfo(){
-    supabaseClient.channel('room-info-main')
-      .on('postgres_changes', { event:'*', schema:'public', table:'rooms', filter:'id=eq.main' }, payload => {
+    supabaseClient.channel('room-info-111')
+      .on('postgres_changes', { event:'*', schema:'public', table:'rooms', filter:'id=eq.111' }, payload => {
         const room = payload.new;
         if(room?.picture_url) applyRoomPicture(room.picture_url);
         if(room?.theme_url) applyThemeBackground(room.theme_url);
@@ -881,7 +881,7 @@
     const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
     if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
     const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
-    const { error: dbErr } = await supabaseClient.from('rooms').update({ picture_url: pub.publicUrl }).eq('id','main');
+    const { error: dbErr } = await supabaseClient.from('rooms').update({ picture_url: pub.publicUrl }).eq('id','111');
     if(dbErr){ showToast('Could not save picture.'); return; }
     applyRoomPicture(pub.publicUrl);
     showToast('Room picture updated');
@@ -895,7 +895,7 @@
     const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
     if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
     const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
-    const { error: dbErr } = await supabaseClient.from('rooms').update({ theme_url: pub.publicUrl }).eq('id','main');
+    const { error: dbErr } = await supabaseClient.from('rooms').update({ theme_url: pub.publicUrl }).eq('id','111');
     if(dbErr){ showToast('Could not save theme.'); return; }
     applyThemeBackground(pub.publicUrl);
     showToast('Room theme updated from gallery');
@@ -950,23 +950,23 @@
   async function loadSeats(){
     // Show cached seats instantly while the real fetch happens
     try{
-      const cached = JSON.parse(localStorage.getItem('room-seats-cache-main') || 'null');
+      const cached = JSON.parse(localStorage.getItem('room-seats-cache-111') || 'null');
       if(cached){ seats = cached; renderSeats(); }
     }catch(err){}
 
     const { data: rows } = await supabaseClient
       .from('room_seats')
       .select('seat_number, occupied_by, locked, profiles:occupied_by(name, avatar_url)')
-      .eq('room_id', 'main')
+      .eq('room_id', '111')
       .order('seat_number');
     seats = buildSeatsFromRows(rows);
     renderSeats();
-    try{ localStorage.setItem('room-seats-cache-main', JSON.stringify(seats)); }catch(err){}
+    try{ localStorage.setItem('room-seats-cache-111', JSON.stringify(seats)); }catch(err){}
   }
 
   function subscribeSeats(){
-    supabaseClient.channel('room-seats-main')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_seats', filter: 'room_id=eq.main' }, () => {
+    supabaseClient.channel('room-seats-111')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_seats', filter: 'room_id=eq.111' }, () => {
         loadSeats();
       })
       .subscribe();
@@ -1034,10 +1034,10 @@
     closeSeatMenu();
     // A user can only occupy one seat at a time — clear any seat they currently hold
     await supabaseClient.from('room_seats').update({ occupied_by: null })
-      .eq('room_id','main').eq('occupied_by', currentUser.id);
+      .eq('room_id','111').eq('occupied_by', currentUser.id);
     const { error } = await supabaseClient.from('room_seats')
       .update({ occupied_by: currentUser.id })
-      .eq('room_id','main').eq('seat_number', seatNumber).eq('locked', false)
+      .eq('room_id','111').eq('seat_number', seatNumber).eq('locked', false)
       .is('occupied_by', null);
     if(error){
       showToast('Could not take that seat.');
@@ -1052,7 +1052,7 @@
     closeSeatMenu();
     await supabaseClient.from('room_seats')
       .update({ locked:true, occupied_by:null })
-      .eq('room_id','main').eq('seat_number', seatNumber);
+      .eq('room_id','111').eq('seat_number', seatNumber);
     showToast('Seat ' + seatNumber + ' locked');
     loadSeats();
   }
@@ -1062,7 +1062,7 @@
     closeSeatMenu();
     await supabaseClient.from('room_seats')
       .update({ locked:false })
-      .eq('room_id','main').eq('seat_number', seatNumber);
+      .eq('room_id','111').eq('seat_number', seatNumber);
     showToast('Seat ' + seatNumber + ' unlocked');
     loadSeats();
   }
@@ -1074,7 +1074,7 @@
     closeSeatMenu();
     await supabaseClient.from('room_seats')
       .update({ occupied_by: null })
-      .eq('room_id','main').eq('seat_number', seatNumber);
+      .eq('room_id','111').eq('seat_number', seatNumber);
     showToast('You left the seat');
     loadSeats();
   }
@@ -1085,7 +1085,7 @@
   async function loadMessages(){
     // Show cached messages instantly while the real fetch happens
     try{
-      const cached = JSON.parse(localStorage.getItem('room-messages-cache-main-' + currentUser.id) || 'null');
+      const cached = JSON.parse(localStorage.getItem('room-messages-cache-111-' + currentUser.id) || 'null');
       if(cached){ messages = cached; renderMessages(); }
     }catch(err){}
 
@@ -1093,13 +1093,13 @@
       .from('room_chat_clears')
       .select('cleared_at')
       .eq('user_id', currentUser.id)
-      .eq('room_id', 'main')
+      .eq('room_id', '111')
       .maybeSingle();
 
     let query = supabaseClient
       .from('room_messages')
       .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name, avatar_url)')
-      .eq('room_id', 'main')
+      .eq('room_id', '111')
       .order('created_at', { ascending: true })
       .limit(150);
 
@@ -1118,12 +1118,12 @@
       };
     });
     renderMessages();
-    try{ localStorage.setItem('room-messages-cache-main-' + currentUser.id, JSON.stringify(messages)); }catch(err){}
+    try{ localStorage.setItem('room-messages-cache-111-' + currentUser.id, JSON.stringify(messages)); }catch(err){}
   }
 
   function subscribeMessages(){
-    supabaseClient.channel('room-messages-main')
-      .on('postgres_changes', { event:'INSERT', schema:'public', table:'room_messages', filter:'room_id=eq.main' }, () => {
+    supabaseClient.channel('room-messages-111')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'room_messages', filter:'room_id=eq.111' }, () => {
         loadMessages();
       })
       .subscribe();
@@ -1212,7 +1212,7 @@
     const value = input.value.trim();
     if(!value) return;
     const payload = {
-      room_id: 'main',
+      room_id: '111',
       sender_id: currentUser.id,
       content: value
     };
