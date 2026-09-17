@@ -532,6 +532,12 @@
     showStatus('ID copied — share it with a friend so they can add you.', 'success');
   }
 
+  function avatarHtml(avatarUrl, initial){
+    return avatarUrl
+      ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+      : initial;
+  }
+
   async function searchById(){
     const value = document.getElementById('search-input').value.trim();
     const resultBox = document.getElementById('search-result');
@@ -546,7 +552,7 @@
     }
     const { data: user, error } = await supabaseClient
       .from('profiles')
-      .select('id, name, id_number')
+      .select('id, name, id_number, avatar_url')
       .eq('id_number', value)
       .maybeSingle();
 
@@ -558,7 +564,7 @@
     const initial = (user.name || '?').charAt(0).toUpperCase();
     resultBox.innerHTML =
       '<div class="section-title">Result</div>' +
-      '<div class="friend-row"><div class="avatar">' + initial + '</div>' +
+      '<div class="friend-row"><div class="avatar">' + avatarHtml(user.avatar_url, initial) + '</div>' +
       '<div><div class="name copyable">' + user.name + '</div></div>' +
       '<button class="action-btn add-btn" style="margin-left:auto;" onclick="sendRequest(\'' + user.id + '\', this)">Add</button></div>';
   }
@@ -598,7 +604,7 @@
   async function renderRequestLists(){
     const { data: pending } = await supabaseClient
       .from('friend_requests')
-      .select('id, from_user, profiles:from_user(name, id_number)')
+      .select('id, from_user, profiles:from_user(name, id_number, avatar_url)')
       .eq('to_user', currentUser.id)
       .eq('status', 'pending');
 
@@ -607,7 +613,7 @@
       const initial = (p?.name || '?').charAt(0).toUpperCase();
       return `
       <div class="friend-row">
-        <div class="avatar">${initial}</div>
+        <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
         <div><div class="name copyable">${p?.name || 'Unknown'}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
         <div class="req-actions">
           <button class="action-btn accept-btn" onclick="respondRequest('${r.id}','accepted',this)">Accept</button>
@@ -618,7 +624,7 @@
 
     const { data: sent } = await supabaseClient
       .from('friend_requests')
-      .select('id, to_user, profiles:to_user(name, id_number)')
+      .select('id, to_user, profiles:to_user(name, id_number, avatar_url)')
       .eq('from_user', currentUser.id)
       .eq('status', 'pending');
 
@@ -627,7 +633,7 @@
       const initial = (p?.name || '?').charAt(0).toUpperCase();
       return `
       <div class="friend-row">
-        <div class="avatar">${initial}</div>
+        <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
         <div><div class="name copyable">${p?.name || 'Unknown'}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
         <button class="action-btn add-btn sent" style="margin-left:auto;">Pending</button>
       </div>`;
