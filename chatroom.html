@@ -260,6 +260,12 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .profile-modal.show{ display:flex; }
   .profile-modal-header{ padding: 18px; }
+  /* the room's own buttons are white-on-dark; on this light screen the arrow must be dark-on-tint or it disappears */
+  .profile-modal-header .icon-btn{
+    width:40px; height:40px;
+    background: var(--teal-soft);
+    color: var(--teal-deep);
+  }
   .profile-modal-body{
     flex:1;
     display:flex;
@@ -1443,12 +1449,43 @@ html, body{ overscroll-behavior-y: contain; }
     try{ localStorage.setItem(('room-info-cache-' + ROOM_ID), JSON.stringify(room)); }catch(err){}
   }
 
+  // The Common App Theme (Owner Panel) is applied to the full-screen panels only — Online Users, the profile
+  // page and Manage room. The room screen itself keeps its own look (room themes are separate).
+  const THEMED_PANELS = ['members-modal', 'profile-modal', 'manage-modal'];
+  function applyPanelTheme(theme){
+    if(!theme) return;
+    THEMED_PANELS.forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      const s = el.style;
+      if(theme.primary_color){
+        const c = theme.primary_color;
+        s.setProperty('--teal-deep', c);
+        s.setProperty('--teal', `color-mix(in srgb, ${c} 72%, white)`);
+        s.setProperty('--teal-soft', `color-mix(in srgb, ${c} 15%, white)`);
+      }
+      if(theme.background_color) s.setProperty('--bg', theme.background_color);
+      if(theme.background_image_url){
+        const wash = 'color-mix(in srgb, var(--bg) 55%, transparent)';
+        s.background = `linear-gradient(${wash}, ${wash}), url('${theme.background_image_url}') center/cover no-repeat`;
+      }
+    });
+  }
+
   async function loadDefaultRoomTheme(){
+    try{
+      const cachedTheme = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
+      if(cachedTheme) applyPanelTheme(cachedTheme);
+    }catch(err){}
     try{
       const cached = localStorage.getItem('default-room-theme-cache');
       if(cached){ defaultRoomThemeUrl = cached; if(lastRoom) applyRoomInfoToUI(lastRoom); }
     }catch(err){}
-    const { data } = await supabaseClient.from('app_theme').select('default_room_theme_url').eq('id','global').maybeSingle();
+    const { data } = await supabaseClient.from('app_theme').select('*').eq('id','global').maybeSingle();
+    if(data){
+      applyPanelTheme(data);
+      try{ localStorage.setItem('app-theme-cache', JSON.stringify(data)); }catch(err){}
+    }
     defaultRoomThemeUrl = data?.default_room_theme_url || null;
     try{
       if(defaultRoomThemeUrl) localStorage.setItem('default-room-theme-cache', defaultRoomThemeUrl);

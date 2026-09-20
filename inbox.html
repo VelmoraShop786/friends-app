@@ -546,7 +546,12 @@ html, body{ overscroll-behavior-y: contain; }
   function applyAppTheme(theme){
     if(!theme) return;
     const root = document.documentElement.style;
-    if(theme.primary_color){ root.setProperty('--teal', theme.primary_color); root.setProperty('--teal-deep', theme.primary_color); }
+    if(theme.primary_color){
+      const c = theme.primary_color;
+      root.setProperty('--teal-deep', c);                                        // buttons, links, active icons
+      root.setProperty('--teal', `color-mix(in srgb, ${c} 72%, white)`);          // lighter end of gradients
+      root.setProperty('--teal-soft', `color-mix(in srgb, ${c} 15%, white)`);     // light tinted backgrounds
+    }
     if(theme.background_color){ root.setProperty('--bg', theme.background_color); }
     if(theme.background_image_url){
       // .phone has its own solid white background that hides the body image on a phone screen,

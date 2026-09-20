@@ -360,6 +360,16 @@
     font-family:'Inter', sans-serif; font-weight:600; font-size:0.78rem;
     padding: 8px 14px; border-radius: 10px;
   }
+  input[type="color"]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:52px; min-height:52px; padding:4px; cursor:pointer;
+    border:1.5px solid var(--line); border-radius:12px; background:#fff;
+    flex-shrink:0;   /* the Owner Panel is a scrolling flex column — without this the bar was squashed to a thin line */
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+  input[type="color"]::-webkit-color-swatch{ border:none; border-radius:8px; }
+  input[type="color"]::-moz-color-swatch{ border:none; border-radius:8px; }
+  .color-hint{ font-size:0.76rem; color: var(--ink-soft); line-height:1.4; margin: 2px 0 0; }
   .pick-row{ display:flex; align-items:center; gap:14px; margin: 8px 0 16px; }
   .theme-preview{
     width:72px; aspect-ratio: 9 / 19; flex-shrink:0;
@@ -396,10 +406,12 @@
     <p class="hint" style="margin-bottom:16px;">Common App Theme — applies across Home, Inbox, Login/Signup, Profile, Search, Friends, Settings. Room themes and profile pictures are separate and unaffected.</p>
 
     <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Primary color</label>
-    <input type="color" id="theme-primary-color" value="#06D6A0" style="width:100%; height:44px; border:none; border-radius:12px; margin:8px 0 16px;">
+    <p class="color-hint">Buttons, links, active icons and the green accents. Pick a medium or dark color — white text sits on it.</p>
+    <input type="color" id="theme-primary-color" value="#05846A" oninput="previewTheme()" style="margin:8px 0 16px;">
 
     <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Background color</label>
-    <input type="color" id="theme-bg-color" value="#F4FBF8" style="width:100%; height:44px; border:none; border-radius:12px; margin:8px 0 16px;">
+    <p class="color-hint">The page background behind the cards. Pick a light color — the text on it is dark.</p>
+    <input type="color" id="theme-bg-color" value="#F6FAF8" oninput="previewTheme()" style="margin:8px 0 16px;">
 
     <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Background image (optional)</label>
     <div class="pick-row">
@@ -988,8 +1000,10 @@
     if(!theme) return;
     const root = document.documentElement.style;
     if(theme.primary_color){
-      root.setProperty('--teal', theme.primary_color);
-      root.setProperty('--teal-deep', theme.primary_color);
+      const c = theme.primary_color;
+      root.setProperty('--teal-deep', c);                                        // buttons, links, active icons
+      root.setProperty('--teal', `color-mix(in srgb, ${c} 72%, white)`);          // lighter end of gradients
+      root.setProperty('--teal-soft', `color-mix(in srgb, ${c} 15%, white)`);     // light tinted backgrounds
     }
     if(theme.background_color){
       root.setProperty('--bg', theme.background_color);
@@ -1043,6 +1057,14 @@
     if(!blob) return;
     if(kind === 'bg') pendingBgBlob = blob; else pendingRoomThemeBlob = blob;
     showPreview(kind, URL.createObjectURL(blob), 'Ready — tap Save to apply.', '');
+  }
+
+  // Shows the picked colors on this screen straight away; nothing is saved until "Save theme".
+  function previewTheme(){
+    applyAppTheme({
+      primary_color: document.getElementById('theme-primary-color').value,
+      background_color: document.getElementById('theme-bg-color').value
+    });
   }
 
   async function saveAppTheme(){
