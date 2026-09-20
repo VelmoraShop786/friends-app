@@ -31,6 +31,7 @@
     -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
     -webkit-touch-callout:default !important;
   }
+html, body{ overscroll-behavior-y: contain; }
   body{
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -500,28 +501,57 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="image-editor.js"></script>
+<script>
+  // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
+  (async function loadAppTheme(){
+    try{
+      const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
+      if(cached) applyAppTheme(cached);
+    }catch(err){}
+    const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+    if(theme){
+      applyAppTheme(theme);
+      try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+    }
+  })();
+  function applyAppTheme(theme){
+    if(!theme) return;
+    const root = document.documentElement.style;
+    if(theme.primary_color){ root.setProperty('--teal', theme.primary_color); root.setProperty('--teal-deep', theme.primary_color); }
+    if(theme.background_color){ root.setProperty('--bg', theme.background_color); }
+    if(theme.background_image_url){
+      document.body.style.backgroundImage = `url('${theme.background_image_url}')`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+    }
+  }
+</script>
 <script>
   const extraViews = ['view-forgot-request', 'view-forgot-otp', 'view-forgot-reset'];
 
-  let selectedAvatarFile = null;
+  // Signup profile picture: pick from gallery -> edit (zoom / move) -> Done keeps the edited picture
+  let selectedAvatarBlob = null;
+  let avatarPreviewUrl = null;
 
-  document.getElementById('avatar-input').addEventListener('change', function(e){
+  document.getElementById('avatar-input').addEventListener('change', async function(e){
     const file = e.target.files[0];
+    e.target.value = '';   // lets the same photo be picked again
     if(!file) return;
-    selectedAvatarFile = file;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      const preview = document.getElementById('avatar-preview');
-      preview.style.backgroundImage = `url('${ev.target.result}')`;
-      preview.style.backgroundSize = 'cover';
-      preview.style.backgroundPosition = 'center';
-      preview.textContent = '';
-      const plus = document.createElement('div');
-      plus.className = 'avatar-plus';
-      plus.textContent = '+';
-      preview.appendChild(plus);
-    };
-    reader.readAsDataURL(file);
+    const blob = await openImageEditor(file, IMAGE_PRESETS.avatar);
+    if(!blob) return;
+    selectedAvatarBlob = blob;
+    if(avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    avatarPreviewUrl = URL.createObjectURL(blob);
+    const preview = document.getElementById('avatar-preview');
+    preview.style.backgroundImage = `url('${avatarPreviewUrl}')`;
+    preview.style.backgroundSize = 'cover';
+    preview.style.backgroundPosition = 'center';
+    preview.textContent = '';
+    const plus = document.createElement('div');
+    plus.className = 'avatar-plus';
+    plus.textContent = '+';
+    preview.appendChild(plus);
   });
 
   function showForm(which){
@@ -708,17 +738,6 @@
     box.className = 'status';
   }
 
-  document.getElementById('avatar-input').addEventListener('change', function(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      const preview = document.getElementById('avatar-preview');
-      preview.innerHTML = '<img src="' + ev.target.result + '" alt="">';
-    };
-    reader.readAsDataURL(file);
-  });
-
   document.getElementById('login-form').addEventListener('submit', async function(e){
     e.preventDefault();
     const isPhone = document.getElementById('login-id-phone').classList.contains('active');
@@ -765,13 +784,9 @@
     const idNumber = generatePlainIdNumber();
 
     let avatarUrl = null;
-    if(selectedAvatarFile){
-      const path = 'avatars/' + user.id + '-' + Date.now() + '-' + selectedAvatarFile.name;
-      const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, selectedAvatarFile, { upsert:true });
-      if(!upErr){
-        const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
-        avatarUrl = pub.publicUrl;
-      }
+    if(selectedAvatarBlob){
+      try{ avatarUrl = await uploadImageBlob(selectedAvatarBlob, 'avatars'); }
+      catch(err){ avatarUrl = null; }   // account is still created; photo can be added later from Profile
     }
 
     const { error: profileError } = await supabaseClient.from('profiles').insert({

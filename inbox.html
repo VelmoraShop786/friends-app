@@ -33,6 +33,7 @@
     -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
     -webkit-touch-callout:default !important;
   }
+html, body{ overscroll-behavior-y: contain; }
   body{
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -404,7 +405,6 @@
         </button>
         <h1>Inbox</h1>
       </div>
-      <button class="new-chat-btn" title="New chat">+</button>
     </div>
     <div class="search-pill">🔍 Search your chats</div>
     <div class="chat-list" id="chat-list"></div>
@@ -450,7 +450,9 @@
 
   <div class="profile-modal" id="profile-modal">
     <div class="profile-modal-header">
-      <button class="back-link" onclick="closeProfileModal()">← Back</button>
+      <button class="icon-btn" onclick="closeProfileModal()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
     </div>
     <div class="profile-modal-body">
       <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
@@ -467,98 +469,245 @@
   <div class="toast" id="toast"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 <script>
-  const chats = [
-    { id:1, name:'Ayesha', initial:'A', preview:'sent a photo', time:'2m', unread:2, online:true, memberId:'208813' },
-    { id:2, name:'Bilal', initial:'B', preview:'kal milte hain?', time:'18m', unread:0, online:true, memberId:'941027' },
-    { id:3, name:'Hamza', initial:'H', preview:'👍', time:'1h', unread:0, online:false, memberId:'556214' },
-    { id:4, name:'Sara', initial:'S', preview:'sent a photo', time:'3h', unread:1, online:false, memberId:'372910' }
-  ];
+  // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
+  (async function loadAppTheme(){
+    try{
+      const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
+      if(cached) applyAppTheme(cached);
+    }catch(err){}
+    const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+    if(theme){
+      applyAppTheme(theme);
+      try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+    }
+  })();
+  function applyAppTheme(theme){
+    if(!theme) return;
+    const root = document.documentElement.style;
+    if(theme.primary_color){ root.setProperty('--teal', theme.primary_color); root.setProperty('--teal-deep', theme.primary_color); }
+    if(theme.background_color){ root.setProperty('--bg', theme.background_color); }
+    if(theme.background_image_url){
+      // .phone has its own solid white background that hides the body image on a phone screen,
+      // so the picture is set on .phone itself, under a light wash so the chat list stays readable.
+      const wash = 'color-mix(in srgb, var(--bg) 55%, transparent)';
+      const phone = document.querySelector('.phone');
+      if(phone){
+        phone.style.background = `linear-gradient(${wash}, ${wash}), url('${theme.background_image_url}') center/cover no-repeat`;
+      }
+    }
+  }
 
-  function openProfileModal(name){
-    const c = chats.find(x => x.name === name);
-    const initial = c ? c.initial : name.charAt(0);
-    const id = c ? c.memberId : '—';
-    document.getElementById('profile-modal-avatar').textContent = initial;
-    document.getElementById('profile-modal-name').textContent = name;
-    document.getElementById('profile-modal-id').textContent = 'ID: ' + id;
+  let currentUser = null;
+  let currentProfile = null;
+  let friends = []; // [{id, name, avatarUrl, idNumber, lastMessage, lastAt, online}]
+  let currentChatId = null;
+  let messages = [];
+  let currentReply = null; // { name, text }
+  let onlineIds = new Set();
+
+  async function initAuth(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session){
+      location.href = 'index.html';
+      return false;
+    }
+    currentUser = session.user;
+    const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = profile;
+    return true;
+  }
+
+  function avatarHtml(avatarUrl, initial){
+    return avatarUrl
+      ? `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+      : initial;
+  }
+
+  function formatTimeAgo(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if(mins < 1) return 'now';
+    if(mins < 60) return mins + 'm';
+    const hrs = Math.floor(mins / 60);
+    if(hrs < 24) return hrs + 'h';
+    const days = Math.floor(hrs / 24);
+    if(days < 7) return days + 'd';
+    return d.toLocaleDateString();
+  }
+
+  function setupOnlinePresence(){
+    const channel = supabaseClient.channel('app-online-users', {
+      config: { presence: { key: currentUser.id } }
+    });
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      onlineIds = new Set(Object.keys(state));
+      renderList();
+      updateChatHeaderStatus();
+    });
+    channel.subscribe(async (status) => {
+      if(status === 'SUBSCRIBED'){
+        await channel.track({ id: currentUser.id });
+      }
+    });
+  }
+
+  function updateChatHeaderStatus(){
+    if(currentChatId === null) return;
+    const statusEl = document.querySelector('.chat-header .status');
+    if(statusEl) statusEl.textContent = onlineIds.has(currentChatId) ? 'Online' : 'Offline';
+  }
+
+  async function loadFriends(){
+    const { data: rows } = await supabaseClient
+      .from('friend_requests')
+      .select('id, from_user, to_user, from_profile:from_user(id, name, avatar_url, id_number), to_profile:to_user(id, name, avatar_url, id_number)')
+      .eq('status', 'accepted')
+      .or(`from_user.eq.${currentUser.id},to_user.eq.${currentUser.id}`);
+
+    const { data: msgs } = await supabaseClient
+      .from('direct_messages')
+      .select('*')
+      .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+      .order('created_at', { ascending: false });
+
+    const lastByPartner = {};
+    (msgs || []).forEach(m => {
+      const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+      if(!lastByPartner[partnerId]) lastByPartner[partnerId] = m;
+    });
+
+    friends = (rows || []).map(r => {
+      const isMeFrom = r.from_user === currentUser.id;
+      const other = isMeFrom ? r.to_profile : r.from_profile;
+      const last = lastByPartner[other.id];
+      return {
+        id: other.id,
+        name: other.name || 'Unknown',
+        avatarUrl: other.avatar_url || null,
+        idNumber: other.id_number || '',
+        lastMessage: last ? last.content : 'Say hi 👋',
+        lastAt: last ? last.created_at : null
+      };
+    }).sort((a, b) => {
+      if(!a.lastAt && !b.lastAt) return 0;
+      if(!a.lastAt) return 1;
+      if(!b.lastAt) return -1;
+      return new Date(b.lastAt) - new Date(a.lastAt);
+    });
+
+    renderList();
+  }
+
+  function findFriend(id){
+    return friends.find(f => f.id === id);
+  }
+
+  function openProfileModal(idOrName){
+    let f = findFriend(idOrName);
+    if(!f) f = friends.find(x => x.name === idOrName);
+    if(!f) return;
+    document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(f.avatarUrl, (f.name || '?').charAt(0).toUpperCase());
+    document.getElementById('profile-modal-name').textContent = f.name;
+    document.getElementById('profile-modal-id').textContent = 'ID: ' + (f.idNumber || '—');
     document.getElementById('profile-modal').classList.add('show');
   }
   function closeProfileModal(){
     document.getElementById('profile-modal').classList.remove('show');
   }
 
-  const demoMessages = {
-    1: [
-      { from:'them', type:'text', text:'Hey! kal free ho?', time:'10:02' },
-      { from:'me', type:'text', text:'Haan bilkul, kya plan hai?', time:'10:03' },
-      { from:'them', type:'image', time:'10:04' },
-      { from:'them', type:'text', text:'ye dekho maine kal ye banaya 😄', time:'10:04' }
-    ],
-    2: [ { from:'me', type:'text', text:'kal milte hain?', time:'9:40' } ],
-    3: [ { from:'them', type:'text', text:'👍', time:'8:15' } ],
-    4: [ { from:'them', type:'image', time:'7:02' }, { from:'them', type:'text', text:'ye dekho', time:'7:02' } ]
-  };
-
-  let currentChatId = null;
-
   function renderList(){
     const list = document.getElementById('chat-list');
-    list.innerHTML = chats.map(c => `
-      <div class="chat-row" onclick="openChat(${c.id})">
-        <div class="avatar" onclick="event.stopPropagation(); openProfileModal('${c.name}')" style="cursor:pointer;">${c.initial}${c.online ? '<span class="dot"></span>' : ''}</div>
+    if(!friends.length){
+      list.innerHTML = '<p style="padding:20px; color:var(--ink-soft); font-size:0.85rem;">No conversations yet — accept a friend request to start chatting.</p>';
+      return;
+    }
+    list.innerHTML = friends.map(f => {
+      const initial = (f.name || '?').charAt(0).toUpperCase();
+      const isOnline = onlineIds.has(f.id);
+      return `
+      <div class="chat-row" onclick="openChat('${f.id}')">
+        <div class="avatar" onclick="event.stopPropagation(); openProfileModal('${f.id}')" style="cursor:pointer;">${avatarHtml(f.avatarUrl, initial)}${isOnline ? '<span class="dot"></span>' : ''}</div>
         <div class="chat-meta">
-          <div class="row1"><span class="name copyable">${c.name}</span><span class="time">${c.time}</span></div>
-          <div class="row1"><span class="preview">${c.preview}</span>${c.unread ? `<span class="unread-badge">${c.unread}</span>` : ''}</div>
+          <div class="row1"><span class="name copyable">${escapeHtml(f.name)}</span><span class="time">${formatTimeAgo(f.lastAt)}</span></div>
+          <div class="row1"><span class="preview">${escapeHtml(f.lastMessage)}</span></div>
         </div>
       </div>
-    `).join('');
+    `;}).join('');
   }
 
-  function openChat(id){
+  async function openChat(id){
     currentChatId = id;
-    const chat = chats.find(c => c.id === id);
-    chat.unread = 0;
-    document.getElementById('chat-name').textContent = chat.name;
-    document.getElementById('chat-avatar').textContent = chat.initial;
+    const f = findFriend(id);
+    if(!f) return;
+    document.getElementById('chat-name').textContent = f.name;
+    document.getElementById('chat-avatar').innerHTML = avatarHtml(f.avatarUrl, (f.name || '?').charAt(0).toUpperCase());
+    updateChatHeaderStatus();
     document.getElementById('screen-list').style.display = 'none';
     document.getElementById('screen-chat').style.display = 'flex';
     cancelReply();
-    renderMessages(id);
+    await loadMessages(id);
   }
 
   function closeChat(){
+    currentChatId = null;
     document.getElementById('screen-chat').style.display = 'none';
     document.getElementById('screen-list').style.display = 'flex';
-    document.getElementById('attach-menu').classList.remove('show');
-    renderList();
+    document.getElementById('attach-menu')?.classList.remove('show');
+    loadFriends();
   }
 
-  let currentReply = null; // { name, text }
+  async function loadMessages(friendId){
+    const { data } = await supabaseClient
+      .from('direct_messages')
+      .select('*')
+      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUser.id})`)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    messages = (data || []).map(m => ({
+      id: m.id,
+      from: m.sender_id === currentUser.id ? 'me' : 'them',
+      text: m.content,
+      time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      replyTo: null
+    }));
+    renderMessages();
+  }
 
-  function renderMessages(id){
+  function subscribeMessages(){
+    supabaseClient.channel('direct-messages-inbox')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, payload => {
+        const m = payload.new;
+        const involvesMe = m.sender_id === currentUser.id || m.receiver_id === currentUser.id;
+        if(!involvesMe) return;
+        const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+        if(currentChatId === partnerId){
+          loadMessages(currentChatId);
+        }
+        loadFriends();
+      })
+      .subscribe();
+  }
+
+  function renderMessages(){
     const box = document.getElementById('messages');
-    const msgs = demoMessages[id] || [];
-    box.innerHTML = msgs.map((m, i) => bubbleHtml(m, i)).join('');
+    box.innerHTML = messages.map((m, i) => bubbleHtml(m, i)).join('');
     box.scrollTop = box.scrollHeight;
     attachSwipeHandlers();
   }
 
   function bubbleHtml(m, i){
-    let inner = '';
-    if(m.type === 'text'){
-      inner = escapeHtml(m.text);
-    } else if(m.type === 'image'){
-      inner = '<img src="data:image/svg+xml;utf8,' + encodeURIComponent(placeholderSvg('#d3f3e8','Photo')) + '">';
-    } else if(m.type === 'video'){
-      inner = '<img src="data:image/svg+xml;utf8,' + encodeURIComponent(placeholderSvg('#05846a','▶ Reel')) + '"><div class="reel-tag">🎬 90s reel</div>';
-    }
-    const senderName = m.from === 'me' ? 'You' : (chats.find(c => c.id === currentChatId)?.name || 'Them');
+    const senderName = m.from === 'me' ? (currentProfile?.name || 'You') : (findFriend(currentChatId)?.name || 'Them');
     const quoted = m.replyTo ? `<div class="quoted-reply"><div class="q-name">${escapeHtml(m.replyTo.name)}</div>${escapeHtml(m.replyTo.text)}</div>` : '';
-    return `<div class="bubble-row ${m.from === 'me' ? 'me' : 'them'}" data-index="${i}" data-name="${escapeHtml(senderName)}" data-text="${escapeHtml(m.type === 'text' ? m.text : (m.type === 'image' ? 'Photo' : 'Reel'))}">
+    return `<div class="bubble-row ${m.from === 'me' ? 'me' : 'them'}" data-index="${i}" data-name="${escapeHtml(senderName)}" data-text="${escapeHtml(m.text)}">
       <div class="bubble-row-inner">
         <div class="reply-icon">↩</div>
-        <div class="bubble">${quoted}${inner}<div class="bubble-time">${m.time}</div></div>
+        <div class="bubble">${quoted}${escapeHtml(m.text)}<div class="bubble-time">${m.time}</div></div>
       </div>
     </div>`;
   }
@@ -614,38 +763,33 @@
     document.getElementById('reply-preview-bar').classList.remove('show');
   }
 
-  function placeholderSvg(bg, label){
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="160"><rect width="220" height="160" rx="12" fill="${bg}"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" fill="white">${label}</text></svg>`;
-  }
-
   function escapeHtml(str){
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
 
-  function sendText(){
+  async function sendText(){
     const input = document.getElementById('text-input');
     const value = input.value.trim();
     if(!value || currentChatId === null) return;
-    demoMessages[currentChatId] = demoMessages[currentChatId] || [];
-    const msg = { from:'me', type:'text', text:value, time:'now' };
-    if(currentReply) msg.replyTo = currentReply;
-    demoMessages[currentChatId].push(msg);
     input.value = '';
     cancelReply();
-    renderMessages(currentChatId);
+    const { error } = await supabaseClient.from('direct_messages').insert({
+      sender_id: currentUser.id,
+      receiver_id: currentChatId,
+      content: value
+    });
+    if(error) showToast('Could not send message.');
+    else loadMessages(currentChatId);
   }
 
   document.getElementById('text-input').addEventListener('keydown', function(e){
     if(e.key === 'Enter') sendText();
   });
 
-  document.getElementById('file-input-image').addEventListener('change', function(e){
-    if(!e.target.files[0] || currentChatId === null) return;
-    demoMessages[currentChatId].push({ from:'me', type:'image', time:'now' });
-    renderMessages(currentChatId);
-    showToast('Photo sent (demo — not uploaded anywhere yet)');
+  document.getElementById('file-input-image').addEventListener('change', function(){
+    showToast('Sending photos is coming soon');
   });
 
   function copyText(text, label){
@@ -660,13 +804,17 @@
     setTimeout(() => toast.classList.remove('show'), 2600);
   }
 
-  renderList();
+  (async function init(){
+    const ok = await initAuth();
+    if(!ok) return;
+    setupOnlinePresence();
+    await loadFriends();
+    subscribeMessages();
 
-  const urlParams = new URLSearchParams(location.search);
-  const openId = urlParams.get('open');
-  if(openId){
-    openChat(Number(openId));
-  }
+    const urlParams = new URLSearchParams(location.search);
+    const openId = urlParams.get('open');
+    if(openId) openChat(openId);
+  })();
 </script>
 
 </body>

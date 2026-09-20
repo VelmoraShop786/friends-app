@@ -31,7 +31,7 @@
     -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
     -webkit-touch-callout:default !important;
   }
-  html,body{ height:100%; }
+  html,body{ height:100%; overscroll-behavior-y: contain; }
   body{
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -209,6 +209,10 @@
   .reject-btn{ background: #fbecec; color:#b1362f; }
   .add-btn{ background: var(--teal-deep); color:white; }
   .add-btn.sent{ background: var(--teal-soft); color: var(--teal-deep); }
+  .submit-btn{
+    width:100%; border:none; font-family:'Inter', sans-serif; font-weight:700; font-size:0.9rem;
+    padding: 13px; border-radius: 12px; cursor:pointer; background: var(--teal-deep); color:white;
+  }
   .status{ font-size: 0.8rem; padding: 9px 12px; border-radius: 8px; display:none; margin: 8px 0; }
   .status.show{ display:block; }
   .status.error{ background:#fde8e8; color:#b1362f; }
@@ -276,6 +280,99 @@
     z-index:10;
   }
   .toast.show{ opacity:0.95; }
+  .profile-modal{
+    display:none;
+    position:absolute;
+    inset:0;
+    background: var(--bg);
+    z-index: 35;
+    flex-direction:column;
+  }
+  .profile-modal.show{ display:flex; }
+  .profile-modal-header{ padding: 18px; }
+  .profile-modal-body{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top: 30px;
+  }
+  .profile-modal-avatar{
+    width:96px; height:96px;
+    border-radius:50%;
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    color:white;
+    font-size:2rem;
+    font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .profile-modal-name{ font-weight:700; font-size:1.2rem; color: var(--ink); margin-bottom:4px; }
+  .profile-modal-id{ font-size:0.85rem; color: var(--ink-soft); }
+  .id-row{ display:flex; align-items:center; gap:6px; }
+  .copy-icon{
+    display:flex; align-items:center; justify-content:center;
+    color: var(--teal-deep);
+    cursor:pointer;
+    opacity:0.8;
+  }
+  .copy-icon:active{ opacity:1; }
+  .icon-btn{
+    width:36px; height:36px;
+    border-radius:50%;
+    border:none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size:1rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+
+  /* ---------- Name dialog + owner-panel pickers ---------- */
+  .dialog-backdrop{
+    display:none; position:absolute; inset:0; z-index:60;
+    background: rgba(10,25,20,0.55);
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .dialog-backdrop.show{ display:flex; }
+  .dialog{ width:100%; max-width:340px; background: var(--card); border-radius:16px; padding:20px; }
+  .dialog h3{ font-family:'Fraunces', serif; font-weight:600; font-size:1.1rem; margin-bottom:12px; color: var(--ink); }
+  .dialog input{
+    width:100%; border:1.5px solid var(--line); background:#fbfdfc; border-radius:12px;
+    padding: 11px 14px; font-family:'Inter', sans-serif; font-size:0.95rem; color: var(--ink); outline:none;
+  }
+  .dialog input:focus{ border-color: var(--teal); background:#fff; }
+  .dialog-actions{ display:flex; gap:10px; margin-top:14px; }
+  .dialog-actions button{
+    flex:1; border:none; padding:12px; border-radius:12px; cursor:pointer;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.9rem;
+  }
+  .dialog-cancel{ background: var(--bg); color: var(--ink-soft); }
+  .dialog-save{ background: var(--teal-deep); color:white; }
+  .dialog-save:disabled{ opacity:0.6; }
+  .room-edit-btn{
+    margin-left:auto; flex-shrink:0; border:none; cursor:pointer;
+    background: rgba(255,255,255,0.22); color:white;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.78rem;
+    padding: 8px 14px; border-radius: 10px;
+  }
+  .pick-row{ display:flex; align-items:center; gap:14px; margin: 8px 0 16px; }
+  .theme-preview{
+    width:72px; aspect-ratio: 9 / 19; flex-shrink:0;
+    border-radius:12px; border:1px solid var(--line);
+    background: var(--teal-soft) center/cover no-repeat;
+  }
+  .pick-actions{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+  .pick-actions .hint{ margin:0; }
+  .pick-btn{
+    border:1.5px solid var(--teal-deep); background:transparent; color: var(--teal-deep);
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.85rem;
+    padding: 9px 16px; border-radius:10px; cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -288,22 +385,72 @@
     <input type="file" id="my-avatar-input" accept="image/*" style="display:none" onchange="changeMyAvatar(this.files[0])">
     <div class="you-name copyable">You</div>
     <div class="you-id copyable">ID: 123456</div>
-    <div class="you-card" onclick="showToast('Edit profile — coming soon')"><span>Edit profile</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="openEditProfile()"><span>Edit profile</span><span class="arrow">›</span></div>
     <div class="you-card" onclick="showScreen('settings')"><span>Settings</span><span class="arrow">›</span></div>
+    <div class="you-card" id="owner-panel-link" style="display:none;" onclick="showScreen('owner')"><span>👑 Owner Panel</span><span class="arrow">›</span></div>
+  </div>
+
+  <!-- OWNER PANEL (only visible to the site owner) -->
+  <div class="screen" id="screen-owner" style="padding: 24px 18px 96px;">
+    <div class="section-title">Owner Panel</div>
+    <p class="hint" style="margin-bottom:16px;">Common App Theme — applies across Home, Inbox, Login/Signup, Profile, Search, Friends, Settings. Room themes and profile pictures are separate and unaffected.</p>
+
+    <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Primary color</label>
+    <input type="color" id="theme-primary-color" value="#06D6A0" style="width:100%; height:44px; border:none; border-radius:12px; margin:8px 0 16px;">
+
+    <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Background color</label>
+    <input type="color" id="theme-bg-color" value="#F4FBF8" style="width:100%; height:44px; border:none; border-radius:12px; margin:8px 0 16px;">
+
+    <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Background image (optional)</label>
+    <div class="pick-row">
+      <div class="theme-preview" id="bg-preview"></div>
+      <div class="pick-actions">
+        <button type="button" class="pick-btn" onclick="document.getElementById('theme-bg-image-input').click()">Choose image</button>
+        <span class="hint" id="bg-preview-note">No image set.</span>
+      </div>
+    </div>
+    <input type="file" id="theme-bg-image-input" accept="image/*" style="display:none" onchange="pickThemeImage(this, 'bg')">
+
+    <button class="submit-btn" onclick="saveAppTheme()">Save theme</button>
+    <button class="submit-btn" style="background:var(--ink-soft); margin-top:10px;" onclick="resetAppTheme()">Reset to default</button>
+
+    <div class="section-title" style="margin-top:30px;">Default room theme</div>
+    <p class="hint" style="margin-bottom:12px;">Every user-created room shows this picture until its owner buys a different theme. The Official Room is not affected.</p>
+    <div class="pick-row">
+      <div class="theme-preview" id="room-theme-preview"></div>
+      <div class="pick-actions">
+        <button type="button" class="pick-btn" onclick="document.getElementById('room-theme-image-input').click()">Choose image</button>
+        <span class="hint" id="room-theme-note">No default set.</span>
+      </div>
+    </div>
+    <input type="file" id="room-theme-image-input" accept="image/*" style="display:none" onchange="pickThemeImage(this, 'room')">
+    <button class="submit-btn" onclick="saveDefaultRoomTheme()">Save default room theme</button>
+    <button class="submit-btn" style="background:var(--ink-soft); margin-top:10px;" onclick="clearDefaultRoomTheme()">Remove default room theme</button>
   </div>
 
   <!-- CHAT (rooms) -->
   <div class="screen" id="screen-chat">
-    <div class="section-title">My Room</div>
+    <div class="section-title">Official Room</div>
     <div class="room-card" onclick="location.href='chatroom.html'">
       <div class="mine-badge">Official</div>
       <div class="room-avatar">👥</div>
       <div>
-        <div class="room-name">The Circle</div>
-        <div class="room-id">ID: 11711</div>
+        <div class="room-name" id="my-room-name">The Circle</div>
+        <div class="room-id" id="my-room-id">ID: 11711</div>
       </div>
     </div>
-    <div class="rooms-note">More rooms will appear here later.</div>
+
+    <div class="section-title" style="margin-top:26px;">Your Room</div>
+    <div id="your-room-box">
+      <p class="hint">Loading...</p>
+    </div>
+
+    <div class="section-title" style="margin-top:26px;">Find a Room</div>
+    <div class="search-box">
+      <input type="text" id="room-search-input" placeholder="Enter a room ID" inputmode="numeric">
+      <button onclick="searchRoomById()">Search</button>
+    </div>
+    <div id="room-search-result"></div>
   </div>
 
   <!-- SOCIAL -->
@@ -374,10 +521,40 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="dialog-backdrop" id="name-dialog" onclick="if(event.target === this) closeNameDialog()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="name-dialog-title">
+      <h3 id="name-dialog-title">Edit name</h3>
+      <input type="text" id="name-dialog-input" autocomplete="off" onkeydown="if(event.key === 'Enter') submitNameDialog()">
+      <div class="dialog-actions">
+        <button type="button" class="dialog-cancel" onclick="closeNameDialog()">Cancel</button>
+        <button type="button" class="dialog-save" id="name-dialog-save" onclick="submitNameDialog()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-modal" id="profile-modal">
+    <div class="profile-modal-header">
+      <button class="icon-btn" onclick="closeProfileModal()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="profile-modal-body">
+      <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
+      <div class="profile-modal-name copyable" id="profile-modal-name">Name</div>
+      <span class="id-row" style="justify-content:center;">
+        <div class="profile-modal-id copyable" id="profile-modal-id">ID: 000000</div>
+        <span class="copy-icon" onclick="copyText(document.getElementById('profile-modal-id').textContent.replace('ID: ',''), 'ID')" title="Copy ID">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </span>
+      </span>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="image-editor.js"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -427,6 +604,14 @@
         name: profile.name, avatar_url: profile.avatar_url, id_number: profile.id_number
       }));
     }catch(err){}
+
+    // Owner Panel visibility is just a UI convenience — actual writes are
+    // protected server-side by RLS (auth.uid() must match id_number '111'),
+    // so this check can't be spoofed into gaining real owner access.
+    if(String(profile.id_number) === '111'){
+      const link = document.getElementById('owner-panel-link');
+      if(link) link.style.display = 'flex';
+    }
   }
 
   function applyAvatarDisplay(el, avatarUrl, initial){
@@ -443,29 +628,81 @@
 
   async function changeMyAvatar(file){
     if(!file || !currentUser) return;
+    const blob = await openImageEditor(file, IMAGE_PRESETS.avatar);
+    if(!blob) return;
     showToast('Uploading photo...');
-    const path = 'avatars/' + currentUser.id + '-' + Date.now() + '-' + file.name;
-    const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
-    if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
-    const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
-    const { error: dbErr } = await supabaseClient.from('profiles').update({ avatar_url: pub.publicUrl }).eq('id', currentUser.id);
-    if(dbErr){ showToast('Could not save photo.'); return; }
-    currentProfile.avatar_url = pub.publicUrl;
+    let url;
+    try{ url = await uploadImageBlob(blob, 'avatars'); }
+    catch(err){ showToast('Upload failed: ' + (err.message || 'try again')); return; }
+    const { data: rows, error: dbErr } = await supabaseClient.from('profiles')
+      .update({ avatar_url: url }).eq('id', currentUser.id).select('id');
+    if(dbErr || !rows || !rows.length){ showToast('Could not save photo.'); return; }
+    currentProfile.avatar_url = url;
     const initial = (currentProfile.name || '?').charAt(0).toUpperCase();
-    document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, pub.publicUrl, initial));
+    document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, url, initial));
+    cacheMyProfile();
+    showToast('Profile picture updated');
+  }
+
+  function cacheMyProfile(){
     try{
       localStorage.setItem('profile-cache-' + currentUser.id, JSON.stringify({
-        name: currentProfile.name, avatar_url: pub.publicUrl, id_number: currentProfile.id_number
+        name: currentProfile.name, avatar_url: currentProfile.avatar_url, id_number: currentProfile.id_number
       }));
     }catch(err){}
-    showToast('Profile picture updated');
+  }
+
+  // ---------- Reusable "edit a name" dialog (profile name + room name) ----------
+  let nameDialogSave = null;
+  function openNameDialog(title, value, maxLen, onSave){
+    document.getElementById('name-dialog-title').textContent = title;
+    const input = document.getElementById('name-dialog-input');
+    input.maxLength = maxLen;
+    input.value = value || '';
+    nameDialogSave = onSave;
+    document.getElementById('name-dialog').classList.add('show');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+  }
+  function closeNameDialog(){
+    document.getElementById('name-dialog').classList.remove('show');
+    nameDialogSave = null;
+  }
+  async function submitNameDialog(){
+    const value = document.getElementById('name-dialog-input').value.trim().replace(/\s+/g, ' ');
+    if(!value){ showToast('The name can\'t be empty.'); return; }
+    if(!nameDialogSave) return;
+    const btn = document.getElementById('name-dialog-save');
+    btn.disabled = true;
+    const ok = await nameDialogSave(value);
+    btn.disabled = false;
+    if(ok) closeNameDialog();
+  }
+
+  function openEditProfile(){
+    if(!currentProfile) return;
+    openNameDialog('Edit your name', currentProfile.name, 30, saveMyName);
+  }
+  async function saveMyName(name){
+    const { data: rows, error } = await supabaseClient.from('profiles')
+      .update({ name }).eq('id', currentUser.id).select('id');
+    if(error || !rows || !rows.length){ showToast('Could not save your name.'); return false; }
+    currentProfile.name = name;
+    document.querySelector('.you-name').textContent = name;
+    if(!currentProfile.avatar_url){
+      const initial = name.charAt(0).toUpperCase();
+      document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => applyAvatarDisplay(el, null, initial));
+    }
+    cacheMyProfile();
+    showToast('Name updated');
+    return true;
   }
 
   function showScreen(name){
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + name).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('nav-' + name).classList.add('active');
+    const navBtn = document.getElementById('nav-' + name);
+    if(navBtn) navBtn.classList.add('active');
     try{ localStorage.setItem('home-active-tab', name); }catch(err){}
   }
 
@@ -474,6 +711,22 @@
       await supabaseClient.auth.signOut();
       location.href = 'index.html';
     }
+  }
+
+  function copyText(text, label){
+    navigator.clipboard?.writeText(text);
+    showToast((label || 'ID') + ' copied');
+  }
+
+  function openProfileModal(name, avatarUrl, idNumber){
+    const initial = (name || '?').charAt(0).toUpperCase();
+    document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(avatarUrl, initial);
+    document.getElementById('profile-modal-name').textContent = name;
+    document.getElementById('profile-modal-id').textContent = 'ID: ' + (idNumber || '—');
+    document.getElementById('profile-modal').classList.add('show');
+  }
+  function closeProfileModal(){
+    document.getElementById('profile-modal').classList.remove('show');
   }
 
   function showToast(msg){
@@ -490,37 +743,101 @@
     document.getElementById('stab-' + name).classList.add('active');
   }
 
-  // ---------- Message + Recent lists (demo data, shared shape with inbox.html) ----------
-  const chats = [
-    { id:1, name:'Ayesha', initial:'A', preview:'sent a photo', time:'2m', online:true },
-    { id:2, name:'Bilal', initial:'B', preview:'kal milte hain?', time:'18m', online:true },
-    { id:3, name:'Hamza', initial:'H', preview:'👍', time:'1h', online:false },
-    { id:4, name:'Sara', initial:'S', preview:'sent a photo', time:'3h', online:false }
-  ];
+  // ---------- Message + Recent lists — real Supabase (accepted friends + direct_messages) ----------
+  let homeFriends = [];
+
+  function formatTimeAgo(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if(mins < 1) return 'now';
+    if(mins < 60) return mins + 'm';
+    const hrs = Math.floor(mins / 60);
+    if(hrs < 24) return hrs + 'h';
+    const days = Math.floor(hrs / 24);
+    if(days < 7) return days + 'd';
+    return d.toLocaleDateString();
+  }
+
+  async function loadHomeFriends(){
+    const { data: rows } = await supabaseClient
+      .from('friend_requests')
+      .select('id, from_user, to_user, from_profile:from_user(id, name, avatar_url), to_profile:to_user(id, name, avatar_url)')
+      .eq('status', 'accepted')
+      .or(`from_user.eq.${currentUser.id},to_user.eq.${currentUser.id}`);
+
+    const { data: msgs } = await supabaseClient
+      .from('direct_messages')
+      .select('*')
+      .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+      .order('created_at', { ascending: false });
+
+    const lastByPartner = {};
+    (msgs || []).forEach(m => {
+      const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
+      if(!lastByPartner[partnerId]) lastByPartner[partnerId] = m;
+    });
+
+    homeFriends = (rows || []).map(r => {
+      const isMeFrom = r.from_user === currentUser.id;
+      const other = isMeFrom ? r.to_profile : r.from_profile;
+      const last = lastByPartner[other.id];
+      return {
+        id: other.id,
+        name: other.name || 'Unknown',
+        avatarUrl: other.avatar_url || null,
+        lastMessage: last ? last.content : 'Say hi 👋',
+        lastAt: last ? last.created_at : null
+      };
+    }).sort((a, b) => {
+      if(!a.lastAt && !b.lastAt) return 0;
+      if(!a.lastAt) return 1;
+      if(!b.lastAt) return -1;
+      return new Date(b.lastAt) - new Date(a.lastAt);
+    });
+
+    renderMessageList();
+    renderRecentList();
+  }
 
   function renderMessageList(){
-    const sorted = [...chats].sort((a, b) => (b.online === a.online) ? 0 : (b.online ? 1 : -1));
-    document.getElementById('spanel-message').innerHTML = sorted.map(c => `
-      <div class="friend-row" onclick="location.href='inbox.html?open=${c.id}'">
-        <div class="avatar">${c.initial}${c.online ? '<span class="dot"></span>' : ''}</div>
+    const box = document.getElementById('spanel-message');
+    if(!homeFriends.length){
+      box.innerHTML = '<p class="hint">No conversations yet.</p>';
+      return;
+    }
+    box.innerHTML = homeFriends.map(f => {
+      const initial = (f.name || '?').charAt(0).toUpperCase();
+      return `
+      <div class="friend-row" onclick="location.href='inbox.html?open=${f.id}'">
+        <div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>
         <div>
-          <div class="name copyable">${c.name}</div>
-          <div class="sub">${c.preview} · ${c.time}</div>
+          <div class="name copyable">${escapeHtml(f.name)}</div>
+          <div class="sub">${escapeHtml(f.lastMessage)} · ${formatTimeAgo(f.lastAt)}</div>
         </div>
       </div>
-    `).join('');
+    `;}).join('');
   }
 
   function renderRecentList(){
-    document.getElementById('spanel-recent').innerHTML = chats.map(c => `
-      <div class="friend-row" onclick="location.href='inbox.html?open=${c.id}'">
-        <div class="avatar">${c.initial}${c.online ? '<span class="dot"></span>' : ''}</div>
+    const box = document.getElementById('spanel-recent');
+    const withMessages = homeFriends.filter(f => f.lastAt);
+    if(!withMessages.length){
+      box.innerHTML = '<p class="hint">No recent conversations yet.</p>';
+      return;
+    }
+    box.innerHTML = withMessages.map(f => {
+      const initial = (f.name || '?').charAt(0).toUpperCase();
+      return `
+      <div class="friend-row" onclick="location.href='inbox.html?open=${f.id}'">
+        <div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>
         <div>
-          <div class="name copyable">${c.name}</div>
-          <div class="sub">Messaged ${c.time} ago</div>
+          <div class="name copyable">${escapeHtml(f.name)}</div>
+          <div class="sub">Messaged ${formatTimeAgo(f.lastAt)} ago</div>
         </div>
       </div>
-    `).join('');
+    `;}).join('');
   }
 
   // ---------- Requests sub-tab (Add Friends) — real Supabase ----------
@@ -570,9 +887,22 @@
     const initial = (user.name || '?').charAt(0).toUpperCase();
     resultBox.innerHTML =
       '<div class="section-title">Result</div>' +
-      '<div class="friend-row"><div class="avatar">' + avatarHtml(user.avatar_url, initial) + '</div>' +
-      '<div><div class="name copyable">' + user.name + '</div></div>' +
-      '<button class="action-btn add-btn" style="margin-left:auto;" onclick="sendRequest(\'' + user.id + '\', this)">Add</button></div>';
+      '<div class="friend-row" style="cursor:pointer;" onclick="openProfileModal(\'' + escapeAttr(user.name) + '\', ' + (user.avatar_url ? "'" + user.avatar_url + "'" : 'null') + ', \'' + user.id_number + '\')">' +
+      '<div class="avatar">' + avatarHtml(user.avatar_url, initial) + '</div>' +
+      '<div><div class="name copyable">' + escapeHtml(user.name) + '</div></div>' +
+      '<button class="action-btn add-btn" style="margin-left:auto;" onclick="event.stopPropagation(); sendRequest(\'' + user.id + '\', this)">Add</button></div>';
+  }
+
+  // For text placed inside an inline onclick='...' handler
+  function escapeAttr(str){
+    return String(str || '')
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  // For text placed directly into innerHTML
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   async function sendRequest(toUserId, btn){
@@ -592,7 +922,7 @@
     renderRequestLists();
   }
 
-  async function respondRequest(requestId, outcome, btn){
+  async function respondRequest(requestId, outcome, btn, fromUserId){
     const row = btn.closest('.friend-row');
     const { error } = await supabaseClient
       .from('friend_requests')
@@ -601,6 +931,13 @@
     if(error){
       showStatus(error.message, 'error');
       return;
+    }
+    if(outcome === 'accepted' && fromUserId){
+      await supabaseClient.from('direct_messages').insert({
+        sender_id: currentUser.id,
+        receiver_id: fromUserId,
+        content: 'Thanks for adding me! 👋'
+      });
     }
     row.style.opacity = '0.5';
     setTimeout(() => row.remove(), 300);
@@ -618,12 +955,12 @@
       const p = r.profiles;
       const initial = (p?.name || '?').charAt(0).toUpperCase();
       return `
-      <div class="friend-row">
+      <div class="friend-row" style="cursor:pointer;" onclick="openProfileModal('${escapeAttr(p?.name)}', ${p?.avatar_url ? "'" + p.avatar_url + "'" : 'null'}, '${p?.id_number || ''}')">
         <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
-        <div><div class="name copyable">${p?.name || 'Unknown'}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
+        <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
         <div class="req-actions">
-          <button class="action-btn accept-btn" onclick="respondRequest('${r.id}','accepted',this)">Accept</button>
-          <button class="action-btn reject-btn" onclick="respondRequest('${r.id}','declined',this)">Reject</button>
+          <button class="action-btn accept-btn" onclick="event.stopPropagation(); respondRequest('${r.id}','accepted',this,'${r.from_user}')">Accept</button>
+          <button class="action-btn reject-btn" onclick="event.stopPropagation(); respondRequest('${r.id}','declined',this,'${r.from_user}')">Reject</button>
         </div>
       </div>`;
     }).join('') || '<p class="hint">No pending requests.</p>';
@@ -638,23 +975,246 @@
       const p = r.profiles;
       const initial = (p?.name || '?').charAt(0).toUpperCase();
       return `
-      <div class="friend-row">
+      <div class="friend-row" style="cursor:pointer;" onclick="openProfileModal('${escapeAttr(p?.name)}', ${p?.avatar_url ? "'" + p.avatar_url + "'" : 'null'}, '${p?.id_number || ''}')">
         <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
-        <div><div class="name copyable">${p?.name || 'Unknown'}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
+        <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
         <button class="action-btn add-btn sent" style="margin-left:auto;">Pending</button>
       </div>`;
     }).join('') || '<p class="hint">No sent requests.</p>';
   }
 
+  // ---------- Common App Theme (site-wide, separate from room themes/avatars) ----------
+  function applyAppTheme(theme){
+    if(!theme) return;
+    const root = document.documentElement.style;
+    if(theme.primary_color){
+      root.setProperty('--teal', theme.primary_color);
+      root.setProperty('--teal-deep', theme.primary_color);
+    }
+    if(theme.background_color){
+      root.setProperty('--bg', theme.background_color);
+    }
+    if(theme.background_image_url){
+      // .phone has its own solid background that would hide the body image on a phone screen,
+      // so the picture is set on .phone itself, under a light wash so text stays readable.
+      const wash = 'color-mix(in srgb, var(--bg) 55%, transparent)';
+      const phone = document.querySelector('.phone');
+      if(phone){
+        phone.style.background = `linear-gradient(${wash}, ${wash}), url('${theme.background_image_url}') center/cover no-repeat`;
+      }
+    }
+  }
+
+  async function loadAppTheme(){
+    try{
+      const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
+      if(cached) applyAppTheme(cached);
+    }catch(err){}
+    const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+    if(theme){
+      applyAppTheme(theme);
+      try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+      if(document.getElementById('theme-primary-color')){
+        if(theme.primary_color) document.getElementById('theme-primary-color').value = theme.primary_color;
+        if(theme.background_color) document.getElementById('theme-bg-color').value = theme.background_color;
+        showPreview('bg', theme.background_image_url, 'Current background image.', 'No image set.');
+        showPreview('room', theme.default_room_theme_url, 'Current default room theme.', 'No default set.');
+      }
+    }
+  }
+
+  // Owner Panel image pickers: choose -> edit (zoom/move) -> keep the edited picture until Save
+  let pendingBgBlob = null;
+  let pendingRoomThemeBlob = null;
+
+  function showPreview(kind, url, setNote, emptyNote){
+    const box = document.getElementById(kind === 'bg' ? 'bg-preview' : 'room-theme-preview');
+    const note = document.getElementById(kind === 'bg' ? 'bg-preview-note' : 'room-theme-note');
+    if(!box) return;
+    box.style.backgroundImage = url ? `url('${url}')` : 'none';
+    if(note) note.textContent = url ? setNote : emptyNote;
+  }
+
+  async function pickThemeImage(input, kind){
+    const file = input.files[0];
+    input.value = '';   // lets the same photo be picked again later
+    if(!file) return;
+    const blob = await openImageEditor(file, IMAGE_PRESETS.theme);
+    if(!blob) return;
+    if(kind === 'bg') pendingBgBlob = blob; else pendingRoomThemeBlob = blob;
+    showPreview(kind, URL.createObjectURL(blob), 'Ready — tap Save to apply.', '');
+  }
+
+  async function saveAppTheme(){
+    const primary = document.getElementById('theme-primary-color').value;
+    const bg = document.getElementById('theme-bg-color').value;
+
+    const update = { primary_color: primary, background_color: bg, updated_at: new Date().toISOString() };
+    if(pendingBgBlob){
+      try{ update.background_image_url = await uploadImageBlob(pendingBgBlob, 'app-theme'); }
+      catch(err){ showToast('Image upload failed: ' + (err.message || 'try again')); return; }
+    }
+
+    const { error } = await supabaseClient.from('app_theme').update(update).eq('id','global');
+    if(error){ showToast('Could not save theme: ' + error.message); return; }
+    pendingBgBlob = null;
+    showToast('App theme updated for everyone');
+    loadAppTheme();
+  }
+
+  async function resetAppTheme(){
+    const { error } = await supabaseClient.from('app_theme').update({
+      primary_color: null, background_color: null, background_image_url: null
+    }).eq('id','global');
+    if(error){ showToast('Could not reset theme.'); return; }
+    try{ localStorage.removeItem('app-theme-cache'); }catch(err){}
+    showToast('Theme reset to default — reloading');
+    setTimeout(() => location.reload(), 800);
+  }
+
+  async function saveDefaultRoomTheme(){
+    if(!pendingRoomThemeBlob){ showToast('Choose an image first.'); return; }
+    let url;
+    try{ url = await uploadImageBlob(pendingRoomThemeBlob, 'room-themes'); }
+    catch(err){ showToast('Image upload failed: ' + (err.message || 'try again')); return; }
+    const { error } = await supabaseClient.from('app_theme').update({ default_room_theme_url: url }).eq('id','global');
+    if(error){ showToast('Could not save: ' + error.message); return; }
+    pendingRoomThemeBlob = null;
+    showPreview('room', url, 'Current default room theme.', 'No default set.');
+    showToast('Default room theme saved');
+  }
+
+  async function clearDefaultRoomTheme(){
+    const { error } = await supabaseClient.from('app_theme').update({ default_room_theme_url: null }).eq('id','global');
+    if(error){ showToast('Could not remove: ' + error.message); return; }
+    pendingRoomThemeBlob = null;
+    showPreview('room', null, '', 'No default set.');
+    showToast('Default room theme removed');
+  }
+
+  // ---------- User-created rooms (Stage 2) ----------
+  let myRoom = null;
+
+  async function loadYourRoom(){
+    const box = document.getElementById('your-room-box');
+    if(!currentProfile){
+      box.innerHTML = '<p class="hint">Could not load your account.</p>';
+      return;
+    }
+    // The app owner's room is the Official Room (same ID, 111) — no second room to create.
+    if(String(currentProfile.id_number) === '111'){
+      box.innerHTML = '<p class="hint">Your room is the Official Room above.</p>';
+      return;
+    }
+    const { data: room } = await supabaseClient
+      .from('rooms')
+      .select('*')
+      .eq('owner_id', currentUser.id)
+      .eq('is_official', false)
+      .maybeSingle();
+
+    if(room){
+      myRoom = room;
+      box.innerHTML = `
+        <div class="room-card" onclick="location.href='chatroom.html?room=${encodeURIComponent(room.id)}'">
+          <div class="mine-badge">Yours</div>
+          <div class="room-avatar">${room.picture_url ? `<img src="${escapeHtml(room.picture_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '👥'}</div>
+          <div style="min-width:0;">
+            <div class="room-name">${escapeHtml(room.name)}</div>
+            <div class="room-id">ID: ${escapeHtml(room.id)}</div>
+          </div>
+          <button class="room-edit-btn" onclick="event.stopPropagation(); editMyRoomName()">Edit name</button>
+        </div>`;
+      return;
+    }
+
+    box.innerHTML = `
+      <p class="hint" style="margin-bottom:12px;">Your room uses your own ID (<strong>${escapeHtml(currentProfile.id_number)}</strong>) as its room ID and your name (<strong>${escapeHtml(currentProfile.name || '')}</strong>) as its name. You can rename it any time.</p>
+      <button class="submit-btn" onclick="createRoom()">Create my room</button>`;
+  }
+
+  async function createRoom(){
+    if(!currentProfile) return;
+    const roomId = String(currentProfile.id_number);
+    const { error } = await supabaseClient.from('rooms').insert({
+      id: roomId, name: currentProfile.name || 'My Room', owner_id: currentUser.id, is_official: false
+    });
+    if(error){
+      showToast('Could not create room: ' + error.message);
+      return;
+    }
+    const seatRows = Array.from({length:10}, (_, i) => ({ room_id: roomId, seat_number: i+1 }));
+    await supabaseClient.from('room_seats').insert(seatRows);
+    showToast('Room created!');
+    location.href = 'chatroom.html?room=' + encodeURIComponent(roomId);
+  }
+
+  function editMyRoomName(){
+    if(!myRoom) return;
+    openNameDialog('Edit room name', myRoom.name, 40, async (name) => {
+      const { data: rows, error } = await supabaseClient.from('rooms')
+        .update({ name }).eq('id', myRoom.id).select('id');
+      if(error || !rows || !rows.length){ showToast('Could not save the room name.'); return false; }
+      try{ localStorage.removeItem('room-info-cache-' + myRoom.id); }catch(err){}
+      showToast('Room name updated');
+      loadYourRoom();
+      return true;
+    });
+  }
+
+  async function searchRoomById(){
+    const value = document.getElementById('room-search-input').value.trim();
+    const resultBox = document.getElementById('room-search-result');
+    resultBox.innerHTML = '';
+    if(!/^[0-9]+$/.test(value)){
+      showToast('Enter a valid room ID.');
+      return;
+    }
+    const { data: room, error } = await supabaseClient
+      .from('rooms')
+      .select('*')
+      .eq('id', value)
+      .maybeSingle();
+
+    if(error || !room){
+      resultBox.innerHTML = '<p class="hint">No room found with that ID.</p>';
+      return;
+    }
+    resultBox.innerHTML = `
+      <div class="room-card" onclick="location.href='chatroom.html?room=${encodeURIComponent(room.id)}'">
+        <div class="mine-badge">${room.is_official ? 'Official' : 'Room'}</div>
+        <div class="room-avatar">${room.picture_url ? `<img src="${escapeHtml(room.picture_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '👥'}</div>
+        <div>
+          <div class="room-name">${escapeHtml(room.name)}</div>
+          <div class="room-id">ID: ${escapeHtml(room.id)} — tap to join</div>
+        </div>
+      </div>`;
+  }
+
+  async function loadMyRoomInfo(){
+    try{
+      const cached = JSON.parse(localStorage.getItem('room-info-cache-111') || 'null');
+      if(cached){
+        document.getElementById('my-room-name').textContent = cached.name || 'Official Room';
+        document.getElementById('my-room-id').textContent = 'ID: ' + (cached.id || '111');
+      }
+    }catch(err){}
+    const { data: room } = await supabaseClient.from('rooms').select('name, id').eq('id','111').single();
+    if(room){
+      document.getElementById('my-room-name').textContent = room.name || 'Official Room';
+      document.getElementById('my-room-id').textContent = 'ID: ' + room.id;
+      try{ localStorage.setItem('room-info-cache-111', JSON.stringify(room)); }catch(err){}
+    }
+  }
+
   (async function init(){
     await requireLoginAndLoadProfile();
     if(!currentUser) return;
-    // NOTE: Message/Recent lists below are still demo data —
-    // real direct messages need a messages/conversations table design
-    // that hasn't been built yet.
-    renderMessageList();
-    renderRecentList();
+    loadHomeFriends();
     renderRequestLists();
+    loadMyRoomInfo();
+    loadAppTheme();
+    loadYourRoom();
 
     try{
       const savedTab = localStorage.getItem('home-active-tab');

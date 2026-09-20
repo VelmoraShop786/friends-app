@@ -31,6 +31,7 @@
     -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
     -webkit-touch-callout:default !important;
   }
+html, body{ overscroll-behavior-y: contain; }
   body{
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -271,7 +272,33 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 <script>
+  // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
+  (async function loadAppTheme(){
+    try{
+      const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
+      if(cached) applyAppTheme(cached);
+    }catch(err){}
+    const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+    if(theme){
+      applyAppTheme(theme);
+      try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+    }
+  })();
+  function applyAppTheme(theme){
+    if(!theme) return;
+    const root = document.documentElement.style;
+    if(theme.primary_color){ root.setProperty('--teal', theme.primary_color); root.setProperty('--teal-deep', theme.primary_color); }
+    if(theme.background_color){ root.setProperty('--bg', theme.background_color); }
+    if(theme.background_image_url){
+      document.body.style.backgroundImage = `url('${theme.background_image_url}')`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+    }
+  }
+
   // Demo directory — in the real app this will be looked up from the backend.
   const demoUsers = {
     "208813": { name: "Ayesha" },

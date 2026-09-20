@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Circle — Chat Room</title>
+<title>Chat Room</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -34,6 +34,7 @@
     -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
     -webkit-touch-callout:default !important;
   }
+html, body{ overscroll-behavior-y: contain; }
   body{
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -598,6 +599,10 @@
     flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
   }
+  .icon-btn-light.deafened{
+    background: #fbecec;
+    color: #b1362f;
+  }
 
   .toast{
     position:fixed;
@@ -615,6 +620,74 @@
     z-index:10;
   }
   .toast.show{ opacity:0.95; }
+
+  /* ---------- Roles / moderation ---------- */
+  .role-tag{
+    display:inline-block; font-size:0.66rem; font-weight:700; line-height:1;
+    padding: 3px 7px; border-radius: 8px; margin-left:6px; vertical-align:middle;
+    background: var(--teal-soft); color: var(--teal-deep);
+  }
+  .role-tag.owner{ background:#ffe9a8; color:#5c3d00; }
+  .role-tag.banned{ background:#fbecec; color:#b1362f; }
+  .profile-role{ margin-top:8px; }
+  .profile-actions{
+    width:100%; max-width:320px; display:flex; flex-direction:column; gap:8px;
+    margin-top:22px; padding: 0 20px; overflow-y:auto;
+  }
+  .pa-btn, .choice-btn{
+    border:none; border-radius:12px; padding:13px; cursor:pointer; width:100%;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.9rem;
+    background: var(--teal-soft); color: var(--teal-deep);
+  }
+  .pa-btn.danger, .choice-btn.danger{ background:#fbecec; color:#b1362f; }
+  .choice-btn.primary{ background: var(--teal-deep); color:white; }
+  .choice-btn.cancel{ background: var(--bg); color: var(--ink-soft); }
+  .choice-list{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .choice-message{ font-size:0.85rem; color: var(--ink-soft); line-height:1.4; }
+  .mm-section{ font-size:0.75rem; font-weight:700; color: var(--ink-soft); letter-spacing:0.03em; padding: 16px 4px 6px; }
+  .mm-empty{ font-size:0.82rem; color: var(--ink-soft); padding: 4px 4px 8px; }
+  .mini-btn{
+    border:none; border-radius:9px; padding:8px 12px; cursor:pointer; flex-shrink:0;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.78rem;
+    background: var(--teal-soft); color: var(--teal-deep);
+  }
+  .mini-btn.danger{ background:#fbecec; color:#b1362f; }
+  .mm-add{ display:flex; gap:8px; padding: 4px 4px 10px; }
+  .mm-add input{
+    flex:1; min-width:0; border:1.5px solid var(--line); background:#fbfdfc; border-radius:10px;
+    padding: 9px 12px; font-family:'Inter', sans-serif; font-size:0.88rem; color: var(--ink); outline:none;
+  }
+  #manage-modal{ z-index:33; }
+  .blocked-screen{
+    display:none; position:absolute; inset:0; z-index:90; background: var(--bg);
+    align-items:center; justify-content:center; padding:28px; text-align:center;
+  }
+  .blocked-screen.show{ display:flex; }
+  .blocked-box{ max-width:320px; }
+  .blocked-box h3{ font-family:'Fraunces', serif; font-weight:600; font-size:1.3rem; color: var(--ink); margin-bottom:10px; }
+  .blocked-box p{ font-size:0.9rem; color: var(--ink-soft); line-height:1.5; margin-bottom:20px; }
+
+  .dialog-backdrop{
+    display:none; position:absolute; inset:0; z-index:60;
+    background: rgba(6,16,13,0.6);
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .dialog-backdrop.show{ display:flex; }
+  .dialog{ width:100%; max-width:340px; background: var(--card); border-radius:16px; padding:20px; }
+  .dialog h3{ font-family:'Fraunces', serif; font-weight:600; font-size:1.1rem; margin-bottom:12px; color: var(--ink); }
+  .dialog input{
+    width:100%; border:1.5px solid var(--line); background:#fbfdfc; border-radius:12px;
+    padding: 11px 14px; font-family:'Inter', sans-serif; font-size:0.95rem; color: var(--ink); outline:none;
+  }
+  .dialog input:focus{ border-color: var(--teal); background:#fff; }
+  .dialog-actions{ display:flex; gap:10px; margin-top:14px; }
+  .dialog-actions button{
+    flex:1; border:none; padding:12px; border-radius:12px; cursor:pointer;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.9rem;
+  }
+  .dialog-cancel{ background: var(--bg); color: var(--ink-soft); }
+  .dialog-save{ background: var(--teal-deep); color:white; }
+  .dialog-save:disabled{ opacity:0.6; }
 </style>
 </head>
 <body>
@@ -679,7 +752,9 @@
 
   <div class="profile-modal" id="profile-modal">
     <div class="profile-modal-header">
-      <button class="back-link" onclick="closeProfileModal()" style="margin:0;">← Back</button>
+      <button class="icon-btn" onclick="closeProfileModal()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
     </div>
     <div class="profile-modal-body">
       <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
@@ -690,12 +765,40 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </span>
       </span>
+      <div class="profile-role" id="profile-role"></div>
+      <div class="profile-actions" id="profile-actions"></div>
+    </div>
+  </div>
+
+  <div class="members-modal" id="manage-modal">
+    <div class="members-modal-header">
+      <span>Manage room</span>
+      <button class="modal-close" onclick="closeManageModal()">✕</button>
+    </div>
+    <div class="members-modal-list" id="manage-body"></div>
+  </div>
+
+  <div class="dialog-backdrop" id="choice-dialog">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="choice-title">
+      <h3 id="choice-title"></h3>
+      <div class="choice-message" id="choice-message"></div>
+      <div class="choice-list" id="choice-list"></div>
+    </div>
+  </div>
+
+  <div class="blocked-screen" id="blocked-screen">
+    <div class="blocked-box">
+      <h3 id="blocked-title"></h3>
+      <p id="blocked-msg"></p>
+      <button class="dialog-save" style="width:100%; border:none; padding:13px; border-radius:12px; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer;" onclick="location.href='home.html'">Back to home</button>
     </div>
   </div>
 
   <div class="info-menu" id="info-menu">
     <button onclick="showToast('Room info panel — coming soon'); toggleInfoMenu(false);">ℹ️ &nbsp;Room info</button>
-    <button onclick="tryChangeRoomTheme()">🖼️ &nbsp;Set room theme (from gallery)</button>
+    <button id="info-rename-btn" style="display:none;" onclick="openRenameDialog()">✏️ &nbsp;Edit room name</button>
+    <button id="info-manage-btn" style="display:none;" onclick="openManageModal()">🛡️ &nbsp;Manage room</button>
+    <button id="info-theme-btn" onclick="tryChangeRoomTheme()">🖼️ &nbsp;Room theme</button>
   </div>
 
   <div class="seats-wrap">
@@ -710,7 +813,7 @@
     </div>
   </div>
 
-  <div class="banner">Welcome to The Circle 🌿 Please be kind and respect each other while talking.</div>
+  <div class="banner">Welcome 🌿 Please be kind and respect each other while talking.</div>
 
   <div class="chat-panel">
     <div class="messages" id="messages"></div>
@@ -724,6 +827,9 @@
     </div>
 
     <div class="composer">
+      <button class="icon-btn-light" id="deafen-btn" title="Mute room for me" onclick="toggleDeafen()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14l-1.41-1.41a8 8 0 0 0 0-11.32l1.41-1.41zM15.54 8.46a5 5 0 0 1 0 7.07l-1.41-1.41a3 3 0 0 0 0-4.24l1.41-1.42z"/></svg>
+      </button>
       <input type="text" id="text-input" placeholder="Say something..." dir="auto">
       <button class="send-btn" onclick="sendText()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
@@ -732,12 +838,29 @@
     </div>
   </div>
 
+  <div class="dialog-backdrop" id="rename-dialog" onclick="if(event.target === this) closeRenameDialog()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title">
+      <h3 id="rename-dialog-title">Edit room name</h3>
+      <input type="text" id="rename-input" maxlength="40" autocomplete="off" onkeydown="if(event.key === 'Enter') submitRename()">
+      <div class="dialog-actions">
+        <button type="button" class="dialog-cancel" onclick="closeRenameDialog()">Cancel</button>
+        <button type="button" class="dialog-save" id="rename-save" onclick="submitRename()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="image-editor.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 <script>
+  // Which room this page is showing — defaults to the permanent Official Room
+  // so any existing link (chatroom.html with no params) behaves exactly as before.
+  const ROOM_ID = new URLSearchParams(location.search).get('room') || '111';
+
   let currentUser = null;
   let currentProfile = null;
 
@@ -771,7 +894,7 @@
     }];
     renderMembersStack();
 
-    const channel = supabaseClient.channel('room-presence-111', {
+    const channel = supabaseClient.channel(('room-presence-' + ROOM_ID), {
       config: { presence: { key: currentUser.id } }
     });
     channel.on('presence', { event: 'sync' }, () => {
@@ -779,10 +902,15 @@
       onlineMembers = Object.values(state).map(entries => {
         const e = entries[0];
         const initial = (e.name || '?').charAt(0).toUpperCase();
-        rememberProfile(e.name, { idNumber: e.id_number || '', avatarUrl: e.avatar_url || null, initial });
+        rememberProfile(e.name, { userId: e.id, idNumber: e.id_number || '', avatarUrl: e.avatar_url || null, initial });
         return { id: e.id, name: e.name, avatarUrl: e.avatar_url || null, idNumber: e.id_number || '', initial };
       });
       renderMembersStack();
+    });
+    // Fires when a user's connection actually drops (tab/browser closed, network lost, crash, etc.)
+    // — not just when they click Exit. This is what reliably frees their seat.
+    channel.on('presence', { event: 'leave' }, ({ key }) => {
+      clearSeatForUser(key);
     });
     channel.subscribe(async (status) => {
       if(status === 'SUBSCRIBED'){
@@ -791,12 +919,20 @@
     });
   }
 
+  async function clearSeatForUser(userId){
+    await supabaseClient.from('room_seats').update({ occupied_by: null })
+      .eq('room_id',ROOM_ID).eq('occupied_by', userId);
+    loadSeats();
+  }
+
   // Registry of every profile we've seen (from presence, seats, or messages) — used so
   // the profile popup always has the freshest known name/ID/avatar, whichever source saw it first.
-  let knownProfiles = {};
+  let knownProfiles = {};   // by display name (fallback lookup)
+  let knownById = {};       // by user id — anything that acts on a specific person uses this
   function rememberProfile(name, info){
     if(!name) return;
     knownProfiles[name] = { ...(knownProfiles[name] || {}), ...info };
+    if(info && info.userId) knownById[info.userId] = { ...(knownById[info.userId] || {}), name, ...info };
   }
 
   function avatarHtml(avatarUrl, initial){
@@ -805,24 +941,39 @@
       : initial;
   }
 
+  // Text that goes inside an inline onclick="fn('...')" handler: safe for the JS string AND the HTML attribute.
+  function attrJs(str){
+    return String(str == null ? '' : str)
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function findProfile(name){
     if(currentProfile && name === currentProfile.name){
-      return { initial:'Me', name: currentProfile.name, id: currentProfile.id_number || '', avatarUrl: currentProfile.avatar_url || null };
+      return { userId: currentUser.id, initial:'Me', name: currentProfile.name, id: currentProfile.id_number || '', avatarUrl: currentProfile.avatar_url || null };
     }
     const known = knownProfiles[name];
     const m = onlineMembers.find(x => x.name === name);
     const idNumber = (m && m.idNumber) || (known && known.idNumber) || '';
     const avatarUrl = (m && m.avatarUrl) || (known && known.avatarUrl) || null;
     const initial = (m && m.initial) || (known && known.initial) || (name ? name.charAt(0).toUpperCase() : '?');
-    if(!m && !known) return { initial:'?', name, id:'—', avatarUrl:null };
-    return { initial, name, id: idNumber || '—', avatarUrl };
+    const userId = (m && m.id) || (known && known.userId) || null;
+    if(!m && !known) return { userId:null, initial:'?', name, id:'—', avatarUrl:null };
+    return { userId, initial, name, id: idNumber || '—', avatarUrl };
+  }
+
+  function roleLabelHtml(userId){
+    const r = roleOf(userId);
+    if(r === 'owner') return '<span class="role-tag owner">Owner</span>';
+    if(r === 'admin') return '<span class="role-tag">Admin</span>';
+    return '';
   }
 
   function renderMembersStack(){
     const stack = document.getElementById('members-stack');
     stack.innerHTML = onlineMembers.map(m => {
       const isMe = m.id === currentUser.id;
-      return `<div class="stack-avatar" onclick="openProfileModal('${escapeHtml(m.name)}')">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>`;
+      return `<div class="stack-avatar" onclick="openProfileFor('${attrJs(m.id)}','${attrJs(m.name)}')">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>`;
     }).join('');
     document.getElementById('member-count-badge').textContent = onlineMembers.length;
   }
@@ -831,12 +982,14 @@
     document.getElementById('modal-user-count').textContent = onlineMembers.length;
     document.getElementById('members-modal-list').innerHTML = onlineMembers.map(m => {
       const isMe = m.id === currentUser.id;
+      const role = roleOf(m.id);
+      const sub = role === 'owner' ? 'Room owner' : (role === 'admin' ? 'Admin' : 'Member');
       return `
-      <div class="modal-member-row" onclick="openProfileModal('${escapeHtml(m.name)}')">
+      <div class="modal-member-row" onclick="openProfileFor('${attrJs(m.id)}','${attrJs(m.name)}')">
         <div class="avatar">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>
         <div>
           <div class="name copyable">${escapeHtml(m.name)}</div>
-          <div class="sub">Member</div>
+          <div class="sub">${sub}</div>
         </div>
       </div>`;
     }).join('');
@@ -846,19 +999,357 @@
     document.getElementById('members-modal').classList.remove('show');
   }
 
-  function openProfileModal(name){
-    const p = findProfile(name);
+  // Open a profile by user id when we have one (safe when two people share a display name)
+  function openProfileFor(userId, name){
+    if(userId && currentUser && userId === currentUser.id){ showProfile(findProfile(currentProfile?.name)); return; }
+    const k = userId ? knownById[userId] : null;
+    if(k){
+      showProfile({
+        userId, name: k.name, id: k.idNumber || '—', avatarUrl: k.avatarUrl || null,
+        initial: k.initial || (k.name || '?').charAt(0).toUpperCase()
+      });
+    } else {
+      openProfileModal(name);
+    }
+  }
+  function openProfileModal(name){ showProfile(findProfile(name)); }
+
+  let currentProfileView = null;
+  function showProfile(p){
+    currentProfileView = p;
     document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(p.avatarUrl, p.initial);
     document.getElementById('profile-modal-name').textContent = p.name;
     document.getElementById('profile-modal-id').textContent = 'ID: ' + p.id;
+    renderProfileRoleAndActions();
     document.getElementById('profile-modal').classList.add('show');
   }
   function closeProfileModal(){
     document.getElementById('profile-modal').classList.remove('show');
+    currentProfileView = null;
   }
 
   // ---------- Permission: only the room owner can customize ----------
-  let canCustomizeRoom = false;
+  let canCustomizeRoom = false;     // true only for the room's owner
+  let isOfficialRoom = false;
+  let lastRoom = null;              // latest known row from the rooms table
+  let defaultRoomThemeUrl = null;   // picture every user-created room shows until a theme is purchased
+
+  // ---------- Roles: owner (permanent) > admin > member ----------
+  let roomOwnerId = null;
+  let roomMembers = {};             // userId -> { role, banned, kicked_until, seat_blocked }
+  let accessBlocked = false;
+
+  function isKicked(m){ return !!(m && m.kicked_until && new Date(m.kicked_until) > new Date()); }
+  function roleOf(userId){
+    if(userId && userId === roomOwnerId) return 'owner';
+    return roomMembers[userId]?.role === 'admin' ? 'admin' : 'member';
+  }
+  function myRole(){
+    if(!currentUser) return 'user';
+    if(currentUser.id === roomOwnerId) return 'owner';
+    const m = roomMembers[currentUser.id];
+    if(m && m.role === 'admin' && !m.banned && !isKicked(m)) return 'admin';
+    return 'user';
+  }
+  function isStaff(){ return myRole() !== 'user'; }
+  // Owner can act on anyone except themselves; an admin only on regular members (never another admin or the owner).
+  function canModerate(targetId){
+    if(!targetId || !currentUser || targetId === currentUser.id || targetId === roomOwnerId) return false;
+    const me = myRole();
+    if(me === 'owner') return true;
+    if(me === 'admin') return roleOf(targetId) !== 'admin';
+    return false;
+  }
+
+  async function loadRoomMembers(){
+    const { data, error } = await supabaseClient.from('room_members').select('*').eq('room_id', ROOM_ID);
+    if(error){ console.error('room_members:', error.message); return; }   // table missing -> the room still works
+    roomMembers = {};
+    (data || []).forEach(r => { roomMembers[r.user_id] = r; });
+    if(!enforceAccess()) return;
+    refreshInfoMenu();
+    renderProfileRoleAndActions();
+  }
+
+  function subscribeRoomMembers(){
+    supabaseClient.channel('room-members-' + ROOM_ID)
+      .on('postgres_changes', { event:'*', schema:'public', table:'room_members', filter:'room_id=eq.' + ROOM_ID }, () => {
+        loadRoomMembers();
+      })
+      .subscribe();
+  }
+
+  // Banned / kicked people are stopped before they appear in the room, and removed the moment it happens.
+  function enforceAccess(){
+    const m = roomMembers[currentUser.id];
+    if(!m || currentUser.id === roomOwnerId) return true;
+    if(m.banned){
+      showBlocked('You are banned', 'The room owner or an admin banned you from this room.');
+      return false;
+    }
+    if(isKicked(m)){
+      showBlocked('You were kicked', 'You can come back after ' + new Date(m.kicked_until).toLocaleString() + '.');
+      return false;
+    }
+    return true;
+  }
+  function showBlocked(title, msg){
+    if(accessBlocked) return;
+    accessBlocked = true;
+    disconnectVoice();
+    try{ supabaseClient.removeAllChannels(); }catch(err){}   // leaves presence, so the seat and online list clear for everyone
+    document.getElementById('blocked-title').textContent = title;
+    document.getElementById('blocked-msg').textContent = msg;
+    document.getElementById('blocked-screen').classList.add('show');
+  }
+
+  // ---------- Generic choice / confirm dialog ----------
+  function showChoice({ title, message, options, cancel }){
+    return new Promise(resolve => {
+      const dlg = document.getElementById('choice-dialog');
+      document.getElementById('choice-title').textContent = title || '';
+      const msg = document.getElementById('choice-message');
+      msg.textContent = message || '';
+      msg.style.display = message ? 'block' : 'none';
+      const list = document.getElementById('choice-list');
+      list.innerHTML = '';
+      const done = v => { dlg.classList.remove('show'); dlg.onclick = null; resolve(v); };
+      (options || []).forEach(o => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'choice-btn ' + (o.kind || '');
+        b.textContent = o.label;
+        b.onclick = () => done(o.value);
+        list.appendChild(b);
+      });
+      const c = document.createElement('button');
+      c.type = 'button';
+      c.className = 'choice-btn cancel';
+      c.textContent = cancel || 'Cancel';
+      c.onclick = () => done(null);
+      list.appendChild(c);
+      dlg.onclick = e => { if(e.target === dlg) done(null); };
+      dlg.classList.add('show');
+    });
+  }
+
+  // ---------- Moderation actions (each one is checked again on the server) ----------
+  async function callRoomRpc(fn, args, okMsg){
+    const { error } = await supabaseClient.rpc(fn, args);
+    if(error){ showToast(error.message || 'Could not do that.'); return false; }
+    if(okMsg) showToast(okMsg);
+    await Promise.all([loadRoomMembers(), loadSeats()]);
+    return true;
+  }
+
+  async function doSetAdmin(uid, name, make){
+    const ok = await showChoice({
+      title: make ? 'Make ' + name + ' an admin?' : 'Remove ' + name + ' as admin?',
+      message: make ? 'Admins can lock seats, move people off seats, invite people to seats, ban members and kick them for up to 3 hours.' : '',
+      options: [{ label: make ? 'Make admin' : 'Remove admin', value: true, kind: make ? 'primary' : 'danger' }]
+    });
+    if(!ok) return false;
+    return callRoomRpc('room_set_admin', { p_room: ROOM_ID, p_user: uid, p_make: make },
+      make ? name + ' is now an admin' : name + ' is no longer an admin');
+  }
+  async function doBan(uid, name, ban){
+    if(ban){
+      const ok = await showChoice({
+        title: 'Ban ' + name + '?',
+        message: 'They will be removed from the room and can\'t come back until someone unbans them.',
+        options: [{ label: 'Ban from room', value: true, kind: 'danger' }]
+      });
+      if(!ok) return false;
+    }
+    return callRoomRpc('room_set_ban', { p_room: ROOM_ID, p_user: uid, p_ban: ban }, ban ? name + ' was banned' : name + ' was unbanned');
+  }
+  async function doKick(uid, name, hours){
+    return callRoomRpc('room_kick', { p_room: ROOM_ID, p_user: uid, p_hours: hours }, hours > 0 ? name + ' was kicked' : 'Kick lifted');
+  }
+  async function askKick(uid, name){
+    const owner = myRole() === 'owner';
+    const opts = owner
+      ? [['1 hour',1],['3 hours',3],['1 day',24],['7 days',168],['30 days',720],['1 year',8760]]
+      : [['1 hour',1],['3 hours',3]];
+    const hours = await showChoice({
+      title: 'Kick ' + name + ' for how long?',
+      message: 'They are removed from the room and can\'t come back until the time is up.',
+      options: opts.map(([label, value]) => ({ label, value, kind: 'danger' }))
+    });
+    if(hours) return doKick(uid, name, hours);
+    return false;
+  }
+  function doRemoveFromSeat(uid, name){
+    return callRoomRpc('room_seat_block', { p_room: ROOM_ID, p_user: uid, p_block: true }, name + ' was removed from the seat');
+  }
+  function doPutOnSeat(uid, name){
+    return callRoomRpc('room_put_on_seat', { p_room: ROOM_ID, p_user: uid }, name + ' is back on a seat');
+  }
+  async function doInviteToSeat(uid, name){
+    const ok = await callRoomRpc('room_invite_to_seat', { p_room: ROOM_ID, p_user: uid }, null);
+    if(!ok) return false;
+    if(eventsChannel){
+      eventsChannel.send({ type:'broadcast', event:'seat-invite', payload:{ to: uid, fromName: currentProfile?.name || 'An admin' } });
+    }
+    showToast('Invitation sent to ' + name);
+    return true;
+  }
+
+  // ---------- Profile popup: role tag + what this person is allowed to do to that user ----------
+  let profileActionFns = [];
+  function buildActionsFor(uid){
+    if(!uid || !canModerate(uid)) return [];
+    const m = roomMembers[uid] || {};
+    const name = knownById[uid]?.name || 'this user';
+    if(m.banned) return [{ label:'Unban from room', run: () => doBan(uid, name, false) }];
+    const items = [];
+    if(myRole() === 'owner'){
+      items.push(roleOf(uid) === 'admin'
+        ? { label:'Remove admin', run: () => doSetAdmin(uid, name, false) }
+        : { label:'Make admin',   run: () => doSetAdmin(uid, name, true) });
+    }
+    if(onlineMembers.some(x => x.id === uid)){
+      if(seats.some(s => s.userId === uid)){
+        items.push({ label:'Remove from seat', run: () => doRemoveFromSeat(uid, name) });
+      } else {
+        items.push({ label: m.seat_blocked ? 'Put back on seat' : 'Put on seat', run: () => doPutOnSeat(uid, name) });
+        items.push({ label:'Invite to seat', run: () => doInviteToSeat(uid, name) });
+      }
+    }
+    if(isKicked(m)) items.push({ label:'Lift kick', run: () => doKick(uid, name, 0) });
+    items.push({ label:'Kick from room…', kind:'danger', run: () => askKick(uid, name) });
+    items.push({ label:'Ban from room', kind:'danger', run: () => doBan(uid, name, true) });
+    return items;
+  }
+  function renderProfileRoleAndActions(){
+    const roleBox = document.getElementById('profile-role');
+    const box = document.getElementById('profile-actions');
+    if(!roleBox || !box) return;
+    const uid = currentProfileView?.userId;
+    let tag = uid ? roleLabelHtml(uid) : '';
+    if(uid && roomMembers[uid]?.banned) tag += '<span class="role-tag banned">Banned</span>';
+    roleBox.innerHTML = tag;
+    profileActionFns = [];
+    const items = uid ? buildActionsFor(uid) : [];
+    box.innerHTML = items.map(a => {
+      profileActionFns.push(a.run);
+      return `<button type="button" class="pa-btn ${a.kind || ''}" onclick="runProfileAction(${profileActionFns.length - 1})">${a.label}</button>`;
+    }).join('');
+  }
+  async function runProfileAction(i){
+    const fn = profileActionFns[i];
+    if(!fn) return;
+    await fn();
+    renderProfileRoleAndActions();
+  }
+
+  // ---------- Manage room (owner + admins): admins, banned, kicked ----------
+  let manageActionFns = [];
+  async function openManageModal(){
+    toggleInfoMenu(false);
+    if(!isStaff()) return;
+    document.getElementById('manage-body').innerHTML = '<p class="mm-empty">Loading...</p>';
+    document.getElementById('manage-modal').classList.add('show');
+    await loadRoomMembers();
+    await renderManage();
+  }
+  function closeManageModal(){
+    document.getElementById('manage-modal').classList.remove('show');
+  }
+  function runManageAction(i){
+    const fn = manageActionFns[i];
+    if(fn) fn();
+  }
+  async function renderManage(){
+    const rows = Object.values(roomMembers);
+    const admins = rows.filter(r => r.role === 'admin');
+    const banned = rows.filter(r => r.banned);
+    const kicked = rows.filter(r => isKicked(r) && !r.banned);
+    const ids = [...new Set([...admins, ...banned, ...kicked].map(r => r.user_id))];
+    if(ids.length){
+      const { data } = await supabaseClient.from('profiles').select('id, name, avatar_url, id_number').in('id', ids);
+      (data || []).forEach(pr => rememberProfile(pr.name, {
+        userId: pr.id, idNumber: pr.id_number || '', avatarUrl: pr.avatar_url || null,
+        initial: (pr.name || '?').charAt(0).toUpperCase()
+      }));
+    }
+    manageActionFns = [];
+    const iAmOwner = myRole() === 'owner';
+
+    function row(r, sub, btn){
+      const k = knownById[r.user_id] || {};
+      const name = k.name || 'Unknown';
+      let action = '';
+      if(btn){
+        manageActionFns.push(async () => { await btn.run(name); renderManage(); });
+        action = `<button type="button" class="mini-btn ${btn.kind || ''}" onclick="runManageAction(${manageActionFns.length - 1})">${btn.label}</button>`;
+      }
+      return `
+      <div class="modal-member-row" style="cursor:default;">
+        <div class="avatar">${avatarHtml(k.avatarUrl, (name || '?').charAt(0).toUpperCase())}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="name copyable">${escapeHtml(name)}</div>
+          <div class="sub">${sub}</div>
+        </div>
+        ${action}
+      </div>`;
+    }
+
+    let html = '<div class="mm-section">ADMINS</div>';
+    if(iAmOwner){
+      html += `<div class="mm-add"><input type="text" id="manage-admin-id" placeholder="Add an admin by ID number" inputmode="numeric"><button type="button" class="mini-btn" onclick="addAdminById()">Add</button></div>`;
+    }
+    html += admins.length
+      ? admins.map(r => row(r, r.banned ? 'Admin — banned' : 'Admin',
+          iAmOwner ? { label:'Remove', kind:'danger', run: name => doSetAdmin(r.user_id, name, false) } : null)).join('')
+      : '<p class="mm-empty">No admins yet.</p>';
+
+    html += '<div class="mm-section">BANNED</div>';
+    html += banned.length
+      ? banned.map(r => row(r, 'Banned',
+          canModerate(r.user_id) ? { label:'Unban', run: name => doBan(r.user_id, name, false) } : null)).join('')
+      : '<p class="mm-empty">Nobody is banned.</p>';
+
+    html += '<div class="mm-section">KICKED</div>';
+    html += kicked.length
+      ? kicked.map(r => row(r, 'Until ' + escapeHtml(new Date(r.kicked_until).toLocaleString()),
+          canModerate(r.user_id) ? { label:'Lift kick', run: name => doKick(r.user_id, name, 0) } : null)).join('')
+      : '<p class="mm-empty">Nobody is kicked.</p>';
+
+    document.getElementById('manage-body').innerHTML = html;
+  }
+  async function addAdminById(){
+    const input = document.getElementById('manage-admin-id');
+    const raw = (input?.value || '').trim();
+    if(!/^[0-9]+$/.test(raw)){ showToast('Enter a valid ID number.'); return; }
+    const { data: pr } = await supabaseClient.from('profiles').select('id, name').eq('id_number', raw).maybeSingle();
+    if(!pr){ showToast('No account found with that ID.'); return; }
+    if(pr.id === roomOwnerId){ showToast('The owner already runs this room.'); return; }
+    if(await doSetAdmin(pr.id, pr.name, true)){
+      if(input) input.value = '';
+      renderManage();
+    }
+  }
+
+  // ---------- Seat invitations (a live prompt on the invited person's screen) ----------
+  let eventsChannel = null;
+  function setupEvents(){
+    eventsChannel = supabaseClient.channel('room-events-' + ROOM_ID);
+    eventsChannel.on('broadcast', { event:'seat-invite' }, async ({ payload }) => {
+      if(!payload || payload.to !== currentUser.id) return;
+      if(seats.some(s => s.userId === currentUser.id)) return;   // already on a seat
+      const yes = await showChoice({
+        title: (payload.fromName || 'An admin') + ' invited you to a seat',
+        options: [{ label:'Take a seat', value:true, kind:'primary' }],
+        cancel: 'Not now'
+      });
+      if(!yes) return;
+      const free = seats.findIndex(s => !s.taken && !s.locked);
+      if(free < 0){ showToast('No free seat right now.'); return; }
+      takeSeat(free);
+    });
+    eventsChannel.subscribe();
+  }
 
   function toggleExitMenu(){
     document.getElementById('exit-menu').classList.toggle('show');
@@ -870,22 +1361,24 @@
   }
 
   async function confirmExit(){
-    // Fully leave: clear any seat the user holds, mark their room chat view as cleared, then navigate back to home.
+    // Fully leave: clear any seat the user holds, disconnect voice, mark their room chat view as cleared, then navigate back to home.
+    leavingRoom = true;
+    await disconnectVoice();
     await supabaseClient.from('room_seats').update({ occupied_by: null })
-      .eq('room_id','111').eq('occupied_by', currentUser.id);
+      .eq('room_id',ROOM_ID).eq('occupied_by', currentUser.id);
     const { error: clearErr } = await supabaseClient.from('room_chat_clears').upsert({
       user_id: currentUser.id,
-      room_id: '111',
+      room_id: ROOM_ID,
       cleared_at: new Date().toISOString()
     }, { onConflict: 'user_id,room_id' });
     if(clearErr) console.error('clear marker failed:', clearErr);
-    try{ localStorage.removeItem('room-messages-cache-111-' + currentUser.id); }catch(err){}
+    try{ localStorage.removeItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id); }catch(err){}
     location.href = 'home.html';
   }
 
   function tryChangeRoomPicture(){
     if(!canCustomizeRoom){
-      showToast('Only the room admin or approved members can change the room picture.');
+      showToast('Only the room owner can change the room picture.');
       return;
     }
     document.getElementById('room-pic-input').click();
@@ -894,20 +1387,40 @@
   function tryChangeRoomTheme(){
     toggleInfoMenu(false);
     if(!canCustomizeRoom){
-      showToast('Only the room admin or approved members can change the room theme.');
+      showToast('Only the room owner can change the room theme.');
+      return;
+    }
+    if(!isOfficialRoom){
+      // User rooms show the default theme; changing it becomes a purchase later.
+      showToast('Changing the room theme will be a paid option — coming soon.');
       return;
     }
     document.getElementById('theme-pic-input').click();
   }
 
-  function applyThemeBackground(dataUrl){
+  function refreshInfoMenu(){
+    const themeBtn = document.getElementById('info-theme-btn');
+    const renameBtn = document.getElementById('info-rename-btn');
+    const manageBtn = document.getElementById('info-manage-btn');
+    if(renameBtn) renameBtn.style.display = canCustomizeRoom ? 'flex' : 'none';
+    if(manageBtn) manageBtn.style.display = isStaff() ? 'flex' : 'none';
+    if(themeBtn) themeBtn.innerHTML = isOfficialRoom
+      ? '🖼️ &nbsp;Set room theme (from gallery)'
+      : '🔒 &nbsp;Change room theme (purchase)';
+  }
+
+  function applyThemeBackground(url){
     document.querySelector('.phone').style.background =
-      `linear-gradient(180deg, rgba(6,37,29,0.55), rgba(6,37,29,0.55)), url('${dataUrl}') center/cover no-repeat`;
+      `linear-gradient(180deg, rgba(6,37,29,0.55), rgba(6,37,29,0.55)), url('${url}') center/cover no-repeat`;
   }
 
   function applyRoomInfoToUI(room){
+    if(room) lastRoom = room;
     if(room?.picture_url) applyRoomPicture(room.picture_url);
-    if(room?.theme_url) applyThemeBackground(room.theme_url);
+    // Own theme wins; user rooms without one show the default theme; the Official Room keeps its plain look.
+    const themeUrl = room?.theme_url || (room && !room.is_official ? defaultRoomThemeUrl : null);
+    if(themeUrl) applyThemeBackground(themeUrl);
+    else if(room) document.querySelector('.phone').style.background = '';
     if(room?.name) document.getElementById('room-title-display').textContent = room.name;
     if(room?.id) document.getElementById('room-id-display').textContent = 'ID: ' + room.id;
   }
@@ -915,53 +1428,105 @@
   async function loadRoomInfo(){
     // Show cached room info instantly while the real fetch happens
     try{
-      const cached = JSON.parse(localStorage.getItem('room-info-cache-111') || 'null');
+      const cached = JSON.parse(localStorage.getItem(('room-info-cache-' + ROOM_ID)) || 'null');
       if(cached) applyRoomInfoToUI(cached);
     }catch(err){}
 
-    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id','111').single();
+    const { data: room } = await supabaseClient.from('rooms').select('*').eq('id',ROOM_ID).single();
     applyRoomInfoToUI(room);
+    roomOwnerId = room ? room.owner_id : null;
     canCustomizeRoom = !!(room && room.owner_id === currentUser.id);
-    try{ localStorage.setItem('room-info-cache-111', JSON.stringify(room)); }catch(err){}
+    isOfficialRoom = !!(room && room.is_official);
+    refreshInfoMenu();
+    try{ localStorage.setItem(('room-info-cache-' + ROOM_ID), JSON.stringify(room)); }catch(err){}
+  }
+
+  async function loadDefaultRoomTheme(){
+    try{
+      const cached = localStorage.getItem('default-room-theme-cache');
+      if(cached){ defaultRoomThemeUrl = cached; if(lastRoom) applyRoomInfoToUI(lastRoom); }
+    }catch(err){}
+    const { data } = await supabaseClient.from('app_theme').select('default_room_theme_url').eq('id','global').maybeSingle();
+    defaultRoomThemeUrl = data?.default_room_theme_url || null;
+    try{
+      if(defaultRoomThemeUrl) localStorage.setItem('default-room-theme-cache', defaultRoomThemeUrl);
+      else localStorage.removeItem('default-room-theme-cache');
+    }catch(err){}
+    if(lastRoom) applyRoomInfoToUI(lastRoom);
   }
 
   function subscribeRoomInfo(){
-    supabaseClient.channel('room-info-111')
-      .on('postgres_changes', { event:'*', schema:'public', table:'rooms', filter:'id=eq.111' }, payload => {
+    supabaseClient.channel(('room-info-' + ROOM_ID))
+      .on('postgres_changes', { event:'*', schema:'public', table:'rooms', filter:'id=eq.' + ROOM_ID }, payload => {
         const room = payload.new;
+        if(!room || !room.id) return;
         applyRoomInfoToUI(room);
-        try{ localStorage.setItem('room-info-cache-111', JSON.stringify(room)); }catch(err){}
+        try{ localStorage.setItem(('room-info-cache-' + ROOM_ID), JSON.stringify(room)); }catch(err){}
       })
       .subscribe();
   }
 
   document.getElementById('room-pic-input').addEventListener('change', async function(e){
     const file = e.target.files[0];
+    e.target.value = '';   // lets the same photo be picked again later
     if(!file) return;
+    const blob = await openImageEditor(file, IMAGE_PRESETS.room);
+    if(!blob) return;
     showToast('Uploading room picture...');
-    const path = 'room-pictures/main-' + Date.now() + '-' + file.name;
-    const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
-    if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
-    const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
-    const { error: dbErr } = await supabaseClient.from('rooms').update({ picture_url: pub.publicUrl }).eq('id','111');
-    if(dbErr){ showToast('Could not save picture.'); return; }
-    applyRoomPicture(pub.publicUrl);
+    let url;
+    try{ url = await uploadImageBlob(blob, 'room-pictures'); }
+    catch(err){ showToast('Upload failed: ' + (err.message || 'try again')); return; }
+    const { data: rows, error: dbErr } = await supabaseClient.from('rooms').update({ picture_url: url }).eq('id',ROOM_ID).select('id');
+    if(dbErr || !rows || !rows.length){ showToast('Could not save picture.'); return; }
+    applyRoomPicture(url);
     showToast('Room picture updated');
   });
 
+  // Room theme upload — only reachable for the Official Room's owner (user rooms use the default theme)
   document.getElementById('theme-pic-input').addEventListener('change', async function(e){
     const file = e.target.files[0];
+    e.target.value = '';
     if(!file) return;
+    const blob = await openImageEditor(file, IMAGE_PRESETS.theme);
+    if(!blob) return;
     showToast('Uploading room theme...');
-    const path = 'room-themes/main-' + Date.now() + '-' + file.name;
-    const { error: upErr } = await supabaseClient.storage.from('Media').upload(path, file, { upsert:true });
-    if(upErr){ showToast('Upload failed: ' + upErr.message); return; }
-    const { data: pub } = supabaseClient.storage.from('Media').getPublicUrl(path);
-    const { error: dbErr } = await supabaseClient.from('rooms').update({ theme_url: pub.publicUrl }).eq('id','111');
-    if(dbErr){ showToast('Could not save theme.'); return; }
-    applyThemeBackground(pub.publicUrl);
-    showToast('Room theme updated from gallery');
+    let url;
+    try{ url = await uploadImageBlob(blob, 'room-themes'); }
+    catch(err){ showToast('Upload failed: ' + (err.message || 'try again')); return; }
+    const { data: rows, error: dbErr } = await supabaseClient.from('rooms').update({ theme_url: url }).eq('id',ROOM_ID).select('id');
+    if(dbErr || !rows || !rows.length){ showToast('Could not save theme.'); return; }
+    applyThemeBackground(url);
+    showToast('Room theme updated');
   });
+
+  // ---------- Rename the room (owner only) ----------
+  function openRenameDialog(){
+    toggleInfoMenu(false);
+    if(!canCustomizeRoom){ showToast('Only the room owner can rename the room.'); return; }
+    const input = document.getElementById('rename-input');
+    input.value = lastRoom?.name || document.getElementById('room-title-display').textContent;
+    document.getElementById('rename-dialog').classList.add('show');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+  }
+  function closeRenameDialog(){
+    document.getElementById('rename-dialog').classList.remove('show');
+  }
+  async function submitRename(){
+    const name = document.getElementById('rename-input').value.trim().replace(/\s+/g, ' ');
+    if(!name){ showToast('The name can\'t be empty.'); return; }
+    const btn = document.getElementById('rename-save');
+    btn.disabled = true;
+    const { data: rows, error } = await supabaseClient.from('rooms').update({ name }).eq('id',ROOM_ID).select('id');
+    btn.disabled = false;
+    if(error || !rows || !rows.length){ showToast('Could not save the room name.'); return; }
+    document.getElementById('room-title-display').textContent = name;
+    if(lastRoom){
+      lastRoom.name = name;
+      try{ localStorage.setItem(('room-info-cache-' + ROOM_ID), JSON.stringify(lastRoom)); }catch(err){}
+    }
+    closeRenameDialog();
+    showToast('Room name updated');
+  }
 
   function toggleInfoMenu(forceState){
     const menu = document.getElementById('info-menu');
@@ -985,7 +1550,7 @@
       if(s.locked){
         label = 'Locked';
       } else if(s.taken){
-        label = `<span class="seat-name" onclick="event.stopPropagation(); openProfileModal('${escapeHtml(s.name || '')}')">${escapeHtml(s.name || '')}</span>`;
+        label = `<span class="seat-name" onclick="event.stopPropagation(); openProfileFor('${attrJs(s.userId || '')}','${attrJs(s.name || '')}')">${escapeHtml(s.name || '')}</span>`;
       } else {
         label = (i+1);
       }
@@ -1010,48 +1575,64 @@
         const idNumber = isMe ? (currentProfile?.id_number || '') : (r.profiles?.id_number || '');
         arr[idx] = {
           taken:true,
+          userId: r.occupied_by,
           name,
           idNumber,
           initial: isMe ? 'Me' : name.charAt(0).toUpperCase(),
           avatarUrl: r.profiles?.avatar_url || null,
           speaking:true
         };
-        rememberProfile(name, { idNumber, avatarUrl: r.profiles?.avatar_url || null, initial: isMe ? 'Me' : name.charAt(0).toUpperCase() });
+        rememberProfile(name, { userId: r.occupied_by, idNumber, avatarUrl: r.profiles?.avatar_url || null, initial: isMe ? 'Me' : name.charAt(0).toUpperCase() });
       }
     });
     return arr;
   }
 
+  // Voice follows the seat: if an admin puts me on a seat my mic connects, and if I'm removed it disconnects.
+  let seatsLoadedOnce = false;
+  let reconcileTimer = null;
+  function reconcileVoice(){
+    clearTimeout(reconcileTimer);
+    reconcileTimer = setTimeout(() => { syncVoice(); }, 800);
+  }
+
   async function loadSeats(){
     // Show cached seats instantly while the real fetch happens
     try{
-      const cached = JSON.parse(localStorage.getItem('room-seats-cache-111') || 'null');
+      const cached = JSON.parse(localStorage.getItem(('room-seats-cache-' + ROOM_ID)) || 'null');
       if(cached){ seats = cached; renderSeats(); }
     }catch(err){}
 
     const { data: rows } = await supabaseClient
       .from('room_seats')
       .select('seat_number, occupied_by, locked, profiles:occupied_by(name, avatar_url, id_number)')
-      .eq('room_id', '111')
+      .eq('room_id', ROOM_ID)
       .order('seat_number');
     seats = buildSeatsFromRows(rows);
     renderSeats();
-    try{ localStorage.setItem('room-seats-cache-111', JSON.stringify(seats)); }catch(err){}
+    try{ localStorage.setItem(('room-seats-cache-' + ROOM_ID), JSON.stringify(seats)); }catch(err){}
+    if(seatsLoadedOnce) reconcileVoice();
+    seatsLoadedOnce = true;
+    renderProfileRoleAndActions();
   }
 
   function subscribeSeats(){
-    supabaseClient.channel('room-seats-111')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_seats', filter: 'room_id=eq.111' }, () => {
+    supabaseClient.channel(('room-seats-' + ROOM_ID))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_seats', filter: 'room_id=eq.' + ROOM_ID }, () => {
         loadSeats();
       })
       .subscribe();
+  }
+
+  function isMySeat(s){
+    return s.taken && (s.userId ? s.userId === currentUser.id : s.initial === 'Me');
   }
 
   function handleSeatClick(i){
     const s = seats[i];
 
     if(s.locked){
-      if(canCustomizeRoom){
+      if(isStaff()){
         openSeatMenu(i, 'locked');
       } else {
         showToast('This seat is locked.');
@@ -1060,14 +1641,20 @@
     }
 
     if(s.taken){
-      if(s.initial === 'Me'){
+      if(isMySeat(s)){
         openSeatMenu(i, 'leave');
+      } else if(isStaff() && canModerate(s.userId)){
+        openSeatMenu(i, 'staff-taken');
       } else {
         showToast('This seat is already taken.');
       }
       return;
     }
 
+    if(roomMembers[currentUser.id]?.seat_blocked && !isStaff()){
+      showToast('You were removed from the seats. Ask an admin to invite you back.');
+      return;
+    }
     openSeatMenu(i, 'empty');
   }
 
@@ -1081,7 +1668,16 @@
       title.textContent = 'Leave seat ' + (i+1) + '?';
       actions.innerHTML = `
         <button class="seat-menu-cancel" onclick="closeSeatMenu()">Cancel</button>
+        <button class="seat-menu-lock" id="seat-mic-toggle-btn" onclick="toggleMic()">${micEnabled ? 'Mute mic' : 'Unmute mic'}</button>
         <button class="seat-menu-leave" onclick="confirmLeaveSeat()">Leave seat</button>
+      `;
+    } else if(mode === 'staff-taken'){
+      const s = seats[i];
+      title.textContent = 'Seat ' + (i+1) + ' — ' + (s.name || '');
+      actions.innerHTML = `
+        <button class="seat-menu-cancel" onclick="closeSeatMenu()">Cancel</button>
+        <button class="seat-menu-lock" onclick="closeSeatMenu(); openProfileFor('${attrJs(s.userId)}','${attrJs(s.name || '')}')">Profile</button>
+        <button class="seat-menu-leave" onclick="staffRemoveFromSeat(${i})">Remove</button>
       `;
     } else if(mode === 'locked'){
       title.textContent = 'Seat ' + (i+1) + ' is locked';
@@ -1092,7 +1688,7 @@
     } else {
       title.textContent = 'Seat ' + (i+1);
       let btns = `<button class="seat-menu-take" onclick="takeSeat(${i})">Take seat</button>`;
-      if(canCustomizeRoom){
+      if(isStaff()){
         btns += `<button class="seat-menu-lock" onclick="lockSeat(${i})">Lock seat</button>`;
       }
       actions.innerHTML = btns;
@@ -1104,30 +1700,38 @@
     document.getElementById('seat-action-menu').classList.remove('show');
   }
 
+  function staffRemoveFromSeat(i){
+    const s = seats[i];
+    closeSeatMenu();
+    if(s && s.userId) doRemoveFromSeat(s.userId, s.name || 'User');
+  }
+
   async function takeSeat(i){
     const seatNumber = i + 1;
     closeSeatMenu();
     // A user can only occupy one seat at a time — clear any seat they currently hold
     await supabaseClient.from('room_seats').update({ occupied_by: null })
-      .eq('room_id','111').eq('occupied_by', currentUser.id);
+      .eq('room_id',ROOM_ID).eq('occupied_by', currentUser.id);
     const { error } = await supabaseClient.from('room_seats')
       .update({ occupied_by: currentUser.id })
-      .eq('room_id','111').eq('seat_number', seatNumber).eq('locked', false)
+      .eq('room_id',ROOM_ID).eq('seat_number', seatNumber).eq('locked', false)
       .is('occupied_by', null);
     if(error){
-      showToast('Could not take that seat.');
+      showToast(/right now/.test(error.message || '') ? error.message : 'Could not take that seat.');
       return;
     }
     showToast('You joined seat ' + seatNumber + ' — mic on');
-    loadSeats();
+    await loadSeats();
+    syncVoice();
   }
 
   async function lockSeat(i){
     const seatNumber = i + 1;
     closeSeatMenu();
-    await supabaseClient.from('room_seats')
+    const { error } = await supabaseClient.from('room_seats')
       .update({ locked:true, occupied_by:null })
-      .eq('room_id','111').eq('seat_number', seatNumber);
+      .eq('room_id',ROOM_ID).eq('seat_number', seatNumber);
+    if(error){ showToast(error.message || 'Could not lock the seat.'); return; }
     showToast('Seat ' + seatNumber + ' locked');
     loadSeats();
   }
@@ -1135,9 +1739,10 @@
   async function unlockSeat(i){
     const seatNumber = i + 1;
     closeSeatMenu();
-    await supabaseClient.from('room_seats')
+    const { error } = await supabaseClient.from('room_seats')
       .update({ locked:false })
-      .eq('room_id','111').eq('seat_number', seatNumber);
+      .eq('room_id',ROOM_ID).eq('seat_number', seatNumber);
+    if(error){ showToast(error.message || 'Could not unlock the seat.'); return; }
     showToast('Seat ' + seatNumber + ' unlocked');
     loadSeats();
   }
@@ -1149,9 +1754,155 @@
     closeSeatMenu();
     await supabaseClient.from('room_seats')
       .update({ occupied_by: null })
-      .eq('room_id','111').eq('seat_number', seatNumber);
+      .eq('room_id',ROOM_ID).eq('seat_number', seatNumber);
     showToast('You left the seat');
-    loadSeats();
+    await loadSeats();
+    syncVoice();   // back to listen-only
+  }
+
+  // ---------- Live voice (LiveKit) ----------
+  // Everyone in the room joins the voice room and can HEAR the people on seats.
+  // Only someone sitting on a seat can SPEAK — the server decides that when it issues the token,
+  // so a person without a seat gets a listen-only token. Moving on/off a seat reconnects with a fresh token.
+  let lkRoom = null;
+  let lkMode = null;              // 'listen' | 'speak': what the current connection is allowed to do
+  let lkClosing = false;          // true while WE are closing the connection on purpose
+  let leavingRoom = false;        // set once the person taps Exit / the page is closing
+  let micEnabled = false;
+  let deafened = false;
+  let voiceFailures = 0;
+
+  async function getLiveKitToken(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/livekit-token', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + session.access_token,
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ room: ROOM_ID })
+    });
+    if(!resp.ok) throw new Error('Token request failed: ' + (await resp.text()));
+    const data = await resp.json();
+    // An older version of the token function doesn't say; it always allowed speaking.
+    data.canPublish = (data.canPublish === undefined) ? true : !!data.canPublish;
+    return data;
+  }
+
+  function wantedVoiceMode(){
+    return seats.some(s => s.taken && s.userId === currentUser.id) ? 'speak' : 'listen';
+  }
+
+  // Makes the voice connection match the person's seat. Safe to call any time, as often as needed.
+  let voiceBusy = false, voiceRerun = false;
+  async function syncVoice(){
+    if(accessBlocked || leavingRoom) return;
+    if(voiceBusy){ voiceRerun = true; return; }
+    voiceBusy = true;
+    try{
+      do{
+        voiceRerun = false;
+        const want = wantedVoiceMode();
+        if(lkRoom && lkMode === want) continue;
+        if(lkRoom) await closeLk();
+        await openLk(want);
+      } while(voiceRerun && !leavingRoom);
+    }finally{
+      voiceBusy = false;
+    }
+  }
+
+  async function openLk(want){
+    try{
+      const { token, url, canPublish } = await getLiveKitToken();
+      const { Room, RoomEvent } = LivekitClient;
+      const room = new Room();
+      lkRoom = room;
+
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if(track.kind === 'audio'){
+          const el = track.attach();
+          el.id = 'lk-audio-' + track.sid;
+          el.autoplay = true;
+          el.muted = deafened; // respect the listener's current mute-room state
+          document.body.appendChild(el);
+        }
+      });
+      room.on(RoomEvent.TrackUnsubscribed, (track) => {
+        track.detach().forEach(el => el.remove());
+      });
+      room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+        if(!room.canPlaybackAudio) showToast('Tap anywhere to turn on the room sound');
+      });
+      room.on(RoomEvent.Disconnected, () => {
+        if(lkRoom !== room || lkClosing) return;   // we closed it ourselves / an older connection
+        lkRoom = null; lkMode = null; micEnabled = false;
+        if(!leavingRoom) setTimeout(syncVoice, 2000);   // connection dropped: rejoin with a fresh token
+      });
+
+      await room.connect(url, token);
+      lkMode = canPublish ? 'speak' : 'listen';
+      if(canPublish && want === 'speak'){
+        await room.localParticipant.setMicrophoneEnabled(true);
+        micEnabled = true;
+      } else {
+        micEnabled = false;
+      }
+      voiceFailures = 0;
+      try{ await room.startAudio(); }catch(err){}
+    }catch(err){
+      console.error('LiveKit connect failed:', err);
+      lkRoom = null; lkMode = null; micEnabled = false;
+      voiceFailures++;
+      if(voiceFailures === 1 || voiceFailures === 3) showToast('Voice connect failed');
+      if(voiceFailures < 3 && !leavingRoom) setTimeout(syncVoice, 4000 * voiceFailures);
+    }
+  }
+
+  async function closeLk(){
+    const room = lkRoom;
+    if(!room) return;
+    lkClosing = true;
+    try{ await room.disconnect(); }catch(err){}
+    lkClosing = false;
+    if(lkRoom === room) lkRoom = null;
+    lkMode = null;
+    micEnabled = false;
+    document.querySelectorAll('[id^="lk-audio-"]').forEach(el => el.remove());
+  }
+
+  // Full stop (Exit, banned, kicked)
+  async function disconnectVoice(){
+    await closeLk();
+  }
+
+  // Browsers only start sound after a tap — the first tap anywhere in the room switches it on.
+  function unlockRoomAudio(){
+    try{ if(lkRoom) lkRoom.startAudio(); }catch(err){}
+    document.querySelectorAll('audio[id^="lk-audio-"]').forEach(a => { a.play().catch(() => {}); });
+  }
+  document.addEventListener('pointerdown', unlockRoomAudio, { passive: true });
+
+  // Locally mutes/unmutes everyone else's audio for just this listener —
+  // doesn't affect anyone else's mic or what other users hear.
+  function toggleDeafen(){
+    deafened = !deafened;
+    document.querySelectorAll('[id^="lk-audio-"]').forEach(el => el.muted = deafened);
+    const btn = document.getElementById('deafen-btn');
+    if(btn) btn.classList.toggle('deafened', deafened);
+    showToast(deafened ? 'Room muted for you' : 'Room unmuted for you');
+  }
+
+  async function toggleMic(){
+    if(!lkRoom || lkMode !== 'speak') return;
+    micEnabled = !micEnabled;
+    await lkRoom.localParticipant.setMicrophoneEnabled(micEnabled);
+    showToast(micEnabled ? 'Mic on' : 'Mic off');
+    // Refresh the seat menu label if it's currently open for my own seat
+    const menu = document.getElementById('seat-action-menu');
+    const micBtn = document.getElementById('seat-mic-toggle-btn');
+    if(micBtn) micBtn.textContent = micEnabled ? 'Mute mic' : 'Unmute mic';
   }
 
   let messages = [];
@@ -1160,7 +1911,7 @@
   async function loadMessages(){
     // Show cached messages instantly while the real fetch happens
     try{
-      const cached = JSON.parse(localStorage.getItem('room-messages-cache-111-' + currentUser.id) || 'null');
+      const cached = JSON.parse(localStorage.getItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id) || 'null');
       if(cached){ messages = cached; renderMessages(); }
     }catch(err){}
 
@@ -1168,13 +1919,13 @@
       .from('room_chat_clears')
       .select('cleared_at')
       .eq('user_id', currentUser.id)
-      .eq('room_id', '111')
+      .eq('room_id', ROOM_ID)
       .maybeSingle();
 
     let query = supabaseClient
       .from('room_messages')
       .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name, avatar_url, id_number)')
-      .eq('room_id', '111')
+      .eq('room_id', ROOM_ID)
       .order('created_at', { ascending: true })
       .limit(150);
 
@@ -1185,9 +1936,10 @@
       const senderName = m.profiles?.name || 'Unknown';
       const initial = senderName.charAt(0).toUpperCase();
       const avatarUrl = m.profiles?.avatar_url || null;
-      rememberProfile(senderName, { idNumber: m.profiles?.id_number || '', avatarUrl, initial });
+      rememberProfile(senderName, { userId: m.sender_id, idNumber: m.profiles?.id_number || '', avatarUrl, initial });
       return {
         from: m.sender_id === currentUser.id ? 'me' : 'them',
+        senderId: m.sender_id,
         name: senderName,
         initial,
         avatarUrl,
@@ -1196,12 +1948,12 @@
       };
     });
     renderMessages();
-    try{ localStorage.setItem('room-messages-cache-111-' + currentUser.id, JSON.stringify(messages)); }catch(err){}
+    try{ localStorage.setItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id, JSON.stringify(messages)); }catch(err){}
   }
 
   function subscribeMessages(){
-    supabaseClient.channel('room-messages-111')
-      .on('postgres_changes', { event:'INSERT', schema:'public', table:'room_messages', filter:'room_id=eq.111' }, () => {
+    supabaseClient.channel(('room-messages-' + ROOM_ID))
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'room_messages', filter:'room_id=eq.' + ROOM_ID }, () => {
         loadMessages();
       })
       .subscribe();
@@ -1219,7 +1971,7 @@
         <div class="msg-row-inner">
           <div class="reply-icon">↩</div>
           <div class="msg-name-row">
-            <span class="msg-avatar" onclick="openProfileModal('${escapeHtml(senderName)}')">${avatarHtml(avatarUrl, initial)}</span>
+            <span class="msg-avatar" onclick="openProfileFor('${attrJs(m.senderId || '')}','${attrJs(senderName)}')">${avatarHtml(avatarUrl, initial)}</span>
             <span class="sender-name copyable ${m.from === 'me' ? 'me' : ''}">${escapeHtml(senderName)}</span>
           </div>
           <span class="bubble">${quoted}${escapeHtml(m.text)}</span>
@@ -1290,7 +2042,7 @@
     const value = input.value.trim();
     if(!value) return;
     const payload = {
-      room_id: '111',
+      room_id: ROOM_ID,
       sender_id: currentUser.id,
       content: value
     };
@@ -1301,7 +2053,7 @@
     input.value = '';
     cancelReply();
     const { error } = await supabaseClient.from('room_messages').insert(payload);
-    if(error) showToast('Could not send message.');
+    if(error) showToast(/cannot send/.test(error.message || '') ? error.message : 'Could not send message.');
   }
 
   document.getElementById('text-input').addEventListener('keydown', function(e){
@@ -1329,14 +2081,29 @@
   (async function init(){
     const ok = await initAuth();
     if(!ok) return;
+    await loadRoomMembers();          // banned / kicked people stop here, before they show up in the room
+    if(accessBlocked) return;
     setupPresence();
     await loadSeats();
+    syncVoice();                      // everyone can hear the room; only seated people can speak
     subscribeSeats();
     await loadRoomInfo();
+    loadDefaultRoomTheme();
     subscribeRoomInfo();
+    subscribeRoomMembers();
+    setupEvents();
     await loadMessages();
     subscribeMessages();
   })();
+
+  // Best-effort cleanup if the tab/browser is closed without tapping Exit
+  window.addEventListener('pagehide', () => {
+    leavingRoom = true;
+    if(lkRoom){
+      lkClosing = true;
+      try{ lkRoom.disconnect(); }catch(err){}
+    }
+  });
 </script>
 
 </body>
