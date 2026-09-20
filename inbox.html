@@ -349,6 +349,47 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .toast.show{ opacity:0.95; }
 
+  /* ---------- Chat header menu + confirm dialog ---------- */
+  .friend-menu{
+    position:absolute;
+    top: 64px;
+    right: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(5,84,60,0.18);
+    padding: 6px;
+    display:none;
+    flex-direction:column;
+    min-width: 170px;
+    z-index: 20;
+  }
+  .friend-menu.show{ display:flex; }
+  .friend-menu button{
+    background:none; border:none; text-align:left; cursor:pointer;
+    padding: 12px 14px; border-radius: 10px;
+    font-family:'Inter', sans-serif; font-size:0.9rem; color: var(--ink);
+  }
+  .friend-menu button:hover{ background: var(--bg); }
+  .friend-menu button.danger{ color:#b1362f; }
+  .dialog-backdrop{
+    display:none; position:absolute; inset:0; z-index:60;
+    background: rgba(10,25,20,0.55);
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .dialog-backdrop.show{ display:flex; }
+  .dialog{ width:100%; max-width:340px; background: var(--card); border-radius:16px; padding:20px; }
+  .dialog h3{ font-family:'Fraunces', serif; font-weight:600; font-size:1.1rem; margin-bottom:8px; color: var(--ink); }
+  .dialog p{ font-size:0.86rem; color: var(--ink-soft); line-height:1.45; }
+  .dialog-actions{ display:flex; gap:10px; margin-top:16px; }
+  .dialog-actions button{
+    flex:1; border:none; padding:12px; border-radius:12px; cursor:pointer;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:0.9rem;
+  }
+  .dialog-cancel{ background: var(--bg); color: var(--ink-soft); }
+  .dialog-danger{ background:#b1362f; color:white; }
+  .dialog-danger:disabled{ opacity:0.6; }
+
   .back-link{
     background:none; border:none; color: var(--ink-soft);
     font-family:'Inter', sans-serif; font-size:0.85rem;
@@ -427,6 +468,9 @@ html, body{ overscroll-behavior-y: contain; }
       <button class="icon-btn" title="Video call">
         <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 3.5v-11l-4 3.5z"/></svg>
       </button>
+      <button class="icon-btn" id="friend-menu-btn" title="More" onclick="toggleFriendMenu(event)" style="margin-right:-8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
     </div>
 
     <div class="messages" id="messages"></div>
@@ -463,6 +507,21 @@ html, body{ overscroll-behavior-y: contain; }
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </span>
       </span>
+    </div>
+  </div>
+
+  <div class="friend-menu" id="friend-menu">
+    <button class="danger" onclick="askDeleteFriend()">Delete friend</button>
+  </div>
+
+  <div class="dialog-backdrop" id="delete-dialog" onclick="if(event.target === this) closeDeleteDialog()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title">
+      <h3 id="delete-dialog-title"></h3>
+      <p id="delete-dialog-text"></p>
+      <div class="dialog-actions">
+        <button type="button" class="dialog-cancel" onclick="closeDeleteDialog()">Cancel</button>
+        <button type="button" class="dialog-danger" id="delete-dialog-btn" onclick="confirmDeleteFriend()">Delete friend</button>
+      </div>
     </div>
   </div>
 
@@ -654,6 +713,41 @@ html, body{ overscroll-behavior-y: contain; }
     await loadMessages(id);
   }
 
+  // ---------- Chat header menu: delete friend ----------
+  function toggleFriendMenu(e){
+    e.stopPropagation();
+    document.getElementById('friend-menu').classList.toggle('show');
+  }
+  document.addEventListener('click', () => {
+    document.getElementById('friend-menu')?.classList.remove('show');
+  });
+
+  function askDeleteFriend(){
+    document.getElementById('friend-menu').classList.remove('show');
+    const f = findFriend(currentChatId);
+    if(!f) return;
+    document.getElementById('delete-dialog-title').textContent = 'Delete ' + f.name + '?';
+    document.getElementById('delete-dialog-text').textContent =
+      'They will be removed from your friends and this whole chat will be deleted for both of you. ' +
+      'To become friends again you will have to send a new friend request.';
+    document.getElementById('delete-dialog').classList.add('show');
+  }
+  function closeDeleteDialog(){
+    document.getElementById('delete-dialog').classList.remove('show');
+  }
+  async function confirmDeleteFriend(){
+    const id = currentChatId;
+    if(!id) return;
+    const btn = document.getElementById('delete-dialog-btn');
+    btn.disabled = true;
+    const { error } = await supabaseClient.rpc('delete_friend', { p_friend: id });
+    btn.disabled = false;
+    if(error){ showToast(error.message || 'Could not delete this friend.'); return; }
+    closeDeleteDialog();
+    closeChat();            // back to the list; it reloads without them
+    showToast('Friend deleted');
+  }
+
   function closeChat(){
     currentChatId = null;
     document.getElementById('screen-chat').style.display = 'none';
@@ -780,8 +874,17 @@ html, body{ overscroll-behavior-y: contain; }
       receiver_id: currentChatId,
       content: value
     });
-    if(error) showToast('Could not send message.');
-    else loadMessages(currentChatId);
+    if(error){
+      if(/row-level security|violates/i.test(error.message || '')){
+        showToast('You are no longer friends with this person.');
+        await loadFriends();
+        if(!findFriend(currentChatId)) closeChat();
+      } else {
+        showToast('Could not send message.');
+      }
+    } else {
+      loadMessages(currentChatId);
+    }
   }
 
   document.getElementById('text-input').addEventListener('keydown', function(e){

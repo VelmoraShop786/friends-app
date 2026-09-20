@@ -568,10 +568,12 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .composer input[type=text]{
     flex:1;
+    min-width:0;            /* lets the box shrink so every button in the row stays on screen */
+    width:0;
     border: none;
     background: rgba(255,255,255,0.92);
     border-radius: 20px;
-    padding: 11px 16px;
+    padding: 11px 14px;
     font-family:'Inter', sans-serif;
     font-size: 0.88rem;
     outline:none;
@@ -1842,7 +1844,9 @@ html, body{ overscroll-behavior-y: contain; }
       });
 
       await room.connect(url, token);
-      lkMode = canPublish ? 'speak' : 'listen';
+      // The mode is what THIS connection is used for. It only differs from what was wanted when the
+      // server refused to let a person speak (they weren't on a seat yet) — then the next sync retries.
+      lkMode = (want === 'speak' && !canPublish) ? 'listen' : want;
       if(canPublish && want === 'speak'){
         await room.localParticipant.setMicrophoneEnabled(true);
         micEnabled = true;
