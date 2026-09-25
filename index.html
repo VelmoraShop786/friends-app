@@ -1,6 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="rk-boot">
 <head>
+<style>
+  /* ---- boot overlay: hides the page's static placeholder markup until real data is applied ---- */
+  html.rk-boot body > *:not(#rk-boot){ visibility:hidden !important; }
+  #rk-boot{
+    position:fixed; inset:0; z-index:999999; visibility:visible !important;
+    background:var(--bg,#f4fbf8); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    font-family:'Inter',system-ui,sans-serif; font-weight:600; font-size:0.95rem; color:var(--ink,#123b2e); text-align:center; padding:24px;
+  }
+  #rk-boot .rk-boot-spin{
+    width:40px; height:40px; border-radius:50%;
+    border:4px solid color-mix(in srgb, var(--teal-deep,#05846a) 25%, transparent); border-top-color:var(--teal-deep,#05846a);
+    animation:rkbootspin .8s linear infinite;
+  }
+  @keyframes rkbootspin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ #rk-boot .rk-boot-spin{ animation-duration:2.4s; } }
+</style>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Join the Circle</title>
@@ -351,6 +368,33 @@ html, body{ overscroll-behavior-y: contain; }
 </style>
 </head>
 <body>
+<div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
+<script>
+  // Boot overlay: covers the page's placeholder markup (default theme, "ID: 000000", empty lists, demo seats)
+  // until the page itself calls rkReveal() once it has applied real (cached or live) data. A safety timer reveals
+  // the page anyway after 12 s so a bug elsewhere can never trap the person behind a spinner forever.
+  (function(){
+    var done = false;
+    window.rkReveal = function(){
+      if(done) return;
+      done = true;
+      document.documentElement.classList.remove('rk-boot');
+      var o = document.getElementById('rk-boot');
+      if(o) o.remove();
+      clearInterval(netWatch);
+      clearTimeout(safety);
+    };
+    var netWatch = setInterval(function(){
+      if(done) return;
+      var t = document.getElementById('rk-boot-text');
+      if(!t) return;
+      var bad = window.RoomKeeper && RoomKeeper.net && RoomKeeper.net.isBad();
+      t.textContent = bad ? 'Please check your network connection' : 'Loading...';
+    }, 500);
+    var safety = setTimeout(window.rkReveal, 12000);
+  })();
+</script>
+
 
 <div class="blob blob1"></div>
 <div class="blob blob2"></div>
@@ -502,18 +546,24 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="image-editor.js"></script>
+<script src="room-keeper.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
   (async function loadAppTheme(){
+    let hadCache = false;
     try{
       const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
-      if(cached) applyAppTheme(cached);
+      if(cached){ applyAppTheme(cached); hadCache = true; }
     }catch(err){}
-    const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
-    if(theme){
-      applyAppTheme(theme);
-      try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
-    }
+    if(hadCache) rkReveal();   // correct (last known) colors are already on screen — no need to wait on the network
+    try{
+      const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+      if(theme){
+        applyAppTheme(theme);
+        try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+      }
+    }catch(err){ console.error('Theme load failed:', err); }
+    rkReveal();   // first-ever visit (no cache): reveal now, themed or not — never wait on the network alone
   })();
   function applyAppTheme(theme){
     if(!theme) return;
@@ -761,7 +811,7 @@ html, body{ overscroll-behavior-y: contain; }
       return;
     }
     showStatus('Logged in — taking you to the app...', 'success');
-    setTimeout(function(){ location.href = 'home.html'; }, 700);
+    setTimeout(function(){ location.replace('home.html'); }, 700);   // replace: the login page must not sit behind the app in Back history
   });
 
   document.getElementById('signup-form').addEventListener('submit', async function(e){
@@ -811,7 +861,7 @@ html, body{ overscroll-behavior-y: contain; }
     }
 
     showStatus('Account created — taking you to the app...', 'success');
-    setTimeout(function(){ location.href = 'home.html'; }, 700);
+    setTimeout(function(){ location.replace('home.html'); }, 700);   // replace: the login page must not sit behind the app in Back history
   });
 
   // ---- Forgot password: real Supabase flow ----
