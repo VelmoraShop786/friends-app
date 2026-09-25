@@ -1,6 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="rk-boot">
 <head>
+<style>
+  /* ---- boot overlay: hides the page's static placeholder markup until real data is applied ---- */
+  html.rk-boot body > *:not(#rk-boot){ visibility:hidden !important; }
+  #rk-boot{
+    position:fixed; inset:0; z-index:999999; visibility:visible !important;
+    background:var(--bg,#f4fbf8); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    font-family:'Inter',system-ui,sans-serif; font-weight:600; font-size:0.95rem; color:var(--ink,#123b2e); text-align:center; padding:24px;
+  }
+  #rk-boot .rk-boot-spin{
+    width:40px; height:40px; border-radius:50%;
+    border:4px solid color-mix(in srgb, var(--teal-deep,#05846a) 25%, transparent); border-top-color:var(--teal-deep,#05846a);
+    animation:rkbootspin .8s linear infinite;
+  }
+  @keyframes rkbootspin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ #rk-boot .rk-boot-spin{ animation-duration:2.4s; } }
+</style>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home</title>
@@ -386,6 +403,33 @@
 </style>
 </head>
 <body>
+<div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
+<script>
+  // Boot overlay: covers the page's placeholder markup (default theme, "ID: 000000", empty lists, demo seats)
+  // until the page itself calls rkReveal() once it has applied real (cached or live) data. A safety timer reveals
+  // the page anyway after 12 s so a bug elsewhere can never trap the person behind a spinner forever.
+  (function(){
+    var done = false;
+    window.rkReveal = function(){
+      if(done) return;
+      done = true;
+      document.documentElement.classList.remove('rk-boot');
+      var o = document.getElementById('rk-boot');
+      if(o) o.remove();
+      clearInterval(netWatch);
+      clearTimeout(safety);
+    };
+    var netWatch = setInterval(function(){
+      if(done) return;
+      var t = document.getElementById('rk-boot-text');
+      if(!t) return;
+      var bad = window.RoomKeeper && RoomKeeper.net && RoomKeeper.net.isBad();
+      t.textContent = bad ? 'Please check your network connection' : 'Loading...';
+    }, 500);
+    var safety = setTimeout(window.rkReveal, 12000);
+  })();
+</script>
+
 
 <div class="phone">
 
@@ -443,7 +487,7 @@
   <!-- CHAT (rooms) -->
   <div class="screen" id="screen-chat">
     <div class="section-title">Official Room</div>
-    <div class="room-card" onclick="location.href='chatroom.html'">
+    <div class="room-card" onclick="goRoom('111')">
       <div class="mine-badge">Official</div>
       <div class="room-avatar">👥</div>
       <div>
@@ -469,15 +513,15 @@
   <div class="screen" id="screen-social">
     <div class="social-tabs">
       <button class="social-tab-btn active" id="stab-message" onclick="showSocialTab('message')">Message</button>
-      <button class="social-tab-btn" id="stab-recent" onclick="showSocialTab('recent')">Recent</button>
+      <button class="social-tab-btn" id="stab-friends" onclick="showSocialTab('friends')">Friends</button>
       <button class="social-tab-btn" id="stab-requests" onclick="showSocialTab('requests')">Requests</button>
     </div>
 
     <!-- Message sub-tab -->
     <div class="social-panel active" id="spanel-message"></div>
 
-    <!-- Recent sub-tab -->
-    <div class="social-panel" id="spanel-recent"></div>
+    <!-- Friends sub-tab: every accepted friend, messaged or not -->
+    <div class="social-panel" id="spanel-friends"></div>
 
     <!-- Requests sub-tab (Add Friends) -->
     <div class="social-panel" id="spanel-requests">
@@ -567,6 +611,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="image-editor.js"></script>
+<script src="room-keeper.js"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -709,6 +754,12 @@
     return true;
   }
 
+  // Rooms are only ever opened from a Room card (or the Kept Room card) — RoomKeeper handles the entry.
+  function goRoom(id){
+    if(window.RoomKeeper) RoomKeeper.openRoom(id);
+    else location.href = 'chatroom.html?room=' + encodeURIComponent(id);
+  }
+
   function showScreen(name){
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + name).classList.add('active');
@@ -810,16 +861,18 @@
     });
 
     renderMessageList();
-    renderRecentList();
+    renderFriendsList();
   }
 
+  // "Message" — only people you have an actual conversation with
   function renderMessageList(){
     const box = document.getElementById('spanel-message');
-    if(!homeFriends.length){
+    const withMessages = homeFriends.filter(f => f.lastAt);
+    if(!withMessages.length){
       box.innerHTML = '<p class="hint">No conversations yet.</p>';
       return;
     }
-    box.innerHTML = homeFriends.map(f => {
+    box.innerHTML = withMessages.map(f => {
       const initial = (f.name || '?').charAt(0).toUpperCase();
       return `
       <div class="friend-row" onclick="location.href='inbox.html?open=${f.id}'">
@@ -832,21 +885,22 @@
     `;}).join('');
   }
 
-  function renderRecentList(){
-    const box = document.getElementById('spanel-recent');
-    const withMessages = homeFriends.filter(f => f.lastAt);
-    if(!withMessages.length){
-      box.innerHTML = '<p class="hint">No recent conversations yet.</p>';
+  // "Friends" — everyone you're friends with, messaged or not
+  function renderFriendsList(){
+    const box = document.getElementById('spanel-friends');
+    if(!homeFriends.length){
+      box.innerHTML = '<p class="hint">No friends yet.</p>';
       return;
     }
-    box.innerHTML = withMessages.map(f => {
+    box.innerHTML = homeFriends.map(f => {
       const initial = (f.name || '?').charAt(0).toUpperCase();
+      const sub = f.lastAt ? (escapeHtml(f.lastMessage) + ' · ' + formatTimeAgo(f.lastAt)) : 'Tap to say hi 👋';
       return `
       <div class="friend-row" onclick="location.href='inbox.html?open=${f.id}'">
         <div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>
         <div>
           <div class="name copyable">${escapeHtml(f.name)}</div>
-          <div class="sub">Messaged ${formatTimeAgo(f.lastAt)} ago</div>
+          <div class="sub">${sub}</div>
         </div>
       </div>
     `;}).join('');
@@ -1138,7 +1192,7 @@
     if(room){
       myRoom = room;
       box.innerHTML = `
-        <div class="room-card" onclick="location.href='chatroom.html?room=${encodeURIComponent(room.id)}'">
+        <div class="room-card" onclick="goRoom('${escapeAttr(room.id)}')">
           <div class="mine-badge">Yours</div>
           <div class="room-avatar">${room.picture_url ? `<img src="${escapeHtml(room.picture_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '👥'}</div>
           <div style="min-width:0;">
@@ -1168,7 +1222,7 @@
     const seatRows = Array.from({length:10}, (_, i) => ({ room_id: roomId, seat_number: i+1 }));
     await supabaseClient.from('room_seats').insert(seatRows);
     showToast('Room created!');
-    location.href = 'chatroom.html?room=' + encodeURIComponent(roomId);
+    goRoom(roomId);
   }
 
   function editMyRoomName(){
@@ -1203,7 +1257,7 @@
       return;
     }
     resultBox.innerHTML = `
-      <div class="room-card" onclick="location.href='chatroom.html?room=${encodeURIComponent(room.id)}'">
+      <div class="room-card" onclick="goRoom('${escapeAttr(room.id)}')">
         <div class="mine-badge">${room.is_official ? 'Official' : 'Room'}</div>
         <div class="room-avatar">${room.picture_url ? `<img src="${escapeHtml(room.picture_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '👥'}</div>
         <div>
@@ -1230,18 +1284,28 @@
   }
 
   (async function init(){
-    await requireLoginAndLoadProfile();
-    if(!currentUser) return;
-    loadHomeFriends();
-    renderRequestLists();
-    loadMyRoomInfo();
-    loadAppTheme();
-    loadYourRoom();
-
     try{
-      const savedTab = localStorage.getItem('home-active-tab');
-      if(savedTab && savedTab !== 'battle') showScreen(savedTab);
-    }catch(err){}
+      await requireLoginAndLoadProfile();
+      if(!currentUser) return;   // redirected to login, or the profile failed to load — don't trap them
+      loadHomeFriends();
+      renderRequestLists();
+      loadMyRoomInfo();
+      loadAppTheme();
+      // Profile (live) and theme (at least cached) are on screen now — safe to reveal the real page.
+      rkReveal();
+      loadYourRoom();
+
+      try{
+        const savedTab = localStorage.getItem('home-active-tab');
+        if(savedTab && savedTab !== 'battle') showScreen(savedTab);
+      }catch(err){}
+    }catch(err){
+      // Something above failed unexpectedly (a network hiccup, a bad response, ...) — never leave the
+      // person stuck behind "Loading..."; show whatever the page already has and let them try again.
+      console.error('Home init failed:', err);
+    }finally{
+      rkReveal();
+    }
   })();
 </script>
 
