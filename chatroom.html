@@ -1,6 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="rk-boot">
 <head>
+<style>
+  /* ---- boot overlay: hides the page's static placeholder markup until real data is applied ---- */
+  html.rk-boot body > *:not(#rk-boot){ visibility:hidden !important; }
+  #rk-boot{
+    position:fixed; inset:0; z-index:999999; visibility:visible !important;
+    background:var(--bg,#f4fbf8); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    font-family:'Inter',system-ui,sans-serif; font-weight:600; font-size:0.95rem; color:var(--ink,#123b2e); text-align:center; padding:24px;
+  }
+  #rk-boot .rk-boot-spin{
+    width:40px; height:40px; border-radius:50%;
+    border:4px solid color-mix(in srgb, var(--teal-deep,#05846a) 25%, transparent); border-top-color:var(--teal-deep,#05846a);
+    animation:rkbootspin .8s linear infinite;
+  }
+  @keyframes rkbootspin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ #rk-boot .rk-boot-spin{ animation-duration:2.4s; } }
+</style>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat Room</title>
@@ -637,6 +654,12 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .role-tag.owner{ background:#ffe9a8; color:#5c3d00; }
   .role-tag.banned{ background:#fbecec; color:#b1362f; }
+  .ban-badge{
+    position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; border-radius:50%;
+    background:#e53935; color:#fff; font-size:0.65rem; display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--bg); pointer-events:none;
+  }
+  .stack-avatar{ position:relative; }
   .profile-role{ margin-top:8px; }
   .profile-actions{
     width:100%; max-width:320px; display:flex; flex-direction:column; gap:8px;
@@ -699,6 +722,33 @@ html, body{ overscroll-behavior-y: contain; }
 </style>
 </head>
 <body>
+<div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
+<script>
+  // Boot overlay: covers the page's placeholder markup (default theme, "ID: 000000", empty lists, demo seats)
+  // until the page itself calls rkReveal() once it has applied real (cached or live) data. A safety timer reveals
+  // the page anyway after 12 s so a bug elsewhere can never trap the person behind a spinner forever.
+  (function(){
+    var done = false;
+    window.rkReveal = function(){
+      if(done) return;
+      done = true;
+      document.documentElement.classList.remove('rk-boot');
+      var o = document.getElementById('rk-boot');
+      if(o) o.remove();
+      clearInterval(netWatch);
+      clearTimeout(safety);
+    };
+    var netWatch = setInterval(function(){
+      if(done) return;
+      var t = document.getElementById('rk-boot-text');
+      if(!t) return;
+      var bad = window.RoomKeeper && RoomKeeper.net && RoomKeeper.net.isBad();
+      t.textContent = bad ? 'Please check your network connection' : 'Loading...';
+    }, 500);
+    var safety = setTimeout(window.rkReveal, 12000);
+  })();
+</script>
+
 
 <div class="phone">
   <button class="power-btn" onclick="toggleExitMenu()" title="Exit room">
@@ -798,7 +848,7 @@ html, body{ overscroll-behavior-y: contain; }
     <div class="blocked-box">
       <h3 id="blocked-title"></h3>
       <p id="blocked-msg"></p>
-      <button class="dialog-save" style="width:100%; border:none; padding:13px; border-radius:12px; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer;" onclick="location.href='home.html'">Back to home</button>
+      <button class="dialog-save" style="width:100%; border:none; padding:13px; border-radius:12px; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer;" onclick="location.href='home.html'">OK</button>
     </div>
   </div>
 
@@ -863,11 +913,17 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="image-editor.js"></script>
+<script src="room-keeper.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 <script>
   // Which room this page is showing — defaults to the permanent Official Room
   // so any existing link (chatroom.html with no params) behaves exactly as before.
   const ROOM_ID = new URLSearchParams(location.search).get('room') || '111';
+
+  // The room can only be entered from the Room card or the Kept Room card — never by Back/Forward.
+  // Inside the room the phone's Back button does nothing.
+  const entryAllowed = !window.RoomKeeper || RoomKeeper.enterGuard(ROOM_ID);
+  if(entryAllowed && window.RoomKeeper) RoomKeeper.startRoomBackGuard();
 
   let currentUser = null;
   let currentProfile = null;
@@ -891,34 +947,147 @@ html, body{ overscroll-behavior-y: contain; }
   // Online members — real, via Supabase Realtime Presence (tracks who has the room open)
   let onlineMembers = []; // {id, name, initial}
 
-  function setupPresence(){
-    // Show yourself immediately so the avatar never appears blank while presence syncs
-    onlineMembers = [{
+  // People are "in the room" from two sources: live Realtime Presence (they have the room screen open)
+  // and the server's room_presence table (they Kept the room and are on another page, heartbeat still running).
+  const HEARTBEAT_MS = 4000;
+  const PRESENCE_STALE_MS = 30000;   // same 30 seconds the server uses before someone who went silent leaves the room
+  let hbTimer = null;
+  let serverPresenceOk = true;       // false if the room_presence SQL has not been installed yet
+  let realtimeMembers = [];
+  let dbPresenceRows = [];
+
+  function selfMember(){
+    return {
       id: currentUser.id,
       name: currentProfile?.name || 'You',
       avatarUrl: currentProfile?.avatar_url || null,
       idNumber: currentProfile?.id_number || '',
       initial: (currentProfile?.name || '?').charAt(0).toUpperCase()
-    }];
+    };
+  }
+
+  function recomputeOnline(){
+    const list = realtimeMembers.slice();
+    const have = new Set(list.map(m => m.id));
+    if(!have.has(currentUser.id)){ list.unshift(selfMember()); have.add(currentUser.id); }
+    dbPresenceRows.forEach(r => {
+      if(have.has(r.user_id)) return;
+      if(Date.now() - new Date(r.last_seen).getTime() > PRESENCE_STALE_MS) return;
+      const p = r.profiles || {};
+      const name = p.name || 'Unknown';
+      const initial = name.charAt(0).toUpperCase();
+      rememberProfile(name, { userId: r.user_id, idNumber: p.id_number || '', avatarUrl: p.avatar_url || null, initial });
+      list.push({ id: r.user_id, name, avatarUrl: p.avatar_url || null, idNumber: p.id_number || '', initial, away: r.status === 'kept' });
+      have.add(r.user_id);
+    });
+    onlineMembers = list;
     renderMembersStack();
+  }
+
+  async function refreshDbPresence(){
+    if(!serverPresenceOk) return;
+    const { data, error } = await supabaseClient.from('room_presence')
+      .select('user_id, status, last_seen, profiles:user_id(name, avatar_url, id_number)')
+      .eq('room_id', ROOM_ID);
+    if(error) return;
+    dbPresenceRows = data || [];
+    recomputeOnline();
+  }
+
+  // Tell the server we are in this room, then keep saying so while the page is open
+  async function enterRoomServer(){
+    try{
+      const { error } = await supabaseClient.rpc('room_enter', { p_room: ROOM_ID });
+      if(error && /room_enter|does not exist|schema cache/i.test(error.message || '')) serverPresenceOk = false;
+    }catch(err){}
+    if(!serverPresenceOk) return;
+    clearInterval(hbTimer);
+    hbTimer = setInterval(sendBeat, HEARTBEAT_MS);
+    refreshDbPresence();
+  }
+
+  async function sendBeat(){
+    if(accessBlocked || leavingRoom || !serverPresenceOk) return;
+    try{
+      const { data, error } = await supabaseClient.rpc('room_heartbeat', { p_room: ROOM_ID, p_status: 'active' });
+      if(!error && data === false){
+        // the server already removed us (no signal for a while) — seat is free, so leave the room too
+        leaveBecauseDisconnected();
+        return;
+      }
+    }catch(err){}
+    refreshDbPresence();
+  }
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) sendBeat(); });
+
+  // ---- connection cut / weak while in the room (the clock starts at the first bad check) ----
+  //   6 s  "Loading..." covers the room (RoomKeeper)
+  //  15 s  the seat is freed — the person is still in the room; if the net returns before this, nothing changes
+  //  30 s  the person leaves the room completely; coming back = the Room card, a fresh entry (no message, no seat)
+  let seatFreedByNet = false, exitedByNet = false;
+
+  function freeMySeatQuietly(){
+    try{
+      supabaseClient.from('room_seats').update({ occupied_by: null })
+        .eq('room_id', ROOM_ID).eq('occupied_by', currentUser.id).then(() => {}, () => {});
+    }catch(err){}
+  }
+
+  function leaveBecauseDisconnected(){
+    if(leavingRoom) return;
+    leavingRoom = true;
+    setScreenAwake(false);
+    clearInterval(hbTimer);
+    try{ disconnectVoice(); }catch(err){}
+    try{ supabaseClient.rpc('room_leave', { p_room: ROOM_ID }); }catch(err){}
+    freeMySeatQuietly();
+    try{ localStorage.removeItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id); }catch(err){}
+    if(window.RoomKeeper) RoomKeeper.exitAndLeave('home.html');   // silently back to Home
+    else location.href = 'home.html';
+  }
+
+  if(window.RoomKeeper && RoomKeeper.net){
+    setInterval(() => {
+      if(leavingRoom || accessBlocked) return;
+      const ms = RoomKeeper.net.outageMs();
+      if(!ms){ seatFreedByNet = false; exitedByNet = false; return; }
+      if(ms >= 15000 && !seatFreedByNet){ seatFreedByNet = true; freeMySeatQuietly(); }
+      if(ms >= 30000 && !exitedByNet){
+        exitedByNet = true;
+        clearInterval(hbTimer);
+        try{ supabaseClient.rpc('room_leave', { p_room: ROOM_ID }); }catch(err){}   // best effort; the server also does it
+      }
+    }, 1000);
+    RoomKeeper.net.onChange(s => {
+      if(s.bad || s.duration < 15000) return;
+      if(s.duration >= 30000) leaveBecauseDisconnected();          // the room was already given up
+      else { loadSeats(); reconcileVoice(); }                      // only the seat was given up: still in the room
+    });
+  }
+
+  function setupPresence(){
+    // Show yourself immediately so the avatar never appears blank while presence syncs
+    realtimeMembers = [selfMember()];
+    recomputeOnline();
 
     const channel = supabaseClient.channel(('room-presence-' + ROOM_ID), {
       config: { presence: { key: currentUser.id } }
     });
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
-      onlineMembers = Object.values(state).map(entries => {
+      realtimeMembers = Object.values(state).map(entries => {
         const e = entries[0];
         const initial = (e.name || '?').charAt(0).toUpperCase();
         rememberProfile(e.name, { userId: e.id, idNumber: e.id_number || '', avatarUrl: e.avatar_url || null, initial });
         return { id: e.id, name: e.name, avatarUrl: e.avatar_url || null, idNumber: e.id_number || '', initial };
       });
-      renderMembersStack();
+      recomputeOnline();
     });
-    // Fires when a user's connection actually drops (tab/browser closed, network lost, crash, etc.)
-    // — not just when they click Exit. This is what reliably frees their seat.
+    // A person leaving THIS screen (Keep, or closing the website) no longer frees their seat by itself:
+    // Keep must keep the seat, and a closed website is cleaned up by the server after its heartbeat stops.
+    // Only if the server-side presence SQL is missing do we fall back to the old behaviour.
     channel.on('presence', { event: 'leave' }, ({ key }) => {
-      clearSeatForUser(key);
+      if(!serverPresenceOk) clearSeatForUser(key);
     });
     channel.subscribe(async (status) => {
       if(status === 'SUBSCRIBED'){
@@ -981,7 +1150,8 @@ html, body{ overscroll-behavior-y: contain; }
     const stack = document.getElementById('members-stack');
     stack.innerHTML = onlineMembers.map(m => {
       const isMe = m.id === currentUser.id;
-      return `<div class="stack-avatar" onclick="openProfileFor('${attrJs(m.id)}','${attrJs(m.name)}')">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>`;
+      const banned = roomMembers[m.id]?.banned ? '<span class="ban-badge">🚫</span>' : '';
+      return `<div class="stack-avatar" onclick="openProfileFor('${attrJs(m.id)}','${attrJs(m.name)}')">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}${banned}</div>`;
     }).join('');
     document.getElementById('member-count-badge').textContent = onlineMembers.length;
   }
@@ -991,12 +1161,13 @@ html, body{ overscroll-behavior-y: contain; }
     document.getElementById('members-modal-list').innerHTML = onlineMembers.map(m => {
       const isMe = m.id === currentUser.id;
       const role = roleOf(m.id);
-      const sub = role === 'owner' ? 'Room owner' : (role === 'admin' ? 'Admin' : 'Member');
+      const sub = (role === 'owner' ? 'Room owner' : (role === 'admin' ? 'Admin' : 'Member')) + (m.away ? ' · away' : '');
+      const banned = roomMembers[m.id]?.banned ? '<span class="ban-badge" style="position:static; margin-left:6px; display:inline-flex;">🚫</span>' : '';
       return `
       <div class="modal-member-row" onclick="openProfileFor('${attrJs(m.id)}','${attrJs(m.name)}')">
-        <div class="avatar">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>
+        <div class="avatar" style="position:relative;">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>
         <div>
-          <div class="name copyable">${escapeHtml(m.name)}</div>
+          <div class="name copyable">${escapeHtml(m.name)}${banned}</div>
           <div class="sub">${sub}</div>
         </div>
       </div>`;
@@ -1069,14 +1240,21 @@ html, body{ overscroll-behavior-y: contain; }
     return false;
   }
 
+  let bannedByName = '';   // who banned ME, for the "You are banned from chat by X" message
   async function loadRoomMembers(){
     const { data, error } = await supabaseClient.from('room_members').select('*').eq('room_id', ROOM_ID);
     if(error){ console.error('room_members:', error.message); return; }   // table missing -> the room still works
     roomMembers = {};
     (data || []).forEach(r => { roomMembers[r.user_id] = r; });
     if(!enforceAccess()) return;
+    const mine = roomMembers[currentUser.id];
+    if(mine && mine.banned && mine.updated_by && !bannedByName){
+      const { data: banner } = await supabaseClient.from('profiles').select('name').eq('id', mine.updated_by).maybeSingle();
+      bannedByName = banner?.name || 'the owner';
+    }
     refreshInfoMenu();
     renderProfileRoleAndActions();
+    renderMembersStack();   // re-apply the 🚫 badge if anyone's ban status just changed
   }
 
   function subscribeRoomMembers(){
@@ -1088,15 +1266,13 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   // Banned / kicked people are stopped before they appear in the room, and removed the moment it happens.
+  // Kicked people are stopped before they ever see the room. Banned people ARE let in — they can watch and
+  // listen, but can't take a seat or send messages (both blocked server-side too), and everyone sees a 🚫 on them.
   function enforceAccess(){
     const m = roomMembers[currentUser.id];
     if(!m || currentUser.id === roomOwnerId) return true;
-    if(m.banned){
-      showBlocked('You are banned', 'The room owner or an admin banned you from this room.');
-      return false;
-    }
     if(isKicked(m)){
-      showBlocked('You were kicked', 'You can come back after ' + new Date(m.kicked_until).toLocaleString() + '.');
+      showBlocked('No access, you have been removed from the room', '');
       return false;
     }
     return true;
@@ -1104,10 +1280,15 @@ html, body{ overscroll-behavior-y: contain; }
   function showBlocked(title, msg){
     if(accessBlocked) return;
     accessBlocked = true;
+    rkReveal();
     disconnectVoice();
+    clearInterval(hbTimer);
+    try{ supabaseClient.rpc('room_leave', { p_room: ROOM_ID }); }catch(err){}
     try{ supabaseClient.removeAllChannels(); }catch(err){}   // leaves presence, so the seat and online list clear for everyone
     document.getElementById('blocked-title').textContent = title;
-    document.getElementById('blocked-msg').textContent = msg;
+    const msgEl = document.getElementById('blocked-msg');
+    msgEl.textContent = msg;
+    msgEl.style.display = msg ? 'block' : 'none';
     document.getElementById('blocked-screen').classList.add('show');
   }
 
@@ -1363,25 +1544,46 @@ html, body{ overscroll-behavior-y: contain; }
     document.getElementById('exit-menu').classList.toggle('show');
   }
 
-  function confirmKeep(){
-    // User stays "in" the room in whatever state they're in (seated or not) — just navigate back to home.
-    location.href = 'home.html';
+  // KEEP: leave this screen but stay in the room — seat, presence and chat are all kept.
+  async function confirmKeep(){
+    leavingRoom = true;                                   // stop voice from reconnecting
+    setScreenAwake(false);
+    clearInterval(hbTimer);
+    const mySeat = seats.findIndex(s => s.taken && s.userId === currentUser.id);
+    try{ await supabaseClient.rpc('room_heartbeat', { p_room: ROOM_ID, p_status: 'kept' }); }catch(err){}
+    await disconnectVoice();                              // the microphone can't stay open on another page
+    if(window.RoomKeeper){
+      RoomKeeper.keepAndLeave({
+        id: ROOM_ID,
+        name: lastRoom?.name || document.getElementById('room-title-display').textContent,
+        picture: lastRoom?.picture_url || '',
+        seat: mySeat >= 0 ? mySeat + 1 : null
+      }, 'home.html');
+    } else {
+      location.href = 'home.html';
+    }
   }
 
+  // EXIT: leave the room completely.
   async function confirmExit(){
-    // Fully leave: clear any seat the user holds, disconnect voice, mark their room chat view as cleared, then navigate back to home.
     leavingRoom = true;
-    await disconnectVoice();
-    await supabaseClient.from('room_seats').update({ occupied_by: null })
-      .eq('room_id',ROOM_ID).eq('occupied_by', currentUser.id);
-    const { error: clearErr } = await supabaseClient.from('room_chat_clears').upsert({
+    setScreenAwake(false);
+    clearInterval(hbTimer);
+    const quick = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), new Promise(r => setTimeout(r, ms))]);  // never hang on a weak network
+    await quick(disconnectVoice(), 3000);
+    await quick(supabaseClient.rpc('room_leave', { p_room: ROOM_ID }), 4000);
+    // (also done directly, in case the server-side function is not installed yet)
+    await quick(supabaseClient.from('room_seats').update({ occupied_by: null })
+      .eq('room_id',ROOM_ID).eq('occupied_by', currentUser.id), 4000);
+    const clearRes = await quick(supabaseClient.from('room_chat_clears').upsert({
       user_id: currentUser.id,
       room_id: ROOM_ID,
       cleared_at: new Date().toISOString()
-    }, { onConflict: 'user_id,room_id' });
-    if(clearErr) console.error('clear marker failed:', clearErr);
+    }, { onConflict: 'user_id,room_id' }), 4000);
+    if(clearRes && clearRes.error) console.error('clear marker failed:', clearRes.error);
     try{ localStorage.removeItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id); }catch(err){}
-    location.href = 'home.html';
+    if(window.RoomKeeper) RoomKeeper.exitAndLeave('home.html');
+    else location.href = 'home.html';
   }
 
   function tryChangeRoomPicture(){
@@ -1653,6 +1855,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(seatsLoadedOnce) reconcileVoice();
     seatsLoadedOnce = true;
     renderProfileRoleAndActions();
+    syncScreenAwake();
   }
 
   function subscribeSeats(){
@@ -1690,6 +1893,10 @@ html, body{ overscroll-behavior-y: contain; }
       return;
     }
 
+    if(roomMembers[currentUser.id]?.banned){
+      showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
+      return;
+    }
     if(roomMembers[currentUser.id]?.seat_blocked && !isStaff()){
       showToast('You were removed from the seats. Ask an admin to invite you back.');
       return;
@@ -1756,7 +1963,8 @@ html, body{ overscroll-behavior-y: contain; }
       .eq('room_id',ROOM_ID).eq('seat_number', seatNumber).eq('locked', false)
       .is('occupied_by', null);
     if(error){
-      showToast(/right now/.test(error.message || '') ? error.message : 'Could not take that seat.');
+      if(roomMembers[currentUser.id]?.banned) showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
+      else showToast(/right now/.test(error.message || '') ? error.message : 'Could not take that seat.');
       return;
     }
     showToast('You joined seat ' + seatNumber + ' — mic on');
@@ -1917,6 +2125,48 @@ html, body{ overscroll-behavior-y: contain; }
   async function disconnectVoice(){
     await closeLk();
   }
+
+  // ---- Screen stays on for as long as the person is IN THE ROOM (on a seat or not) ----
+  // A phone that turns its screen off pauses the page (no heartbeat, no voice) and the person would be dropped from
+  // the room. The browser's "Wake Lock" keeps the screen awake while they are in the room. The browser drops the lock
+  // by itself whenever the page is hidden, so it is taken again when the person is back, and again on taps if the
+  // phone refused the first time (Battery saver can refuse it).
+  let wakeLock = null;
+  let wakeLockWarned = false;
+  let wakeLockBusy = false;   // true while a request('screen') is in flight — two syncScreenAwake() calls can
+                               // otherwise both see wakeLock===null and both request a lock before either resolves
+  async function setScreenAwake(on){
+    if(!('wakeLock' in navigator)) return;                 // very old browser: nothing we can do
+    if(wakeLockBusy) return;                                // another request/release is already in flight; it will settle this
+    try{
+      if(on){
+        if(wakeLock && !wakeLock.released) return;
+        wakeLockBusy = true;
+        const lock = await navigator.wakeLock.request('screen');
+        wakeLock = lock;
+        wakeLockWarned = false;
+        lock.addEventListener('release', () => { if(wakeLock === lock) wakeLock = null; });
+      } else if(wakeLock){
+        wakeLockBusy = true;
+        const lock = wakeLock; wakeLock = null;
+        await lock.release();
+      }
+    }catch(err){
+      // refused (battery saver / power saving) — the room keeps working; say so once, retried on the next tap
+      if(on && !wakeLockWarned){
+        wakeLockWarned = true;
+        showToast('Your phone won\'t keep the screen on. Turn off Battery saver or raise Screen timeout.');
+      }
+    }finally{
+      wakeLockBusy = false;
+    }
+  }
+  function syncScreenAwake(){
+    const inRoom = !!currentUser && !leavingRoom && !accessBlocked;
+    setScreenAwake(inRoom && !document.hidden);
+  }
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) syncScreenAwake(); });
+  document.addEventListener('pointerdown', () => { if(!wakeLock) syncScreenAwake(); }, { passive: true });
 
   // Browsers only start sound after a tap — the first tap anywhere in the room switches it on.
   function unlockRoomAudio(){
@@ -2082,6 +2332,10 @@ html, body{ overscroll-behavior-y: contain; }
     const input = document.getElementById('text-input');
     const value = input.value.trim();
     if(!value) return;
+    if(roomMembers[currentUser.id]?.banned){
+      showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
+      return;
+    }
     const payload = {
       room_id: ROOM_ID,
       sender_id: currentUser.id,
@@ -2094,7 +2348,10 @@ html, body{ overscroll-behavior-y: contain; }
     input.value = '';
     cancelReply();
     const { error } = await supabaseClient.from('room_messages').insert(payload);
-    if(error) showToast(/cannot send/.test(error.message || '') ? error.message : 'Could not send message.');
+    if(error){
+      if(roomMembers[currentUser.id]?.banned) showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
+      else showToast(/cannot send/.test(error.message || '') ? error.message : 'Could not send message.');
+    }
   }
 
   document.getElementById('text-input').addEventListener('keydown', function(e){
@@ -2120,21 +2377,34 @@ html, body{ overscroll-behavior-y: contain; }
   // Room picture upload handled by the Storage-backed listener above (loadRoomInfo/subscribeRoomInfo)
 
   (async function init(){
-    const ok = await initAuth();
-    if(!ok) return;
-    await loadRoomMembers();          // banned / kicked people stop here, before they show up in the room
-    if(accessBlocked) return;
-    setupPresence();
-    await loadSeats();
-    syncVoice();                      // everyone can hear the room; only seated people can speak
-    subscribeSeats();
-    await loadRoomInfo();
-    loadDefaultRoomTheme();
-    subscribeRoomInfo();
-    subscribeRoomMembers();
-    setupEvents();
-    await loadMessages();
-    subscribeMessages();
+    if(!entryAllowed) return;         // opened by Back/Forward or a stray link: RoomKeeper already sent us home
+    try{
+      const ok = await initAuth();
+      if(!ok) return;                 // not signed in — RoomKeeper is sending them to the login page
+      await loadRoomMembers();        // banned / kicked people stop here, before they show up in the room
+      if(accessBlocked) return;
+      await enterRoomServer();        // registers presence; seat + presence stay until Exit or the website closes
+      syncScreenAwake();              // the screen stays on while in the room
+      setupPresence();
+      await loadSeats();
+      syncVoice();                    // everyone can hear the room; only seated people can speak
+      subscribeSeats();
+      await loadRoomInfo();
+      loadDefaultRoomTheme();
+      rkReveal();   // seats, online count, room name/id/picture and theme are all real now — safe to show the room
+      subscribeRoomInfo();
+      subscribeRoomMembers();
+      setupEvents();
+      await loadMessages();
+      subscribeMessages();
+    }catch(err){
+      // Something above failed unexpectedly — never leave the person stuck behind "Loading...";
+      // show whatever the room already has rather than trap them on a spinner forever.
+      console.error('Room init failed:', err);
+      showToast('Something went wrong loading the room.');
+    }finally{
+      rkReveal();
+    }
   })();
 
   // Best-effort cleanup if the tab/browser is closed without tapping Exit
