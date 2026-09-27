@@ -1,6 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="rk-boot">
 <head>
+<style>
+  /* ---- boot overlay: hides the page's static placeholder markup until real data is applied ---- */
+  html.rk-boot body > *:not(#rk-boot){ visibility:hidden !important; }
+  #rk-boot{
+    position:fixed; inset:0; z-index:999999; visibility:visible !important;
+    background:var(--bg,#f4fbf8); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    font-family:'Inter',system-ui,sans-serif; font-weight:600; font-size:0.95rem; color:var(--ink,#123b2e); text-align:center; padding:24px;
+  }
+  #rk-boot .rk-boot-spin{
+    width:40px; height:40px; border-radius:50%;
+    border:4px solid color-mix(in srgb, var(--teal-deep,#05846a) 25%, transparent); border-top-color:var(--teal-deep,#05846a);
+    animation:rkbootspin .8s linear infinite;
+  }
+  @keyframes rkbootspin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ #rk-boot .rk-boot-spin{ animation-duration:2.4s; } }
+</style>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inbox</title>
@@ -54,7 +71,6 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   /* ---------- Chat list screen ---------- */
-  #screen-list{ display:flex; flex-direction:column; flex:1; }
 
   .list-header{
     padding: 22px 20px 14px;
@@ -134,7 +150,7 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   /* ---------- Conversation screen ---------- */
-  #screen-chat{ display:none; flex-direction:column; flex:1; height:100vh; }
+  #screen-chat{ display:flex; flex-direction:column; flex:1; height:100vh; }
 
   .chat-header{
     display:flex;
@@ -243,6 +259,26 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .bubble-row.me .quoted-reply{ background: rgba(255,255,255,0.18); border-left-color: white; }
   .quoted-reply .q-name{ font-weight:700; }
+
+  /* ---------- Long-press menu on a message: Copy / Reply / Delete ---------- */
+  .msg-menu-backdrop{
+    display:none; position:fixed; inset:0; z-index:70;
+    background: rgba(10,25,20,0.35);
+    align-items:flex-end; justify-content:center;
+  }
+  .msg-menu-backdrop.show{ display:flex; }
+  .msg-menu{
+    width:100%; max-width:420px; background: var(--card);
+    border-radius:18px 18px 0 0; padding: 8px 0 max(8px, env(safe-area-inset-bottom, 0px));
+  }
+  .msg-menu button{
+    display:flex; align-items:center; gap:12px; width:100%; border:none; background:none; cursor:pointer;
+    text-align:left; padding: 14px 20px; font-family:'Inter', sans-serif; font-size:0.92rem; color: var(--ink);
+  }
+  .msg-menu button:active{ background: var(--bg); }
+  .msg-menu button.danger{ color:#b1362f; }
+  .msg-menu .msg-menu-icon{ width:20px; text-align:center; flex-shrink:0; }
+
 
   .reply-preview-bar{
     display:none;
@@ -434,24 +470,37 @@ html, body{ overscroll-behavior-y: contain; }
 </style>
 </head>
 <body>
+<div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
+<script>
+  // Boot overlay: covers the page's placeholder markup (default theme, "ID: 000000", empty lists, demo seats)
+  // until the page itself calls rkReveal() once it has applied real (cached or live) data. A safety timer reveals
+  // the page anyway after 12 s so a bug elsewhere can never trap the person behind a spinner forever.
+  (function(){
+    var done = false;
+    window.rkReveal = function(){
+      if(done) return;
+      done = true;
+      document.documentElement.classList.remove('rk-boot');
+      var o = document.getElementById('rk-boot');
+      if(o) o.remove();
+      clearInterval(netWatch);
+      clearTimeout(safety);
+    };
+    var netWatch = setInterval(function(){
+      if(done) return;
+      var t = document.getElementById('rk-boot-text');
+      if(!t) return;
+      var bad = window.RoomKeeper && RoomKeeper.net && RoomKeeper.net.isBad();
+      t.textContent = bad ? 'Please check your network connection' : 'Loading...';
+    }, 500);
+    var safety = setTimeout(window.rkReveal, 12000);
+  })();
+</script>
+
 
 <div class="phone">
 
-  <!-- CHAT LIST -->
-  <div id="screen-list">
-    <div class="list-header">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <button class="icon-btn" onclick="location.href='home.html'" title="Back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <h1>Inbox</h1>
-      </div>
-    </div>
-    <div class="search-pill">🔍 Search your chats</div>
-    <div class="chat-list" id="chat-list"></div>
-  </div>
-
-  <!-- CONVERSATION -->
+  <!-- CONVERSATION — the only screen this page shows; the friend list lives on home.html's Social tab -->
   <div id="screen-chat">
     <div class="chat-header">
       <button class="icon-btn" onclick="closeChat()" title="Back">
@@ -525,23 +574,49 @@ html, body{ overscroll-behavior-y: contain; }
     </div>
   </div>
 
+  <div class="msg-menu-backdrop" id="msg-menu" onclick="if(event.target === this) closeMsgMenu()">
+    <div class="msg-menu">
+      <button type="button" onclick="msgMenuCopy()"><span class="msg-menu-icon">📋</span>Copy</button>
+      <button type="button" onclick="msgMenuReply()"><span class="msg-menu-icon">↩️</span>Reply</button>
+      <button type="button" class="danger" id="msg-menu-delete" onclick="askDeleteMessage()"><span class="msg-menu-icon">🗑️</span>Delete</button>
+    </div>
+  </div>
+
+  <div class="dialog-backdrop" id="delete-msg-dialog" onclick="if(event.target === this) closeDeleteMsgDialog()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-msg-dialog-title">
+      <h3 id="delete-msg-dialog-title">Delete this message?</h3>
+      <p>This removes it for both of you. This can't be undone.</p>
+      <div class="dialog-actions">
+        <button type="button" class="dialog-cancel" onclick="closeDeleteMsgDialog()">Cancel</button>
+        <button type="button" class="dialog-danger" id="delete-msg-dialog-btn" onclick="confirmDeleteMessage()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+
   <div class="toast" id="toast"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="room-keeper.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
   (async function loadAppTheme(){
+    let hadCache = false;
     try{
       const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
-      if(cached) applyAppTheme(cached);
+      if(cached){ applyAppTheme(cached); hadCache = true; }
     }catch(err){}
-    const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
-    if(theme){
-      applyAppTheme(theme);
-      try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
-    }
+    if(hadCache) rkReveal();
+    try{
+      const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+      if(theme){
+        applyAppTheme(theme);
+        try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+      }
+    }catch(err){ console.error('Theme load failed:', err); }
+    rkReveal();
   })();
   function applyAppTheme(theme){
     if(!theme) return;
@@ -611,8 +686,7 @@ html, body{ overscroll-behavior-y: contain; }
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
       onlineIds = new Set(Object.keys(state));
-      renderList();
-      updateChatHeaderStatus();
+      updateChatHeaderStatus();   // no list screen any more to refresh — just the current chat's online dot
     });
     channel.subscribe(async (status) => {
       if(status === 'SUBSCRIBED'){
@@ -665,7 +739,9 @@ html, body{ overscroll-behavior-y: contain; }
       return new Date(b.lastAt) - new Date(a.lastAt);
     });
 
-    renderList();
+    // No list screen here any more — the friend list lives on home.html's Social tab.
+    // If the person we're chatting with was removed as a friend while we're open, leave the chat.
+    if(currentChatId && !findFriend(currentChatId)) closeChat();
   }
 
   function findFriend(id){
@@ -685,26 +761,6 @@ html, body{ overscroll-behavior-y: contain; }
     document.getElementById('profile-modal').classList.remove('show');
   }
 
-  function renderList(){
-    const list = document.getElementById('chat-list');
-    if(!friends.length){
-      list.innerHTML = '<p style="padding:20px; color:var(--ink-soft); font-size:0.85rem;">No conversations yet — accept a friend request to start chatting.</p>';
-      return;
-    }
-    list.innerHTML = friends.map(f => {
-      const initial = (f.name || '?').charAt(0).toUpperCase();
-      const isOnline = onlineIds.has(f.id);
-      return `
-      <div class="chat-row" onclick="openChat('${f.id}')">
-        <div class="avatar" onclick="event.stopPropagation(); openProfileModal('${f.id}')" style="cursor:pointer;">${avatarHtml(f.avatarUrl, initial)}${isOnline ? '<span class="dot"></span>' : ''}</div>
-        <div class="chat-meta">
-          <div class="row1"><span class="name copyable">${escapeHtml(f.name)}</span><span class="time">${formatTimeAgo(f.lastAt)}</span></div>
-          <div class="row1"><span class="preview">${escapeHtml(f.lastMessage)}</span></div>
-        </div>
-      </div>
-    `;}).join('');
-  }
-
   async function openChat(id){
     currentChatId = id;
     const f = findFriend(id);
@@ -712,8 +768,6 @@ html, body{ overscroll-behavior-y: contain; }
     document.getElementById('chat-name').textContent = f.name;
     document.getElementById('chat-avatar').innerHTML = avatarHtml(f.avatarUrl, (f.name || '?').charAt(0).toUpperCase());
     updateChatHeaderStatus();
-    document.getElementById('screen-list').style.display = 'none';
-    document.getElementById('screen-chat').style.display = 'flex';
     cancelReply();
     await loadMessages(id);
   }
@@ -754,11 +808,10 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   function closeChat(){
-    currentChatId = null;
-    document.getElementById('screen-chat').style.display = 'none';
-    document.getElementById('screen-list').style.display = 'flex';
-    document.getElementById('attach-menu')?.classList.remove('show');
-    loadFriends();
+    // This page only ever shows one conversation — there is no inbox list screen any more.
+    // The friend list lives on home.html's Social tab (Message / Friends / Requests), which is
+    // where the Back arrow (and RoomKeeper's Back handling) should land.
+    location.href = 'home.html';
   }
 
   async function loadMessages(friendId){
@@ -816,18 +869,26 @@ html, body{ overscroll-behavior-y: contain; }
       const inner = row.querySelector('.bubble-row-inner');
       const icon = row.querySelector('.reply-icon');
       const isMe = row.classList.contains('me');
-      let startX = 0, dragging = false, dx = 0;
+      let startX = 0, dragging = false, dx = 0, pressTimer = null;
 
-      function start(x){ startX = x; dragging = true; }
+      function clearPressTimer(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } }
+      function start(x){
+        startX = x; dragging = true; dx = 0;
+        clearPressTimer();
+        // Holding still (not swiping) for a moment opens Copy / Reply / Delete for this message.
+        pressTimer = setTimeout(() => { openMsgMenu(row); dragging = false; }, 480);
+      }
       function move(x){
         if(!dragging) return;
         dx = x - startX;
+        if(Math.abs(dx) > 8) clearPressTimer();   // it's a swipe, not a long press
         const valid = isMe ? dx < 0 : dx > 0;
         const clamped = valid ? Math.max(Math.min(dx, 60), -60) : 0;
         inner.style.transform = `translateX(${clamped}px)`;
         icon.classList.toggle('show', Math.abs(clamped) > 24);
       }
       function end(){
+        clearPressTimer();
         if(!dragging) return;
         dragging = false;
         const valid = isMe ? dx < -40 : dx > 40;
@@ -846,7 +907,60 @@ html, body{ overscroll-behavior-y: contain; }
       inner.addEventListener('mousemove', e => move(e.clientX));
       inner.addEventListener('mouseup', end);
       inner.addEventListener('mouseleave', end);
+      inner.addEventListener('contextmenu', e => e.preventDefault());   // our own menu replaces the browser's
     });
+  }
+
+  // ---------- Long-press menu on a message: Copy / Reply / Delete ----------
+  let msgMenuIndex = null;
+  function openMsgMenu(row){
+    const i = parseInt(row.dataset.index, 10);
+    if(Number.isNaN(i) || !messages[i]) return;
+    msgMenuIndex = i;
+    const isMine = messages[i].from === 'me';
+    document.getElementById('msg-menu-delete').style.display = isMine ? 'flex' : 'none';
+    document.getElementById('msg-menu').classList.add('show');
+    if(navigator.vibrate) navigator.vibrate(12);
+  }
+  function closeMsgMenu(){
+    document.getElementById('msg-menu').classList.remove('show');
+  }
+  function msgMenuCopy(){
+    const m = messages[msgMenuIndex];
+    closeMsgMenu();
+    if(!m) return;
+    navigator.clipboard?.writeText(m.text).then(
+      () => showToast('Copied'),
+      () => showToast('Could not copy')
+    );
+  }
+  function msgMenuReply(){
+    const m = messages[msgMenuIndex];
+    closeMsgMenu();
+    if(!m) return;
+    const senderName = m.from === 'me' ? (currentProfile?.name || 'You') : (findFriend(currentChatId)?.name || 'Them');
+    startReply(senderName, m.text);
+  }
+  function askDeleteMessage(){
+    closeMsgMenu();
+    if(msgMenuIndex == null || !messages[msgMenuIndex]) return;
+    document.getElementById('delete-msg-dialog').classList.add('show');
+  }
+  function closeDeleteMsgDialog(){
+    document.getElementById('delete-msg-dialog').classList.remove('show');
+  }
+  async function confirmDeleteMessage(){
+    const m = messages[msgMenuIndex];
+    if(!m || !m.id) { closeDeleteMsgDialog(); return; }
+    const btn = document.getElementById('delete-msg-dialog-btn');
+    btn.disabled = true;
+    const { error } = await supabaseClient.from('direct_messages').delete().eq('id', m.id);
+    btn.disabled = false;
+    closeDeleteMsgDialog();
+    if(error){ showToast(error.message || 'Could not delete the message.'); return; }
+    messages = messages.filter(x => x.id !== m.id);
+    renderMessages();
+    showToast('Message deleted');
   }
 
   function startReply(name, text){
@@ -913,15 +1027,23 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   (async function init(){
-    const ok = await initAuth();
-    if(!ok) return;
-    setupOnlinePresence();
-    await loadFriends();
-    subscribeMessages();
+    try{
+      const urlParams = new URLSearchParams(location.search);
+      const openId = urlParams.get('open');
+      if(!openId){ location.replace('home.html'); return; }   // nothing to show on this page without a friend to chat with
 
-    const urlParams = new URLSearchParams(location.search);
-    const openId = urlParams.get('open');
-    if(openId) openChat(openId);
+      const ok = await initAuth();
+      rkReveal();   // safety net: reveal even if there is no theme row yet, or the fetch above is slow
+      if(!ok) return;
+      setupOnlinePresence();
+      await loadFriends();
+      subscribeMessages();
+      openChat(openId);
+    }catch(err){
+      console.error('Inbox init failed:', err);
+    }finally{
+      rkReveal();
+    }
   })();
 </script>
 
