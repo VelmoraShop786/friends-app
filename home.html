@@ -501,12 +501,6 @@
       <p class="hint">Loading...</p>
     </div>
 
-    <div class="section-title" style="margin-top:26px;">Find a Room</div>
-    <div class="search-box">
-      <input type="text" id="room-search-input" placeholder="Enter a room ID" inputmode="numeric">
-      <button onclick="searchRoomById()">Search</button>
-    </div>
-    <div id="room-search-result"></div>
   </div>
 
   <!-- SOCIAL -->
@@ -538,7 +532,14 @@
       </div>
       <p class="hint">Friends can be found by ID number only — usernames aren't searchable since they can change.</p>
       <div class="status" id="status-box"></div>
-      <div id="search-result"></div>
+      <div id="search-result-tabs" style="display:none;">
+        <div class="social-tabs" style="margin: 10px 0;">
+          <button class="social-tab-btn" id="srtab-users" onclick="showSearchResultTab('users')">Users</button>
+          <button class="social-tab-btn" id="srtab-rooms" onclick="showSearchResultTab('rooms')">Rooms</button>
+        </div>
+        <div id="search-result-users"></div>
+        <div id="search-result-rooms" style="display:none;"></div>
+      </div>
       <div class="section-title">Pending requests</div>
       <div id="pending-requests"></div>
       <div class="section-title">Sent requests</div>
@@ -927,10 +928,16 @@
       : initial;
   }
 
+  // Searching an ID number looks up both that person's account (Users) and, if they've made one, their
+  // room (Rooms) — a room's ID is the same as its owner's account ID, so both use the same search value.
   async function searchById(){
     const value = document.getElementById('search-input').value.trim();
-    const resultBox = document.getElementById('search-result');
-    resultBox.innerHTML = '';
+    const tabsBox = document.getElementById('search-result-tabs');
+    const usersBox = document.getElementById('search-result-users');
+    const roomsBox = document.getElementById('search-result-rooms');
+    tabsBox.style.display = 'none';
+    usersBox.innerHTML = '';
+    roomsBox.innerHTML = '';
     if(!/^[0-9]+$/.test(value)){
       showStatus('Enter a valid ID number.', 'error');
       return;
@@ -939,11 +946,10 @@
       showStatus("That's your own ID.", 'error');
       return;
     }
-    const { data: user, error } = await supabaseClient
-      .from('profiles')
-      .select('id, name, id_number, avatar_url')
-      .eq('id_number', value)
-      .maybeSingle();
+    const [{ data: user, error }, { data: room }] = await Promise.all([
+      supabaseClient.from('profiles').select('id, name, id_number, avatar_url').eq('id_number', value).maybeSingle(),
+      supabaseClient.from('rooms').select('*').eq('id', value).maybeSingle()
+    ]);
 
     if(error || !user){
       showStatus('No account found with that ID.', 'error');
@@ -951,12 +957,30 @@
     }
     hideStatus();
     const initial = (user.name || '?').charAt(0).toUpperCase();
-    resultBox.innerHTML =
-      '<div class="section-title">Result</div>' +
+    usersBox.innerHTML =
       '<div class="friend-row" style="cursor:pointer;" onclick="openProfileModal(\'' + escapeAttr(user.name) + '\', ' + (user.avatar_url ? "'" + user.avatar_url + "'" : 'null') + ', \'' + user.id_number + '\')">' +
       '<div class="avatar">' + avatarHtml(user.avatar_url, initial) + '</div>' +
       '<div><div class="name copyable">' + escapeHtml(user.name) + '</div></div>' +
       '<button class="action-btn add-btn" style="margin-left:auto;" onclick="event.stopPropagation(); sendRequest(\'' + user.id + '\', this)">Add</button></div>';
+    roomsBox.innerHTML = room
+      ? `<div class="room-card" onclick="goRoom('${escapeAttr(room.id)}')">
+          <div class="mine-badge">${room.is_official ? 'Official' : 'Room'}</div>
+          <div class="room-avatar">${room.picture_url ? `<img src="${escapeHtml(room.picture_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '👥'}</div>
+          <div>
+            <div class="room-name">${escapeHtml(room.name)}</div>
+            <div class="room-id">ID: ${escapeHtml(room.id)} — tap to join</div>
+          </div>
+        </div>`
+      : '<p class="hint">This person hasn\'t created a room yet.</p>';
+    tabsBox.style.display = 'block';
+    showSearchResultTab('users');
+  }
+
+  function showSearchResultTab(which){
+    document.getElementById('srtab-users').classList.toggle('active', which === 'users');
+    document.getElementById('srtab-rooms').classList.toggle('active', which === 'rooms');
+    document.getElementById('search-result-users').style.display = which === 'users' ? 'block' : 'none';
+    document.getElementById('search-result-rooms').style.display = which === 'rooms' ? 'block' : 'none';
   }
 
   // For text placed inside an inline onclick='...' handler
@@ -1236,35 +1260,6 @@
       loadYourRoom();
       return true;
     });
-  }
-
-  async function searchRoomById(){
-    const value = document.getElementById('room-search-input').value.trim();
-    const resultBox = document.getElementById('room-search-result');
-    resultBox.innerHTML = '';
-    if(!/^[0-9]+$/.test(value)){
-      showToast('Enter a valid room ID.');
-      return;
-    }
-    const { data: room, error } = await supabaseClient
-      .from('rooms')
-      .select('*')
-      .eq('id', value)
-      .maybeSingle();
-
-    if(error || !room){
-      resultBox.innerHTML = '<p class="hint">No room found with that ID.</p>';
-      return;
-    }
-    resultBox.innerHTML = `
-      <div class="room-card" onclick="goRoom('${escapeAttr(room.id)}')">
-        <div class="mine-badge">${room.is_official ? 'Official' : 'Room'}</div>
-        <div class="room-avatar">${room.picture_url ? `<img src="${escapeHtml(room.picture_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '👥'}</div>
-        <div>
-          <div class="room-name">${escapeHtml(room.name)}</div>
-          <div class="room-id">ID: ${escapeHtml(room.id)} — tap to join</div>
-        </div>
-      </div>`;
   }
 
   async function loadMyRoomInfo(){
