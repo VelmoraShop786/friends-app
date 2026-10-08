@@ -248,6 +248,39 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .avatar-note{ font-size: 0.8rem; color: var(--ink-soft); }
 
+  select{
+    border: 1.5px solid var(--line);
+    background: #fbfdfc;
+    border-radius: 10px;
+    padding: 12px 10px;
+    font-family:'Inter', sans-serif;
+    font-size: 0.95rem;
+    color: var(--ink);
+    outline:none;
+    width:100%;
+    min-width:0;
+  }
+  select:focus{ border-color: var(--teal); background:#ffffff; }
+  .row2{ display:flex; gap:10px; }
+  .row2 select{ flex:1; }
+  label .tp-count{ float:right; }
+  .seg{ display:flex; gap:10px; }
+  .seg button{
+    flex:1;
+    border: 1.5px solid var(--line);
+    background:#fbfdfc;
+    color: var(--ink-soft);
+    border-radius:10px;
+    padding: 11px 8px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.92rem;
+    cursor:pointer;
+  }
+  .seg button.active[data-v="male"]{ background:#e8f0ff; border-color:#3b82f6; color:#1d4ed8; }
+  .seg button.active[data-v="female"]{ background:#ffe8f3; border-color:#ec4899; color:#be185d; }
+  .field-hint{ font-size:0.76rem; color: var(--ink-soft); margin-top:6px; }
+
   .id-toggle{
     display:flex;
     gap: 4px;
@@ -458,8 +491,27 @@ html, body{ overscroll-behavior-y: contain; }
         <span class="avatar-note">Optional — you can add this later too.</span>
       </div>
       <div class="field">
-        <label for="signup-name">Name</label>
-        <input type="text" id="signup-name" placeholder="Your name" required>
+        <label for="signup-name">Name <span class="tp-count" id="signup-name-count">0/18</span></label>
+        <input type="text" id="signup-name" placeholder="Your name (max 18 characters)" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <div class="seg" id="signup-gender">
+          <button type="button" data-v="male">&#9794;&#xFE0E; Male</button>
+          <button type="button" data-v="female">&#9792;&#xFE0E; Female</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Date of birth</label>
+        <div class="row2">
+          <select id="signup-dob-day" aria-label="Birth day"></select>
+          <select id="signup-dob-month" aria-label="Birth month"></select>
+        </div>
+        <span class="field-hint">Only day and month — the year is not asked or shown.</span>
+      </div>
+      <div class="field">
+        <label for="signup-country">Country</label>
+        <select id="signup-country"></select>
       </div>
       <div class="id-toggle">
         <button type="button" class="active" id="signup-id-email" onclick="setIdMode('signup','email')">Email</button>
@@ -474,14 +526,14 @@ html, body{ overscroll-behavior-y: contain; }
 
       <div class="field" id="signup-otp-field" style="display:none;">
         <label for="signup-otp">Verification code</label>
-        <input type="text" id="signup-otp" placeholder="Enter your OTP code" inputmode="numeric" maxlength="8">
+        <input type="text" id="signup-otp" placeholder="Enter the 6-digit code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6">
       </div>
       <p class="sub" id="signup-otp-note" style="display:none; margin-top:-10px;"></p>
       <button type="button" class="submit-btn" id="signup-verify-btn" style="display:none;" onclick="verifySignupCode()">Verify code</button>
 
       <div class="field" id="signup-password-field" style="display:none;">
         <label for="signup-password">Password</label>
-        <input type="password" id="signup-password" placeholder="At least 6 characters" minlength="6">
+        <input type="password" id="signup-password" placeholder="At least 8 characters, letters + numbers" minlength="8">
       </div>
       <button type="submit" class="submit-btn" id="signup-create-btn" style="display:none;">Create account</button>
       <p class="switch-line">Already have an account? <button type="button" onclick="showForm('login')">Log in</button></p>
@@ -519,8 +571,6 @@ html, body{ overscroll-behavior-y: contain; }
         <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
         <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
         <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
-        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
-        <input type="text" maxlength="1" inputmode="numeric" class="otp-box" data-group="forgot">
       </div>
       <p class="resend-line">Didn't get a code? <button type="button" onclick="showStatus('Code resent.', 'success')">Resend</button></p>
       <button type="button" class="submit-btn" id="forgot-verify-btn" style="margin-top:20px;" onclick="verifyForgotCode()">Verify code</button>
@@ -532,7 +582,7 @@ html, body{ overscroll-behavior-y: contain; }
       <p class="sub">Choose something you'll remember.</p>
       <div class="field">
         <label for="new-password">New password</label>
-        <input type="password" id="new-password" placeholder="At least 6 characters" minlength="6">
+        <input type="password" id="new-password" placeholder="At least 8 characters, letters + numbers" minlength="8">
       </div>
       <div class="field">
         <label for="confirm-password">Confirm password</label>
@@ -545,6 +595,8 @@ html, body{ overscroll-behavior-y: contain; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="text-policy.js"></script>
+<script src="profile-extras.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script>
@@ -584,6 +636,42 @@ html, body{ overscroll-behavior-y: contain; }
 </script>
 <script>
   const extraViews = ['view-forgot-request', 'view-forgot-otp', 'view-forgot-reset'];
+
+  // Password policy: at least 8 characters and BOTH letters and numbers (digits-only or letters-only is rejected)
+  function passwordProblem(pw){
+    if(!pw || pw.length < 8) return 'Password must be at least 8 characters.';
+    if(!/[0-9]/.test(pw)) return 'Password must also contain at least one number.';
+    if(!/[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u0600-\u06FF\u0900-\u097F]/.test(pw)) return 'Password must also contain at least one letter.';
+    return '';
+  }
+
+  // ---- Signup profile details: name policy, gender, date of birth (day + month), country ----
+  TextPolicy.bind(document.getElementById('signup-name'), 'name', { counter: 'signup-name-count' });
+  ProfileExtras.fillDaySelect(document.getElementById('signup-dob-day'), '', '');
+  ProfileExtras.fillMonthSelect(document.getElementById('signup-dob-month'), '');
+  ProfileExtras.linkDayToMonth(document.getElementById('signup-dob-day'), document.getElementById('signup-dob-month'));
+  ProfileExtras.fillCountrySelect(document.getElementById('signup-country'), '');
+  let signupGender = '';
+  document.querySelectorAll('#signup-gender button').forEach(function(b){
+    b.addEventListener('click', function(){
+      signupGender = b.getAttribute('data-v');
+      document.querySelectorAll('#signup-gender button').forEach(function(x){ x.classList.toggle('active', x === b); });
+    });
+  });
+
+  // Returns { ok, error, name, extras } — used before the code is sent and again when the account is created.
+  function readSignupDetails(){
+    const n = TextPolicy.check(document.getElementById('signup-name').value, 'name');
+    if(!n.ok) return { ok:false, error: n.error };
+    const e = ProfileExtras.validate({
+      gender: signupGender,
+      day: document.getElementById('signup-dob-day').value,
+      month: document.getElementById('signup-dob-month').value,
+      country: document.getElementById('signup-country').value
+    });
+    if(!e.ok) return { ok:false, error: e.error };
+    return { ok:true, error:'', name: n.value, extras: e.values };
+  }
 
   // Signup profile picture: pick from gallery -> edit (zoom / move) -> Done keeps the edited picture
   let selectedAvatarBlob = null;
@@ -657,6 +745,11 @@ html, body{ overscroll-behavior-y: contain; }
     hideStatus();
   }
 
+  // Signup code box: digits only (letters / spaces are removed as you type or paste), max 6
+  document.getElementById('signup-otp').addEventListener('input', function(){
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+  });
+
   document.querySelectorAll('.otp-box').forEach(function(box, idx, all){
     box.addEventListener('input', function(){
       box.value = box.value.replace(/[^0-9]/g, '');
@@ -689,12 +782,28 @@ html, body{ overscroll-behavior-y: contain; }
   async function sendSignupCode(){
     const isPhone = document.getElementById('signup-id-phone').classList.contains('active');
     const value = document.getElementById('signup-email').value.trim();
+    const details = readSignupDetails();
+    if(!details.ok){
+      showStatus(details.error, 'error');
+      return;
+    }
     if(!value){
       showStatus(isPhone ? 'Enter your phone number first.' : 'Enter your email first.', 'error');
       return;
     }
     const btn = document.getElementById('signup-send-code-btn');
     btn.disabled = true; btn.textContent = 'Sending...';
+
+    // One account per email / phone number: refuse before a code is even sent.
+    // (If the server function isn't installed yet this check is skipped and signup works as before.)
+    try{
+      const { data: taken, error: takenErr } = await supabaseClient.rpc('contact_taken', { p_kind: isPhone ? 'phone' : 'email', p_value: value });
+      if(!takenErr && taken === true){
+        btn.disabled = false; btn.textContent = 'Send code';
+        showStatus('This ' + (isPhone ? 'phone number' : 'email') + ' already has an account. Please log in instead.', 'error');
+        return;
+      }
+    }catch(err){}
 
     const payload = isPhone ? { phone: value } : { email: value };
     const { error } = await supabaseClient.auth.signInWithOtp({ ...payload, options: { shouldCreateUser: true } });
@@ -817,8 +926,14 @@ html, body{ overscroll-behavior-y: contain; }
   document.getElementById('signup-form').addEventListener('submit', async function(e){
     e.preventDefault();
     const password = document.getElementById('signup-password').value;
-    if(!password || password.length < 6){
-      showStatus('Password must be at least 6 characters.', 'error');
+    const details = readSignupDetails();
+    if(!details.ok){
+      showStatus(details.error, 'error');
+      return;
+    }
+    const pwProblem = passwordProblem(password);
+    if(pwProblem){
+      showStatus(pwProblem, 'error');
       return;
     }
     const btn = document.getElementById('signup-create-btn');
@@ -833,7 +948,7 @@ html, body{ overscroll-behavior-y: contain; }
 
     const { data: userData } = await supabaseClient.auth.getUser();
     const user = userData.user;
-    const name = document.getElementById('signup-name').value.trim();
+    const name = details.name;
     const isPhone = document.getElementById('signup-id-phone').classList.contains('active');
     const contact = document.getElementById('signup-email').value.trim();
     const idNumber = generatePlainIdNumber();
@@ -850,13 +965,18 @@ html, body{ overscroll-behavior-y: contain; }
       id_number: idNumber,
       email: isPhone ? null : contact,
       phone: isPhone ? contact : null,
-      avatar_url: avatarUrl
+      avatar_url: avatarUrl,
+      gender: details.extras.gender,
+      dob_day: details.extras.dob_day,
+      dob_month: details.extras.dob_month,
+      country: details.extras.country
     });
 
     btn.disabled = false; btn.textContent = 'Create account';
 
     if(profileError){
-      showStatus(profileError.message, 'error');
+      const dup = profileError.code === '23505' && /norm_uniq/.test(profileError.message || '');
+      showStatus(dup ? 'This ' + (isPhone ? 'phone number' : 'email') + ' already has an account. Please log in instead.' : profileError.message, 'error');
       return;
     }
 
@@ -891,8 +1011,8 @@ html, body{ overscroll-behavior-y: contain; }
   async function verifyForgotCode(){
     const boxes = document.querySelectorAll('.otp-box[data-group="forgot"]');
     const code = Array.from(boxes).map(b => b.value).join('');
-    if(code.length < 8){
-      showStatus('Enter the full 8-digit code.', 'error');
+    if(code.length < 6){
+      showStatus('Enter the full 6-digit code.', 'error');
       return;
     }
     const btn = document.getElementById('forgot-verify-btn');
@@ -916,8 +1036,9 @@ html, body{ overscroll-behavior-y: contain; }
   async function saveNewPassword(){
     const pw = document.getElementById('new-password').value;
     const confirmPw = document.getElementById('confirm-password').value;
-    if(!pw || pw.length < 6){
-      showStatus('Password must be at least 6 characters.', 'error');
+    const pwProblem = passwordProblem(pw);
+    if(pwProblem){
+      showStatus(pwProblem, 'error');
       return;
     }
     if(pw !== confirmPw){
