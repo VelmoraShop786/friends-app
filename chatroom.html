@@ -467,7 +467,9 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   /* ---------- Announcement banner ---------- */
+  .banner.has-announcement{ border-left-color:#ffd166; background: rgba(255,209,102,0.16); }
   .banner{
+    white-space: pre-line; overflow-wrap:anywhere; max-height: 7.2em; overflow-y:auto;
     margin: 4px 18px 14px;
     background: rgba(255,255,255,0.1);
     border-left: 3px solid var(--teal);
@@ -719,6 +721,15 @@ html, body{ overscroll-behavior-y: contain; }
   .dialog-cancel{ background: var(--bg); color: var(--ink-soft); }
   .dialog-save{ background: var(--teal-deep); color:white; }
   .dialog-save:disabled{ opacity:0.6; }
+  .dialog textarea{
+    width:100%; border:1.5px solid var(--line); background:#fbfdfc; border-radius:12px; resize:none;
+    padding: 11px 14px; font-family:'Inter', sans-serif; font-size:0.95rem; color: var(--ink); outline:none; line-height:1.4;
+    -webkit-user-select:text; user-select:text; unicode-bidi: plaintext;
+  }
+  .dialog textarea:focus{ border-color: var(--teal); background:#fff; }
+  .dialog-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:0.74rem; color: var(--ink-soft); }
+  .dialog-actions.three button{ padding:12px 6px; }
+  .profile-modal-name{ max-width:90%; text-align:center; overflow-wrap:anywhere; }
 </style>
 </head>
 <body>
@@ -823,6 +834,8 @@ html, body{ overscroll-behavior-y: contain; }
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </span>
       </span>
+      <div class="pf-pills" id="profile-modal-pills" style="display:none;"></div>
+      <div class="pf-bio" id="profile-modal-bio" style="display:none;"></div>
       <div class="profile-role" id="profile-role"></div>
       <div class="profile-actions" id="profile-actions"></div>
     </div>
@@ -855,6 +868,8 @@ html, body{ overscroll-behavior-y: contain; }
   <div class="info-menu" id="info-menu">
     <button onclick="showToast('Room info panel — coming soon'); toggleInfoMenu(false);">ℹ️ &nbsp;Room info</button>
     <button id="info-rename-btn" style="display:none;" onclick="openRenameDialog()">✏️ &nbsp;Edit room name</button>
+    <button id="info-announce-btn" style="display:none;" onclick="openAnnounceDialog()">📢 &nbsp;Room announcement</button>
+    <button id="info-follow-btn" style="display:none;" onclick="toggleFollowRoom()">⭐ &nbsp;Follow room</button>
     <button id="info-manage-btn" style="display:none;" onclick="openManageModal()">🛡️ &nbsp;Manage room</button>
     <button id="info-theme-btn" onclick="tryChangeRoomTheme()">🖼️ &nbsp;Room theme</button>
   </div>
@@ -871,7 +886,7 @@ html, body{ overscroll-behavior-y: contain; }
     </div>
   </div>
 
-  <div class="banner">Welcome 🌿 Please be kind and respect each other while talking.</div>
+  <div class="banner" id="room-banner">Welcome 🌿 Please be kind and respect each other while talking.</div>
 
   <div class="chat-panel">
     <div class="messages" id="messages"></div>
@@ -899,10 +914,24 @@ html, body{ overscroll-behavior-y: contain; }
   <div class="dialog-backdrop" id="rename-dialog" onclick="if(event.target === this) closeRenameDialog()">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title">
       <h3 id="rename-dialog-title">Edit room name</h3>
-      <input type="text" id="rename-input" maxlength="40" autocomplete="off" onkeydown="if(event.key === 'Enter') submitRename()">
+      <input type="text" id="rename-input" autocomplete="off" onkeydown="if(event.key === 'Enter') submitRename()">
+      <div class="dialog-foot"><span>Up to 40 characters</span><span class="tp-count" id="rename-count"></span></div>
       <div class="dialog-actions">
         <button type="button" class="dialog-cancel" onclick="closeRenameDialog()">Cancel</button>
         <button type="button" class="dialog-save" id="rename-save" onclick="submitRename()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-backdrop" id="announce-dialog" onclick="if(event.target === this) closeAnnounceDialog()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="announce-dialog-title">
+      <h3 id="announce-dialog-title">Room announcement</h3>
+      <textarea id="announce-input" rows="4" dir="auto" placeholder="Write an announcement for everyone in this room"></textarea>
+      <div class="dialog-foot"><span>Shown at the top of the chat</span><span class="tp-count" id="announce-count"></span></div>
+      <div class="dialog-actions three">
+        <button type="button" class="dialog-cancel" onclick="closeAnnounceDialog()">Cancel</button>
+        <button type="button" class="dialog-cancel" id="announce-clear" onclick="clearAnnouncement()">Clear</button>
+        <button type="button" class="dialog-save" id="announce-save" onclick="submitAnnouncement()">Save</button>
       </div>
     </div>
   </div>
@@ -912,6 +941,8 @@ html, body{ overscroll-behavior-y: contain; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="text-policy.js"></script>
+<script src="profile-extras.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
@@ -962,7 +993,7 @@ html, body{ overscroll-behavior-y: contain; }
       name: currentProfile?.name || 'You',
       avatarUrl: currentProfile?.avatar_url || null,
       idNumber: currentProfile?.id_number || '',
-      initial: (currentProfile?.name || '?').charAt(0).toUpperCase()
+      initial: TextPolicy.initial(currentProfile?.name)
     };
   }
 
@@ -975,7 +1006,7 @@ html, body{ overscroll-behavior-y: contain; }
       if(Date.now() - new Date(r.last_seen).getTime() > PRESENCE_STALE_MS) return;
       const p = r.profiles || {};
       const name = p.name || 'Unknown';
-      const initial = name.charAt(0).toUpperCase();
+      const initial = TextPolicy.initial(name);
       rememberProfile(name, { userId: r.user_id, idNumber: p.id_number || '', avatarUrl: p.avatar_url || null, initial });
       list.push({ id: r.user_id, name, avatarUrl: p.avatar_url || null, idNumber: p.id_number || '', initial, away: r.status === 'kept' });
       have.add(r.user_id);
@@ -1077,7 +1108,7 @@ html, body{ overscroll-behavior-y: contain; }
       const state = channel.presenceState();
       realtimeMembers = Object.values(state).map(entries => {
         const e = entries[0];
-        const initial = (e.name || '?').charAt(0).toUpperCase();
+        const initial = TextPolicy.initial(e.name);
         rememberProfile(e.name, { userId: e.id, idNumber: e.id_number || '', avatarUrl: e.avatar_url || null, initial });
         return { id: e.id, name: e.name, avatarUrl: e.avatar_url || null, idNumber: e.id_number || '', initial };
       });
@@ -1133,7 +1164,7 @@ html, body{ overscroll-behavior-y: contain; }
     const m = onlineMembers.find(x => x.name === name);
     const idNumber = (m && m.idNumber) || (known && known.idNumber) || '';
     const avatarUrl = (m && m.avatarUrl) || (known && known.avatarUrl) || null;
-    const initial = (m && m.initial) || (known && known.initial) || (name ? name.charAt(0).toUpperCase() : '?');
+    const initial = (m && m.initial) || (known && known.initial) || TextPolicy.initial(name);
     const userId = (m && m.id) || (known && known.userId) || null;
     if(!m && !known) return { userId:null, initial:'?', name, id:'—', avatarUrl:null };
     return { userId, initial, name, id: idNumber || '—', avatarUrl };
@@ -1185,7 +1216,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(k){
       showProfile({
         userId, name: k.name, id: k.idNumber || '—', avatarUrl: k.avatarUrl || null,
-        initial: k.initial || (k.name || '?').charAt(0).toUpperCase()
+        initial: k.initial || TextPolicy.initial(k.name)
       });
     } else {
       openProfileModal(name);
@@ -1194,15 +1225,24 @@ html, body{ overscroll-behavior-y: contain; }
   function openProfileModal(name){ showProfile(findProfile(name)); }
 
   let currentProfileView = null;
+  let profileViewToken = 0;
   function showProfile(p){
     currentProfileView = p;
     document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(p.avatarUrl, p.initial);
     document.getElementById('profile-modal-name').textContent = p.name;
     document.getElementById('profile-modal-id').textContent = 'ID: ' + p.id;
+    // flag + gender + birthday pills and the bio (fetched fresh; the row above is already on screen)
+    const pillsEl = document.getElementById('profile-modal-pills'), bioEl = document.getElementById('profile-modal-bio');
+    ProfileExtras.render(pillsEl, bioEl, null);
+    const viewToken = ++profileViewToken;
+    ProfileExtras.load({ userId: p.userId, idNumber: p.id }).then(extras => {
+      if(viewToken === profileViewToken && extras) ProfileExtras.render(pillsEl, bioEl, extras);
+    });
     renderProfileRoleAndActions();
     document.getElementById('profile-modal').classList.add('show');
   }
   function closeProfileModal(){
+    profileViewToken++;
     document.getElementById('profile-modal').classList.remove('show');
     currentProfileView = null;
   }
@@ -1459,7 +1499,7 @@ html, body{ overscroll-behavior-y: contain; }
       const { data } = await supabaseClient.from('profiles').select('id, name, avatar_url, id_number').in('id', ids);
       (data || []).forEach(pr => rememberProfile(pr.name, {
         userId: pr.id, idNumber: pr.id_number || '', avatarUrl: pr.avatar_url || null,
-        initial: (pr.name || '?').charAt(0).toUpperCase()
+        initial: TextPolicy.initial(pr.name)
       }));
     }
     manageActionFns = [];
@@ -1475,7 +1515,7 @@ html, body{ overscroll-behavior-y: contain; }
       }
       return `
       <div class="modal-member-row" style="cursor:default;">
-        <div class="avatar">${avatarHtml(k.avatarUrl, (name || '?').charAt(0).toUpperCase())}</div>
+        <div class="avatar">${avatarHtml(k.avatarUrl, TextPolicy.initial(name))}</div>
         <div style="flex:1; min-width:0;">
           <div class="name copyable">${escapeHtml(name)}</div>
           <div class="sub">${sub}</div>
@@ -1612,6 +1652,13 @@ html, body{ overscroll-behavior-y: contain; }
     const themeBtn = document.getElementById('info-theme-btn');
     const renameBtn = document.getElementById('info-rename-btn');
     const manageBtn = document.getElementById('info-manage-btn');
+    const announceBtn = document.getElementById('info-announce-btn');
+    const followBtn = document.getElementById('info-follow-btn');
+    if(followBtn){
+      followBtn.style.display = (currentUser && roomOwnerId && currentUser.id !== roomOwnerId) ? 'flex' : 'none';   // you cannot follow your own room
+      followBtn.innerHTML = isFollowingRoom ? '✅ &nbsp;Following — tap to unfollow' : '⭐ &nbsp;Follow room';
+    }
+    if(announceBtn) announceBtn.style.display = isStaff() ? 'flex' : 'none';   // owner or admin
     if(renameBtn) renameBtn.style.display = canCustomizeRoom ? 'flex' : 'none';
     if(manageBtn) manageBtn.style.display = isStaff() ? 'flex' : 'none';
     if(themeBtn) themeBtn.innerHTML = isOfficialRoom
@@ -1624,8 +1671,18 @@ html, body{ overscroll-behavior-y: contain; }
       `linear-gradient(180deg, rgba(6,37,29,0.55), rgba(6,37,29,0.55)), url('${url}') center/cover no-repeat`;
   }
 
+  const DEFAULT_BANNER = 'Welcome 🌿 Please be kind and respect each other while talking.';
+  function applyBanner(room){
+    const el = document.getElementById('room-banner');
+    if(!el) return;
+    const text = room && room.announcement ? TextPolicy.clean(room.announcement, 'announcement') : '';
+    el.textContent = text ? '📢 ' + text : DEFAULT_BANNER;
+    el.classList.toggle('has-announcement', !!text);
+  }
+
   function applyRoomInfoToUI(room){
     if(room) lastRoom = room;
+    if(room) applyBanner(room);
     if(room?.picture_url) applyRoomPicture(room.picture_url);
     // Own theme wins; user rooms without one show the default theme; the Official Room keeps its plain look.
     const themeUrl = room?.theme_url || (room && !room.is_official ? defaultRoomThemeUrl : null);
@@ -1741,11 +1798,13 @@ html, body{ overscroll-behavior-y: contain; }
   });
 
   // ---------- Rename the room (owner only) ----------
+  TextPolicy.bind(document.getElementById('rename-input'), 'roomName', { counter: 'rename-count' });
   function openRenameDialog(){
     toggleInfoMenu(false);
     if(!canCustomizeRoom){ showToast('Only the room owner can rename the room.'); return; }
     const input = document.getElementById('rename-input');
-    input.value = lastRoom?.name || document.getElementById('room-title-display').textContent;
+    input.value = TextPolicy.clean(lastRoom?.name || document.getElementById('room-title-display').textContent, 'roomName');
+    TextPolicy.refresh(input);
     document.getElementById('rename-dialog').classList.add('show');
     setTimeout(() => { input.focus(); input.select(); }, 50);
   }
@@ -1753,8 +1812,9 @@ html, body{ overscroll-behavior-y: contain; }
     document.getElementById('rename-dialog').classList.remove('show');
   }
   async function submitRename(){
-    const name = document.getElementById('rename-input').value.trim().replace(/\s+/g, ' ');
-    if(!name){ showToast('The name can\'t be empty.'); return; }
+    const chk = TextPolicy.check(document.getElementById('rename-input').value, 'roomName');
+    if(!chk.ok){ showToast(chk.error); return; }
+    const name = chk.value;
     const btn = document.getElementById('rename-save');
     btn.disabled = true;
     const { data: rows, error } = await supabaseClient.from('rooms').update({ name }).eq('id',ROOM_ID).select('id');
@@ -1767,6 +1827,89 @@ html, body{ overscroll-behavior-y: contain; }
     }
     closeRenameDialog();
     showToast('Room name updated');
+  }
+
+  // ---------- Room announcement (owner or admin) ----------
+  TextPolicy.bind(document.getElementById('announce-input'), 'announcement', { counter: 'announce-count' });
+  function openAnnounceDialog(){
+    toggleInfoMenu(false);
+    if(!isStaff()){ showToast('Only the room owner or an admin can set the announcement.'); return; }
+    const input = document.getElementById('announce-input');
+    input.value = TextPolicy.clean(lastRoom?.announcement || '', 'announcement');
+    TextPolicy.refresh(input);
+    document.getElementById('announce-clear').style.display = lastRoom?.announcement ? '' : 'none';
+    document.getElementById('announce-dialog').classList.add('show');
+    setTimeout(() => input.focus(), 50);
+  }
+  function closeAnnounceDialog(){
+    document.getElementById('announce-dialog').classList.remove('show');
+  }
+  async function saveAnnouncement(text){
+    const { data, error } = await supabaseClient.rpc('set_room_announcement', { p_room: ROOM_ID, p_text: text || null });
+    if(error){
+      console.error('Announcement save failed:', error);
+      showToast(/Only the room owner/.test(error.message || '') ? 'Only the room owner or an admin can set the announcement.' : 'Could not save the announcement.');
+      return false;
+    }
+    if(!lastRoom) lastRoom = { id: ROOM_ID };
+    lastRoom.announcement = data || null;
+    applyBanner(lastRoom);
+    try{ localStorage.setItem(('room-info-cache-' + ROOM_ID), JSON.stringify(lastRoom)); }catch(err){}
+    return true;
+  }
+  async function submitAnnouncement(){
+    const chk = TextPolicy.check(document.getElementById('announce-input').value, 'announcement');
+    const btn = document.getElementById('announce-save');
+    btn.disabled = true;
+    const ok = await saveAnnouncement(chk.value);
+    btn.disabled = false;
+    if(!ok) return;
+    closeAnnounceDialog();
+    showToast(chk.value ? 'Announcement updated' : 'Announcement removed');
+  }
+  async function clearAnnouncement(){
+    const btn = document.getElementById('announce-clear');
+    btn.disabled = true;
+    const ok = await saveAnnouncement('');
+    btn.disabled = false;
+    if(!ok) return;
+    closeAnnounceDialog();
+    showToast('Announcement removed');
+  }
+
+  // ---------- Recently entered rooms + Follow ----------
+  let isFollowingRoom = false;
+  async function recordRoomVisit(){
+    try{
+      await supabaseClient.from('room_visits').upsert(
+        { user_id: currentUser.id, room_id: ROOM_ID, last_entered_at: new Date().toISOString() },
+        { onConflict: 'user_id,room_id' }
+      );
+    }catch(err){ console.error('Could not record the visit:', err); }   // table not installed yet -> the room still works
+  }
+  async function loadFollowState(){
+    try{
+      const { data } = await supabaseClient.from('room_follows').select('room_id')
+        .eq('user_id', currentUser.id).eq('room_id', ROOM_ID).maybeSingle();
+      isFollowingRoom = !!data;
+    }catch(err){ isFollowingRoom = false; }
+    refreshInfoMenu();
+  }
+  async function toggleFollowRoom(){
+    toggleInfoMenu(false);
+    if(!currentUser || currentUser.id === roomOwnerId){ showToast('You cannot follow your own room.'); return; }
+    if(isFollowingRoom){
+      const { error } = await supabaseClient.from('room_follows').delete().eq('user_id', currentUser.id).eq('room_id', ROOM_ID);
+      if(error){ console.error(error); showToast('Could not unfollow.'); return; }
+      isFollowingRoom = false;
+      showToast('Unfollowed');
+    } else {
+      const { error } = await supabaseClient.from('room_follows').insert({ user_id: currentUser.id, room_id: ROOM_ID });
+      if(error && error.code !== '23505'){ console.error(error); showToast('Could not follow this room.'); return; }
+      isFollowingRoom = true;
+      showToast('Following this room');
+    }
+    refreshInfoMenu();
   }
 
   function toggleInfoMenu(forceState){
@@ -1819,11 +1962,11 @@ html, body{ overscroll-behavior-y: contain; }
           userId: r.occupied_by,
           name,
           idNumber,
-          initial: isMe ? 'Me' : name.charAt(0).toUpperCase(),
+          initial: isMe ? 'Me' : TextPolicy.initial(name),
           avatarUrl: r.profiles?.avatar_url || null,
           speaking:true
         };
-        rememberProfile(name, { userId: r.occupied_by, idNumber, avatarUrl: r.profiles?.avatar_url || null, initial: isMe ? 'Me' : name.charAt(0).toUpperCase() });
+        rememberProfile(name, { userId: r.occupied_by, idNumber, avatarUrl: r.profiles?.avatar_url || null, initial: isMe ? 'Me' : TextPolicy.initial(name) });
       }
     });
     return arr;
@@ -2225,7 +2368,7 @@ html, body{ overscroll-behavior-y: contain; }
     const { data } = await query;
     messages = (data || []).map(m => {
       const senderName = m.profiles?.name || 'Unknown';
-      const initial = senderName.charAt(0).toUpperCase();
+      const initial = TextPolicy.initial(senderName);
       const avatarUrl = m.profiles?.avatar_url || null;
       rememberProfile(senderName, { userId: m.sender_id, idNumber: m.profiles?.id_number || '', avatarUrl, initial });
       return {
@@ -2234,8 +2377,8 @@ html, body{ overscroll-behavior-y: contain; }
         name: senderName,
         initial,
         avatarUrl,
-        text: m.content,
-        replyTo: m.reply_to_name ? { name: m.reply_to_name, text: m.reply_to_text } : null
+        text: TextPolicy.clean(m.content, 'message'),   // older rows may predate the policy
+        replyTo: m.reply_to_name ? { name: m.reply_to_name, text: TextPolicy.clean(m.reply_to_text, 'reply') } : null
       };
     });
     renderMessages();
@@ -2254,7 +2397,7 @@ html, body{ overscroll-behavior-y: contain; }
     const box = document.getElementById('messages');
     box.innerHTML = messages.map((m, i) => {
       const senderName = m.name;
-      const initial = m.from === 'me' ? 'Me' : (m.initial || senderName.charAt(0));
+      const initial = m.from === 'me' ? 'Me' : (m.initial || TextPolicy.initial(senderName));
       const avatarUrl = m.avatarUrl;
       const quoted = m.replyTo ? `<div class="quoted-reply"><div class="q-name">${escapeHtml(m.replyTo.name)}</div>${escapeHtml(m.replyTo.text)}</div>` : '';
       return `
@@ -2330,7 +2473,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   async function sendText(){
     const input = document.getElementById('text-input');
-    const value = input.value.trim();
+    const value = TextPolicy.clean(input.value, 'message');
     if(!value) return;
     if(roomMembers[currentUser.id]?.banned){
       showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
@@ -2342,8 +2485,8 @@ html, body{ overscroll-behavior-y: contain; }
       content: value
     };
     if(currentReply){
-      payload.reply_to_name = currentReply.name;
-      payload.reply_to_text = currentReply.text;
+      payload.reply_to_name = TextPolicy.clean(currentReply.name, 'reply');
+      payload.reply_to_text = TextPolicy.clean(currentReply.text, 'reply');
     }
     input.value = '';
     cancelReply();
@@ -2354,6 +2497,7 @@ html, body{ overscroll-behavior-y: contain; }
     }
   }
 
+  TextPolicy.bind(document.getElementById('text-input'), 'message');   // same policy while typing / pasting
   document.getElementById('text-input').addEventListener('keydown', function(e){
     if(e.key === 'Enter') sendText();
   });
@@ -2384,12 +2528,14 @@ html, body{ overscroll-behavior-y: contain; }
       await loadRoomMembers();        // banned / kicked people stop here, before they show up in the room
       if(accessBlocked) return;
       await enterRoomServer();        // registers presence; seat + presence stay until Exit or the website closes
+      recordRoomVisit();              // feeds the "Recently" tab on the home page
       syncScreenAwake();              // the screen stays on while in the room
       setupPresence();
       await loadSeats();
       syncVoice();                    // everyone can hear the room; only seated people can speak
       subscribeSeats();
       await loadRoomInfo();
+      loadFollowState();
       loadDefaultRoomTheme();
       rkReveal();   // seats, online count, room name/id/picture and theme are all real now — safe to show the room
       subscribeRoomInfo();

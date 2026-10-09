@@ -179,6 +179,15 @@ html, body{ overscroll-behavior-y: contain; }
     display:block;
   }
   .field{ display:flex; flex-direction:column; }
+  .pw-wrap{ position:relative; width:100%; }
+  .pw-wrap input{ width:100%; padding-right:48px; }
+  .pw-eye{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+    background:none; border:none; padding:0; cursor:pointer; color:#9aa8a4; -webkit-tap-highlight-color: transparent;
+  }
+  .pw-eye.on{ color: var(--teal-deep, #05846a); }
+  .pw-eye svg{ display:block; }
   input{
     border: 1.5px solid var(--line);
     background: #fbfdfc;
@@ -636,6 +645,32 @@ html, body{ overscroll-behavior-y: contain; }
 </script>
 <script>
   const extraViews = ['view-forgot-request', 'view-forgot-otp', 'view-forgot-reset'];
+
+  // ---- Show / hide password (eye button on every password box) ----
+  // closed eye = password hidden (••••)   open eye = password visible
+  const EYE_CLOSED = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5c2.2 3.4 5.4 5 9 5s6.8-1.6 9-5"/><path d="M5.2 13.4l-1.8 2.3"/><path d="M9.2 15.2l-.9 2.8"/><path d="M14.8 15.2l.9 2.8"/><path d="M18.8 13.4l1.8 2.3"/></svg>';
+  const EYE_OPEN = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c2.4-4.4 5.7-6.5 10-6.5s7.6 2.1 10 6.5c-2.4 4.4-5.7 6.5-10 6.5S4.4 16.4 2 12z"/><circle cx="12" cy="12" r="3.2"/></svg>';
+  document.querySelectorAll('input[type="password"]').forEach(function(input){
+    const wrap = document.createElement('div');
+    wrap.className = 'pw-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pw-eye';
+    btn.setAttribute('aria-label', 'Show password');
+    btn.innerHTML = EYE_CLOSED;
+    wrap.appendChild(btn);
+    btn.addEventListener('mousedown', function(e){ e.preventDefault(); });   // keep the cursor in the box
+    btn.addEventListener('click', function(){
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? EYE_OPEN : EYE_CLOSED;
+      btn.classList.toggle('on', show);
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      input.focus();
+    });
+  });
 
   // Password policy: at least 8 characters and BOTH letters and numbers (digits-only or letters-only is rejected)
   function passwordProblem(pw){

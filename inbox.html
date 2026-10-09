@@ -458,7 +458,7 @@ html, body{ overscroll-behavior-y: contain; }
     display:flex; align-items:center; justify-content:center;
     margin-bottom:16px;
   }
-  .profile-modal-name{ font-weight:700; font-size:1.2rem; color: var(--ink); margin-bottom:4px; }
+  .profile-modal-name{ font-weight:700; font-size:1.2rem; color: var(--ink); margin-bottom:4px; max-width:90%; text-align:center; overflow-wrap:anywhere; }
   .profile-modal-id{ font-size:0.85rem; color: var(--ink-soft); }
   .copy-icon{
     display:flex; align-items:center; justify-content:center;
@@ -556,6 +556,8 @@ html, body{ overscroll-behavior-y: contain; }
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </span>
       </span>
+      <div class="pf-pills" id="profile-modal-pills" style="display:none;"></div>
+      <div class="pf-bio" id="profile-modal-bio" style="display:none;"></div>
     </div>
   </div>
 
@@ -599,6 +601,8 @@ html, body{ overscroll-behavior-y: contain; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="text-policy.js"></script>
+<script src="profile-extras.js"></script>
 <script src="room-keeper.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
@@ -729,7 +733,7 @@ html, body{ overscroll-behavior-y: contain; }
         name: other.name || 'Unknown',
         avatarUrl: other.avatar_url || null,
         idNumber: other.id_number || '',
-        lastMessage: last ? last.content : 'Say hi 👋',
+        lastMessage: last ? TextPolicy.clean(last.content, 'message') : 'Say hi 👋',
         lastAt: last ? last.created_at : null
       };
     }).sort((a, b) => {
@@ -748,16 +752,24 @@ html, body{ overscroll-behavior-y: contain; }
     return friends.find(f => f.id === id);
   }
 
+  let profileModalToken = 0;
   function openProfileModal(idOrName){
     let f = findFriend(idOrName);
     if(!f) f = friends.find(x => x.name === idOrName);
     if(!f) return;
-    document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(f.avatarUrl, (f.name || '?').charAt(0).toUpperCase());
+    const pillsEl = document.getElementById('profile-modal-pills'), bioEl = document.getElementById('profile-modal-bio');
+    ProfileExtras.render(pillsEl, bioEl, null);
+    const token = ++profileModalToken;
+    ProfileExtras.load({ userId: f.id, idNumber: f.idNumber }).then(extras => {
+      if(token === profileModalToken && extras) ProfileExtras.render(pillsEl, bioEl, extras);
+    });
+    document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(f.avatarUrl, TextPolicy.initial(f.name));
     document.getElementById('profile-modal-name').textContent = f.name;
     document.getElementById('profile-modal-id').textContent = 'ID: ' + (f.idNumber || '—');
     document.getElementById('profile-modal').classList.add('show');
   }
   function closeProfileModal(){
+    profileModalToken++;
     document.getElementById('profile-modal').classList.remove('show');
   }
 
@@ -766,7 +778,7 @@ html, body{ overscroll-behavior-y: contain; }
     const f = findFriend(id);
     if(!f) return;
     document.getElementById('chat-name').textContent = f.name;
-    document.getElementById('chat-avatar').innerHTML = avatarHtml(f.avatarUrl, (f.name || '?').charAt(0).toUpperCase());
+    document.getElementById('chat-avatar').innerHTML = avatarHtml(f.avatarUrl, TextPolicy.initial(f.name));
     updateChatHeaderStatus();
     cancelReply();
     await loadMessages(id);
@@ -824,7 +836,7 @@ html, body{ overscroll-behavior-y: contain; }
     messages = (data || []).map(m => ({
       id: m.id,
       from: m.sender_id === currentUser.id ? 'me' : 'them',
-      text: m.content,
+      text: TextPolicy.clean(m.content, 'message'),   // older rows may predate the policy
       time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       replyTo: null
     }));
@@ -984,7 +996,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   async function sendText(){
     const input = document.getElementById('text-input');
-    const value = input.value.trim();
+    const value = TextPolicy.clean(input.value, 'message');
     if(!value || currentChatId === null) return;
     input.value = '';
     cancelReply();
@@ -1006,6 +1018,7 @@ html, body{ overscroll-behavior-y: contain; }
     }
   }
 
+  TextPolicy.bind(document.getElementById('text-input'), 'message');   // same policy while typing / pasting
   document.getElementById('text-input').addEventListener('keydown', function(e){
     if(e.key === 'Enter') sendText();
   });
