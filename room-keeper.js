@@ -3,7 +3,9 @@
 
   Included on every page. What it does:
    - On the ROOM page: the phone's Back button does nothing (the person stays in the room).
-   - On every OTHER page: 1st Back shows "press Back again", 2nd Back goes back normally.
+   - On every OTHER page: 1st Back shows "Click again to exit!" for 2 seconds and the person stays;
+     a 2nd Back inside those 2 seconds leaves; after 2 seconds the message goes away and everything starts over
+     (a late Back is a "1st Back" again, it never leaves).
    - KEEP: the person leaves the room screen but stays in the room (seat, presence, chat kept).
      A floating "Kept Room" card appears on the other pages; tapping it returns to the same room.
    - While a room is kept, this page sends a heartbeat so the server knows the website is still open.
@@ -28,8 +30,8 @@
   var K_KEPT  = 'kr_kept';    // JSON {id,name,picture,seat} while a room is kept
   var K_INIT  = 'kr_init';    // set once this tab-session has done its start-up cleanup
   var HEARTBEAT_MS = 4000;
-  var BACK_WINDOW_MS = 2500;
-  var BACK_MSG = 'ایک بار پھر Back دبائیں، website سے باہر جانے کے لیے۔';
+  var BACK_WINDOW_MS = 2000;                 // the "click again" window: exactly 2 seconds
+  var BACK_MSG = 'Click again to exit!';
   var isRoomPage = /(^|\/)chatroom\.html$/.test(location.pathname);
 
   function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
@@ -43,8 +45,8 @@
   var CSS = '' +
     '#kr-toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:100000;max-width:88vw;' +
     'background:rgba(20,32,28,0.94);color:#fff;padding:11px 18px;border-radius:14px;font-size:0.9rem;line-height:1.5;' +
-    'direction:rtl;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;' +
-    'font-family:"Noto Nastaliq Urdu","Noto Naskh Arabic","Jameel Noori Nastaleeq",system-ui,sans-serif;}' +
+    'text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;' +
+    'font-family:Inter,system-ui,sans-serif;font-weight:600;}' +
     '#kr-toast.show{opacity:1;}' +
     '#kr-card{position:fixed;z-index:99990;width:132px;padding:20px 8px 8px;border-radius:16px;cursor:pointer;touch-action:none;' +
     'background:linear-gradient(160deg,#0d4a3b 0%,#0a2f27 100%);border:1.5px solid rgba(60,220,170,0.55);' +
@@ -92,15 +94,16 @@
     (document.head || document.documentElement).appendChild(st);
   }
 
-  var toastTimer = null;
   function showBackToast(){
     injectCss();
     var t = document.getElementById('kr-toast');
     if(!t){ t = document.createElement('div'); t.id = 'kr-toast'; document.body.appendChild(t); }
     t.textContent = BACK_MSG;
     t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, BACK_WINDOW_MS);
+  }
+  function hideBackToast(){
+    var t = document.getElementById('kr-toast');
+    if(t) t.classList.remove('show');
   }
 
   function ask(title, text, yesLabel){
@@ -126,7 +129,17 @@
   }
 
   // ---------- Back button: every page except the room ----------
-  var lastBackAt = 0;
+  //  1st Back : "Click again to exit!" for 2 seconds, the person stays on the page.
+  //  2nd Back inside those 2 seconds : a normal Back (leaves).
+  //  After 2 seconds the message disappears AND the first press is forgotten, so a late Back
+  //  is a "1st Back" again — it never leaves by itself.
+  var backArmed = false;       // true only during the 2 seconds after a 1st Back
+  var backTimer = null;
+  function disarmBack(){
+    backArmed = false;
+    clearTimeout(backTimer); backTimer = null;
+    hideBackToast();
+  }
   function startPageBackGuard(){
     var s = history.state;
     if(!(s && s.kr === 'top')){
@@ -136,16 +149,26 @@
     window.addEventListener('popstate', function(e){
       var st = e.state;
       if(!st || st.kr !== 'base') return;            // moved onto our own top entry, or not ours
-      var now = Date.now();
-      if(now - lastBackAt < BACK_WINDOW_MS){         // second press: a normal Back
-        lastBackAt = 0;
+      if(backArmed){                                 // 2nd press inside the 2 seconds: a normal Back
+        disarmBack();
         history.back();
         return;
       }
-      lastBackAt = now;                              // first press: warn and stay
+      backArmed = true;                              // 1st press: warn, stay, start the 2 seconds
       showBackToast();
-      history.pushState({ kr: 'top' }, '');
+      history.pushState({ kr: 'top' }, '');          // put the guard entry back in front of the person
+      clearTimeout(backTimer);
+      backTimer = setTimeout(disarmBack, BACK_WINDOW_MS);
     });
+    // Safety net: the guard entry must always be in front of us. If the browser ever dropped it
+    // (we are sitting on the base entry), put it back on the next touch, so a late Back still only warns.
+    function ensureGuard(){
+      var cur = history.state;
+      if(cur && cur.kr === 'base') history.pushState({ kr: 'top' }, '');
+    }
+    ['pointerdown', 'touchstart', 'keydown'].forEach(function(ev){ document.addEventListener(ev, ensureGuard, { passive: true, capture: true }); });
+    // coming back to this page from the back/forward cache: start clean
+    window.addEventListener('pageshow', function(){ disarmBack(); ensureGuard(); });
   }
 
   // ---------- Back button: inside the room (does nothing) ----------

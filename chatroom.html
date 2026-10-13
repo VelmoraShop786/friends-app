@@ -450,12 +450,32 @@ html, body{ overscroll-behavior-y: contain; }
     cursor:pointer;
   }
   .seat.taken .seat-circle{
-    border-color: var(--teal);
-    box-shadow: 0 0 0 3px rgba(6,214,160,0.25);
+    border-color: rgba(255,255,255,0.55);   /* sitting on a seat is NOT shown with green — green means "voice is coming out" */
   }
   .seat.speaking .seat-circle{
+    border-color: var(--teal);
     animation: pulse 1.2s infinite;
   }
+  /* people YOU blocked get a small red mark on their seat — only you see it */
+  .seat-block-badge{
+    display:none; position:absolute; top:-4px; left:50%; margin-left:10px; width:20px; height:20px; border-radius:50%; z-index:2;
+    align-items:center; justify-content:center; font-size:0.7rem; line-height:1;
+    background:#b1362f; box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+  }
+  .seat{ position:relative; }
+  .seat.blocked-by-me .seat-block-badge{ display:flex; }
+  .seat.blocked-by-me .seat-circle img{ opacity:0.55; }
+  .blocked-chip{
+    display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; vertical-align:middle;
+    background:#fbe4e2; color:#b1362f; font-size:0.66rem; font-weight:700;
+  }
+  /* mic switched off: dark tint + crossed-out mic on the avatar (like Yalla Ludo) */
+  .seat-muted-badge{
+    display:none; position:absolute; inset:0;
+    align-items:center; justify-content:center;
+    background: rgba(0,0,0,0.38); border-radius:50%;
+  }
+  .seat.muted .seat-muted-badge{ display:flex; }
   .seat.locked .seat-circle{
     background: rgba(255,255,255,0.22);
     border-color: rgba(255,255,255,0.35);
@@ -467,9 +487,7 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   /* ---------- Announcement banner ---------- */
-  .banner.has-announcement{ border-left-color:#ffd166; background: rgba(255,209,102,0.16); }
   .banner{
-    white-space: pre-line; overflow-wrap:anywhere; max-height: 7.2em; overflow-y:auto;
     margin: 4px 18px 14px;
     background: rgba(255,255,255,0.1);
     border-left: 3px solid var(--teal);
@@ -478,6 +496,84 @@ html, body{ overscroll-behavior-y: contain; }
     color: rgba(255,255,255,0.9);
     font-size: 0.8rem;
     line-height:1.4;
+  }
+
+  /* ---------- Messages icon (only while something is unread) + its sheet ---------- */
+  .msg-fab{
+    display:none; position:absolute; right:12px; bottom:74px; z-index:9;
+    width:46px; height:46px; border-radius:50%; border:none; padding:0; cursor:pointer;
+    background: var(--teal-deep); color:#fff; align-items:center; justify-content:center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .msg-fab.show{ display:flex; }
+  .msg-fab-badge{
+    position:absolute; top:-5px; right:-5px; min-width:20px; height:20px; padding:0 5px; border-radius:10px;
+    background:#e53935; color:#fff; font-size:0.7rem; font-weight:700; line-height:1;
+    display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+  }
+  .ms-backdrop{ display:none; position:absolute; inset:0; z-index:60; background:rgba(0,0,0,0.5); align-items:flex-end; justify-content:center; }
+  .ms-backdrop.show{ display:flex; }
+  .ms-sheet{
+    width:100%; max-height:78%; min-height:46%; display:flex; flex-direction:column; background:#fff; color:#16302a;
+    border-radius:20px 20px 0 0; font-family:'Inter',system-ui,sans-serif; -webkit-user-select:text; user-select:text;
+  }
+  .ms-head{ display:flex; align-items:center; gap:6px; padding:12px 14px 8px; flex-shrink:0; }
+  .ms-title{ font-family:'Fraunces',Georgia,serif; font-weight:600; font-size:1.1rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ms-icon{ width:36px; height:36px; border:none; border-radius:50%; background:none; color:#16302a; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .ms-body{ flex:1; overflow-y:auto; padding: 0 16px 16px; }
+  .ms-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #e3eeea; cursor:pointer; }
+  .ms-av{ position:relative; width:44px; height:44px; flex-shrink:0; }
+  .ms-av .a{ width:44px; height:44px; border-radius:50%; overflow:hidden; background:#d3f3e8; color:#05846a; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .ms-av .a img{ width:100%; height:100%; object-fit:cover; }
+  .ms-av .b{ position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:#e53935; color:#fff; font-size:0.68rem; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #fff; }
+  .ms-ico{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.25rem; }
+  .ms-ico.bell{ background:linear-gradient(135deg,#ffd166,#f4a300); }
+  .ms-name{ font-weight:700; font-size:0.92rem; overflow-wrap:anywhere; }
+  .ms-sub{ font-size:0.78rem; color:#5c7770; margin-top:2px; overflow-wrap:anywhere; }
+  .ms-sec{ margin:12px 0 2px; font-size:0.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#5c7770; }
+  .ms-acts{ margin-left:auto; display:flex; gap:6px; }
+  .ms-acts button{ border:none; border-radius:10px; padding:8px 12px; font-weight:600; font-size:0.78rem; cursor:pointer; background:#d3f3e8; color:#05846a; }
+  .ms-acts button.no{ background:#f1f6f4; color:#5c7770; }
+  .ms-empty{ text-align:center; color:#5c7770; padding:30px 10px; font-size:0.9rem; }
+  .ms-chat{ display:flex; flex-direction:column; gap:6px; padding-top:4px; }
+  .ms-b{ max-width:80%; padding:8px 12px; border-radius:14px; font-size:0.88rem; line-height:1.4; overflow-wrap:anywhere; white-space:pre-wrap; }
+  .ms-b.them{ align-self:flex-start; background:#eef5f2; }
+  .ms-b.me{ align-self:flex-end; background:#05846a; color:#fff; }
+  .ms-foot{ flex-shrink:0; display:flex; gap:8px; padding:10px 14px 14px; border-top:1px solid #e3eeea; }
+  .ms-foot input{ flex:1; min-width:0; border:1.5px solid #d6e4df; background:#fbfdfc; border-radius:999px; padding:11px 16px; font-family:inherit; font-size:0.92rem; color:#16302a; outline:none; }
+  .ms-foot button{ border:none; border-radius:50%; width:44px; height:44px; background:#05846a; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+  .ms-note{ flex:1; text-align:center; font-size:0.84rem; color:#5c7770; padding:6px 4px; }
+  .nt-title{ font-weight:700; font-size:0.9rem; }
+  .nt-body{ margin-top:3px; color:#5c7770; font-size:0.84rem; line-height:1.45; overflow-wrap:anywhere; }
+  .nt-time{ margin-top:4px; color:#5c7770; font-size:0.72rem; }
+  .nt-row{ padding:11px 0; border-bottom:1px solid #e3eeea; }
+  .nt-row.new .nt-title::before{ content:''; display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:#e53935; }
+
+  /* Room announcement: sits under the welcome line, left half of the screen, long text wraps to the next lines */
+  .announce-box{
+    display:none;
+    width: calc(50% - 18px);
+    margin: -6px 0 14px 18px;
+    background: rgba(0,0,0,0.38);
+    border-radius: 14px;
+    padding: 10px 12px;
+    color: rgba(255,255,255,0.95);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-height: 13em;
+    overflow-y: auto;
+  }
+  #room-announce-text{ white-space: pre-line; }   /* keeps the owner's line breaks, without turning the box markup into blank lines */
+  .announce-box.show{ display:block; }
+  .announce-title{ font-weight:700; color:#ffd166; margin-bottom:3px; }
+  .announce-empty{ opacity:0.7; font-style:italic; }
+  .announce-edit{
+    display:flex; align-items:center; justify-content:center;
+    width:28px; height:28px; margin: 6px 0 0 auto; padding:0;
+    border:none; border-radius:50%; cursor:pointer; font-size:0.8rem;
+    background: rgba(255,255,255,0.2); color:#fff;
   }
 
   /* ---------- Text chat feed (now part of the same themed screen) ---------- */
@@ -836,6 +932,7 @@ html, body{ overscroll-behavior-y: contain; }
       </span>
       <div class="pf-pills" id="profile-modal-pills" style="display:none;"></div>
       <div class="pf-bio" id="profile-modal-bio" style="display:none;"></div>
+      <div class="sf-actions" id="profile-modal-safety"></div>
       <div class="profile-role" id="profile-role"></div>
       <div class="profile-actions" id="profile-actions"></div>
     </div>
@@ -868,7 +965,6 @@ html, body{ overscroll-behavior-y: contain; }
   <div class="info-menu" id="info-menu">
     <button onclick="showToast('Room info panel — coming soon'); toggleInfoMenu(false);">ℹ️ &nbsp;Room info</button>
     <button id="info-rename-btn" style="display:none;" onclick="openRenameDialog()">✏️ &nbsp;Edit room name</button>
-    <button id="info-announce-btn" style="display:none;" onclick="openAnnounceDialog()">📢 &nbsp;Room announcement</button>
     <button id="info-follow-btn" style="display:none;" onclick="toggleFollowRoom()">⭐ &nbsp;Follow room</button>
     <button id="info-manage-btn" style="display:none;" onclick="openManageModal()">🛡️ &nbsp;Manage room</button>
     <button id="info-theme-btn" onclick="tryChangeRoomTheme()">🖼️ &nbsp;Room theme</button>
@@ -887,6 +983,11 @@ html, body{ overscroll-behavior-y: contain; }
   </div>
 
   <div class="banner" id="room-banner">Welcome 🌿 Please be kind and respect each other while talking.</div>
+  <div class="announce-box" id="room-announce">
+    <div class="announce-title">Announcement:</div>
+    <div id="room-announce-text" dir="auto"></div>
+    <button type="button" class="announce-edit" id="announce-edit-btn" title="Edit announcement" onclick="openAnnounceDialog()" style="display:none;">✏️</button>
+  </div>
 
   <div class="chat-panel">
     <div class="messages" id="messages"></div>
@@ -911,6 +1012,18 @@ html, body{ overscroll-behavior-y: contain; }
     </div>
   </div>
 
+  <button class="msg-fab" id="msg-fab" type="button" title="Messages" onclick="openMsgSheet()" aria-label="Messages">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    <span class="msg-fab-badge" id="msg-fab-badge"></span>
+  </button>
+  <div class="ms-backdrop" id="msg-sheet" onclick="if(event.target === this) closeMsgSheet()">
+    <div class="ms-sheet" role="dialog" aria-modal="true">
+      <div class="ms-head" id="ms-head"></div>
+      <div class="ms-body" id="ms-body"></div>
+      <div class="ms-foot" id="ms-foot" style="display:none;"></div>
+    </div>
+  </div>
+
   <div class="dialog-backdrop" id="rename-dialog" onclick="if(event.target === this) closeRenameDialog()">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title">
       <h3 id="rename-dialog-title">Edit room name</h3>
@@ -927,7 +1040,7 @@ html, body{ overscroll-behavior-y: contain; }
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="announce-dialog-title">
       <h3 id="announce-dialog-title">Room announcement</h3>
       <textarea id="announce-input" rows="4" dir="auto" placeholder="Write an announcement for everyone in this room"></textarea>
-      <div class="dialog-foot"><span>Shown at the top of the chat</span><span class="tp-count" id="announce-count"></span></div>
+      <div class="dialog-foot"><span>Shown to everyone under the welcome message</span><span class="tp-count" id="announce-count"></span></div>
       <div class="dialog-actions three">
         <button type="button" class="dialog-cancel" onclick="closeAnnounceDialog()">Cancel</button>
         <button type="button" class="dialog-cancel" id="announce-clear" onclick="clearAnnouncement()">Clear</button>
@@ -943,6 +1056,8 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="supabase-config.js"></script>
 <script src="text-policy.js"></script>
 <script src="profile-extras.js"></script>
+<script src="safety.js"></script>
+<script src="notify.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
@@ -1198,11 +1313,13 @@ html, body{ overscroll-behavior-y: contain; }
       <div class="modal-member-row" onclick="openProfileFor('${attrJs(m.id)}','${attrJs(m.name)}')">
         <div class="avatar" style="position:relative;">${avatarHtml(m.avatarUrl, isMe ? 'Me' : m.initial)}</div>
         <div>
-          <div class="name copyable">${escapeHtml(m.name)}${banned}</div>
+          <div class="name copyable">${escapeHtml(m.name)}${banned}${Safety.isBlocked(m.id) ? '<span class="blocked-chip">Blocked</span>' : ''}</div>
           <div class="sub">${sub}</div>
+          <div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(m.id)}" style="display:none;"></div>
         </div>
       </div>`;
     }).join('');
+    ProfileExtras.fillIn(document.getElementById('members-modal-list'));   // flag + gender + birthday under each name
     document.getElementById('members-modal').classList.add('show');
   }
   function closeMembersModal(){
@@ -1234,6 +1351,7 @@ html, body{ overscroll-behavior-y: contain; }
     // flag + gender + birthday pills and the bio (fetched fresh; the row above is already on screen)
     const pillsEl = document.getElementById('profile-modal-pills'), bioEl = document.getElementById('profile-modal-bio');
     ProfileExtras.render(pillsEl, bioEl, null);
+    Safety.renderButtons(document.getElementById('profile-modal-safety'), { userId: p.userId, name: p.name, roomId: ROOM_ID });   // Block + Report (hidden on your own profile)
     const viewToken = ++profileViewToken;
     ProfileExtras.load({ userId: p.userId, idNumber: p.id }).then(extras => {
       if(viewToken === profileViewToken && extras) ProfileExtras.render(pillsEl, bioEl, extras);
@@ -1441,7 +1559,7 @@ html, body{ overscroll-behavior-y: contain; }
       if(seats.some(s => s.userId === uid)){
         items.push({ label:'Remove from seat', run: () => doRemoveFromSeat(uid, name) });
       } else {
-        items.push({ label: m.seat_blocked ? 'Put back on seat' : 'Put on seat', run: () => doPutOnSeat(uid, name) });
+        items.push({ label: 'Put on seat', run: () => doPutOnSeat(uid, name) });
         items.push({ label:'Invite to seat', run: () => doInviteToSeat(uid, name) });
       }
     }
@@ -1519,6 +1637,7 @@ html, body{ overscroll-behavior-y: contain; }
         <div style="flex:1; min-width:0;">
           <div class="name copyable">${escapeHtml(name)}</div>
           <div class="sub">${sub}</div>
+          <div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(r.user_id)}" style="display:none;"></div>
         </div>
         ${action}
       </div>`;
@@ -1546,6 +1665,7 @@ html, body{ overscroll-behavior-y: contain; }
       : '<p class="mm-empty">Nobody is kicked.</p>';
 
     document.getElementById('manage-body').innerHTML = html;
+    ProfileExtras.fillIn(document.getElementById('manage-body'));
   }
   async function addAdminById(){
     const input = document.getElementById('manage-admin-id');
@@ -1652,13 +1772,12 @@ html, body{ overscroll-behavior-y: contain; }
     const themeBtn = document.getElementById('info-theme-btn');
     const renameBtn = document.getElementById('info-rename-btn');
     const manageBtn = document.getElementById('info-manage-btn');
-    const announceBtn = document.getElementById('info-announce-btn');
     const followBtn = document.getElementById('info-follow-btn');
     if(followBtn){
       followBtn.style.display = (currentUser && roomOwnerId && currentUser.id !== roomOwnerId) ? 'flex' : 'none';   // you cannot follow your own room
       followBtn.innerHTML = isFollowingRoom ? '✅ &nbsp;Following — tap to unfollow' : '⭐ &nbsp;Follow room';
     }
-    if(announceBtn) announceBtn.style.display = isStaff() ? 'flex' : 'none';   // owner or admin
+    renderAnnounceBox();   // the pencil depends on who the owner is
     if(renameBtn) renameBtn.style.display = canCustomizeRoom ? 'flex' : 'none';
     if(manageBtn) manageBtn.style.display = isStaff() ? 'flex' : 'none';
     if(themeBtn) themeBtn.innerHTML = isOfficialRoom
@@ -1672,12 +1791,24 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   const DEFAULT_BANNER = 'Welcome 🌿 Please be kind and respect each other while talking.';
+  // The welcome line always stays; the announcement box sits right under it.
+  // Everyone sees the box when there is an announcement; the OWNER always sees it (with the ✏️ to write / edit).
+  function isRoomOwner(){ return !!(currentUser && roomOwnerId && currentUser.id === roomOwnerId); }
+  function renderAnnounceBox(){
+    const box = document.getElementById('room-announce');
+    if(!box) return;
+    const text = lastRoom && lastRoom.announcement ? TextPolicy.clean(lastRoom.announcement, 'announcement') : '';
+    const owner = isRoomOwner();
+    const textEl = document.getElementById('room-announce-text');
+    textEl.textContent = text || (owner ? 'No announcement yet — tap ✏️ to write one for everyone in this room.' : '');
+    textEl.classList.toggle('announce-empty', !text);
+    document.getElementById('announce-edit-btn').style.display = owner ? 'flex' : 'none';
+    box.classList.toggle('show', !!text || owner);
+  }
   function applyBanner(room){
-    const el = document.getElementById('room-banner');
-    if(!el) return;
-    const text = room && room.announcement ? TextPolicy.clean(room.announcement, 'announcement') : '';
-    el.textContent = text ? '📢 ' + text : DEFAULT_BANNER;
-    el.classList.toggle('has-announcement', !!text);
+    const welcome = document.getElementById('room-banner');
+    if(welcome) welcome.textContent = DEFAULT_BANNER;
+    renderAnnounceBox();
   }
 
   function applyRoomInfoToUI(room){
@@ -1833,7 +1964,7 @@ html, body{ overscroll-behavior-y: contain; }
   TextPolicy.bind(document.getElementById('announce-input'), 'announcement', { counter: 'announce-count' });
   function openAnnounceDialog(){
     toggleInfoMenu(false);
-    if(!isStaff()){ showToast('Only the room owner or an admin can set the announcement.'); return; }
+    if(!isRoomOwner()){ showToast('Only the room owner can edit the announcement.'); return; }
     const input = document.getElementById('announce-input');
     input.value = TextPolicy.clean(lastRoom?.announcement || '', 'announcement');
     TextPolicy.refresh(input);
@@ -1848,7 +1979,8 @@ html, body{ overscroll-behavior-y: contain; }
     const { data, error } = await supabaseClient.rpc('set_room_announcement', { p_room: ROOM_ID, p_text: text || null });
     if(error){
       console.error('Announcement save failed:', error);
-      showToast(/Only the room owner/.test(error.message || '') ? 'Only the room owner or an admin can set the announcement.' : 'Could not save the announcement.');
+      const why = String(error.message || error.details || error.code || '').slice(0, 110);
+      showToast(/Only the room owner/.test(why) ? 'Only the room owner can edit the announcement.' : ('Could not save the announcement: ' + why));
       return false;
     }
     if(!lastRoom) lastRoom = { id: ROOM_ID };
@@ -1876,6 +2008,153 @@ html, body{ overscroll-behavior-y: contain; }
     closeAnnounceDialog();
     showToast('Announcement removed');
   }
+
+  // ---------- Messages icon + sheet: unread friend messages, friend requests, System — without leaving the room ----------
+  const MS_BACK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+  const MS_CLOSE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  let msOpen = false, msView = 'list', msChatId = null;
+  const msProfiles = {};
+
+  function msEl(id){ return document.getElementById(id); }
+  function paintMsgFab(){
+    const n = Notify.state.total;
+    msEl('msg-fab').classList.toggle('show', n > 0);          // no notification -> no icon
+    msEl('msg-fab-badge').textContent = Notify.badgeText(n);
+  }
+  async function msEnsureProfiles(ids){
+    const need = ids.filter(i => i && !msProfiles[i]);
+    if(!need.length) return;
+    const { data } = await supabaseClient.from('profiles').select('id, name, avatar_url').in('id', need);
+    (data || []).forEach(p => { msProfiles[p.id] = p; });
+  }
+  const msAv = (p, badge) => `<div class="ms-av"><div class="a">${p && p.avatar_url ? `<img src="${escapeHtml(p.avatar_url)}" alt="">` : escapeHtml(TextPolicy.initial(p ? p.name : '?'))}</div>${badge ? `<span class="b">${Notify.badgeText(badge)}</span>` : ''}</div>`;
+
+  function openMsgSheet(){ msOpen = true; msView = 'list'; msChatId = null; msEl('msg-sheet').classList.add('show'); renderMsgSheet(); }
+  function closeMsgSheet(){ msOpen = false; msEl('msg-sheet').classList.remove('show'); }
+  function msBack(){ msView = 'list'; msChatId = null; renderMsgSheet(); }
+
+  async function renderMsgSheet(){
+    if(!msOpen) return;
+    const head = msEl('ms-head'), body = msEl('ms-body'), foot = msEl('ms-foot');
+    if(msView === 'chat') return renderMsChat();
+    if(msView === 'system') return renderMsSystem();
+    foot.style.display = 'none';
+    head.innerHTML = `<div class="ms-title">Messages</div><button class="ms-icon" onclick="closeMsgSheet()" aria-label="Close">${MS_CLOSE}</button>`;
+    const N = Notify.state;
+    const ids = Object.keys(N.messages).filter(k => N.messages[k] > 0);
+    let reqs = [];
+    if(N.requests > 0){
+      const { data } = await supabaseClient.from('friend_requests')
+        .select('id, from_user, profiles:from_user(name, avatar_url, id_number)').eq('to_user', currentUser.id).eq('status', 'pending');
+      reqs = data || [];
+    }
+    await msEnsureProfiles(ids);
+    if(!msOpen || msView !== 'list') return;
+    let html = '';
+    if(N.system > 0){
+      html += `<div class="ms-row" onclick="openMsSystem()"><div class="ms-av"><div class="ms-ico bell">🔔</div><span class="b">${Notify.badgeText(N.system)}</span></div>
+        <div style="min-width:0;"><div class="ms-name">System</div><div class="ms-sub">${escapeHtml(N.latestSystem ? N.latestSystem.title : '')}</div></div></div>`;
+    }
+    if(reqs.length){
+      html += '<div class="ms-sec">Friend requests</div>' + reqs.map(r => {
+        const p = r.profiles || {};
+        return `<div class="ms-row" style="cursor:default;">${msAv(p, 0)}
+          <div style="min-width:0;"><div class="ms-name" dir="auto">${escapeHtml(p.name || 'Unknown')}</div><div class="ms-sub">wants to be your friend</div></div>
+          <div class="ms-acts"><button onclick="msRespond('${escapeAttr(String(r.id))}','accepted','${escapeAttr(r.from_user)}')">Accept</button><button class="no" onclick="msRespond('${escapeAttr(String(r.id))}','declined','')">Decline</button></div></div>`;
+      }).join('');
+    }
+    if(ids.length){
+      html += '<div class="ms-sec">New messages</div>' + ids.map(id => {
+        const p = msProfiles[id] || { name: 'Friend' };
+        const n = N.messages[id];
+        return `<div class="ms-row" onclick="openMsChat('${escapeAttr(id)}')">${msAv(p, n)}
+          <div style="min-width:0;"><div class="ms-name" dir="auto">${escapeHtml(p.name)}</div><div class="ms-sub">${n} new message${n > 1 ? 's' : ''}</div></div></div>`;
+      }).join('');
+    }
+    body.innerHTML = html || '<div class="ms-empty">You\'re all caught up. 🎉</div>';
+  }
+
+  async function msRespond(requestId, outcome, fromUserId){
+    const { error } = await supabaseClient.from('friend_requests').update({ status: outcome }).eq('id', requestId);
+    if(error){ showToast('Could not answer the request.'); return; }
+    if(outcome === 'accepted' && fromUserId){
+      await supabaseClient.from('direct_messages').insert({ sender_id: currentUser.id, receiver_id: fromUserId, content: 'Thanks for adding me! 👋' });
+    }
+    showToast(outcome === 'accepted' ? 'Friend request accepted.' : 'Request declined.');
+    await Notify.refresh();
+    renderMsgSheet();
+  }
+
+  // System notifications
+  async function openMsSystem(){ msView = 'system'; renderMsgSheet(); }
+  async function renderMsSystem(){
+    msEl('ms-foot').style.display = 'none';
+    msEl('ms-head').innerHTML = `<button class="ms-icon" onclick="msBack()" aria-label="Back">${MS_BACK}</button><div class="ms-title">System</div>`;
+    const body = msEl('ms-body');
+    body.innerHTML = '<div class="ms-empty">Loading...</div>';
+    const { data, error } = await supabaseClient.from('user_notifications').select('*').order('created_at', { ascending: false }).limit(50);
+    if(msView !== 'system') return;
+    if(error || !data || !data.length){ body.innerHTML = '<div class="ms-empty">No notifications yet.</div>'; return; }
+    body.innerHTML = data.map(n => `<div class="nt-row ${n.read_at ? '' : 'new'}"><div class="nt-title">${escapeHtml(n.title)}</div>${n.body ? `<div class="nt-body" dir="auto">${escapeHtml(n.body)}</div>` : ''}<div class="nt-time">${escapeHtml(new Date(n.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</div></div>`).join('');
+    Notify.markSystemRead();
+  }
+
+  // a friend's chat, right here in the room
+  async function openMsChat(id){
+    msView = 'chat'; msChatId = id;
+    await msEnsureProfiles([id]);
+    await renderMsChat();
+    Notify.markChatRead(id);
+  }
+  async function renderMsChat(){
+    const id = msChatId, p = msProfiles[id] || { name: 'Friend' };
+    msEl('ms-head').innerHTML = `<button class="ms-icon" onclick="msBack()" aria-label="Back">${MS_BACK}</button><div class="ms-title" dir="auto">${escapeHtml(p.name)}</div>`;
+    const foot = msEl('ms-foot');
+    const mine = Safety.isBlocked(id), theirs = Safety.isBlockedBy(id);
+    foot.style.display = 'flex';
+    if(mine || theirs){
+      foot.innerHTML = `<div class="ms-note">${mine ? 'You blocked this person. Unblock them from their profile to send messages.' : "This person has blocked you. You can't send messages."}</div>`;
+    } else {
+      foot.innerHTML = `<input type="text" id="ms-input" placeholder="Message..." dir="auto" onkeydown="if(event.key==='Enter') msSend()"><button type="button" onclick="msSend()" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>`;
+      TextPolicy.bind(msEl('ms-input'), 'message');
+    }
+    await loadMsChat();
+  }
+  async function loadMsChat(){
+    const id = msChatId;
+    if(!id) return;
+    const { data } = await supabaseClient.from('direct_messages').select('id, sender_id, content, created_at')
+      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${id}),and(sender_id.eq.${id},receiver_id.eq.${currentUser.id})`)
+      .order('created_at', { ascending: false }).limit(40);
+    if(msView !== 'chat' || msChatId !== id) return;
+    const rows = (data || []).slice().reverse();
+    const body = msEl('ms-body');
+    body.innerHTML = '<div class="ms-chat">' + rows.map(m => `<div class="ms-b ${m.sender_id === currentUser.id ? 'me' : 'them'}" dir="auto">${escapeHtml(TextPolicy.clean(m.content, 'message'))}</div>`).join('') + '</div>';
+    body.scrollTop = body.scrollHeight;
+  }
+  async function msSend(){
+    const input = msEl('ms-input'), id = msChatId;
+    if(!input || !id) return;
+    const value = TextPolicy.clean(input.value, 'message');
+    if(!value) return;
+    if(Safety.isBlocked(id) || Safety.isBlockedBy(id)){ renderMsChat(); return; }
+    input.value = '';
+    const { error } = await supabaseClient.from('direct_messages').insert({ sender_id: currentUser.id, receiver_id: id, content: value });
+    if(error){
+      showToast(/cannot message/i.test(error.message || '') ? 'You cannot message this person.' : 'Could not send message.');
+      Safety.load();
+      return;
+    }
+    loadMsChat();
+  }
+
+  Notify.onChange(() => {
+    paintMsgFab();
+    if(!msOpen) return;
+    if(msView === 'list') renderMsgSheet();
+    else if(msView === 'chat' && Notify.unreadFor(msChatId) > 0){ loadMsChat(); Notify.markChatRead(msChatId); }   // a new message while the chat is open
+  });
+  Safety.onChange(() => { if(msOpen && msView === 'chat') renderMsChat(); });
 
   // ---------- Recently entered rooms + Follow ----------
   let isFollowingRoom = false;
@@ -1921,6 +2200,42 @@ html, body{ overscroll-behavior-y: contain; }
     }
   }
 
+  const MIC_OFF_SVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l22 22"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+
+  // Who is really talking / who has the mic switched off, straight from the voice connection (LiveKit).
+  //  speaking = the voice level of that person is above the "talking" level right now (works for me too)
+  //  muted    = sitting on a seat but their mic is not sending (muted, or not switched on)
+  function voiceState(){
+    const speaking = new Set(), muted = new Set();
+    const known = !!(lkRoom && lkRoom.state === 'connected');
+    if(!known) return { speaking, muted, known };
+    const remote = lkRoom.remoteParticipants || lkRoom.participants;       // name differs between LiveKit versions
+    const people = [lkRoom.localParticipant].concat(remote ? Array.from(remote.values()) : []);
+    const micOn = new Map();
+    people.forEach(p => {
+      if(!p) return;
+      micOn.set(p.identity, !!p.isMicrophoneEnabled);
+      if(p.isSpeaking && p.isMicrophoneEnabled) speaking.add(p.identity);
+    });
+    seats.forEach(s => { if(s.taken && s.userId && !micOn.get(s.userId)) muted.add(s.userId); });
+    return { speaking, muted, known };
+  }
+  // red mark on the seats of people I blocked (visible only to me)
+  function syncSeatBlockUi(){
+    document.querySelectorAll('#seats-grid .seat[data-uid]').forEach(el => {
+      const uid = el.getAttribute('data-uid');
+      el.classList.toggle('blocked-by-me', !!uid && Safety.isBlocked(uid));
+    });
+  }
+  function syncSeatVoiceUi(){
+    const v = voiceState();
+    document.querySelectorAll('#seats-grid .seat[data-uid]').forEach(el => {
+      const uid = el.getAttribute('data-uid');
+      el.classList.toggle('speaking', !!uid && v.known && v.speaking.has(uid));
+      el.classList.toggle('muted', !!uid && v.known && v.muted.has(uid));
+    });
+  }
+
   function renderSeats(){
     const grid = document.getElementById('seats-grid');
     const lockSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><path d="M12 2a5 5 0 0 0-5 5v3H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-1V7a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3z"/></svg>';
@@ -1939,11 +2254,13 @@ html, body{ overscroll-behavior-y: contain; }
         label = (i+1);
       }
       return `
-      <button class="seat ${s.taken ? 'taken' : ''} ${s.speaking ? 'speaking' : ''} ${s.locked ? 'locked' : ''}" onclick="handleSeatClick(${i})">
-        <div class="seat-circle">${inner}</div>
+      <button class="seat ${s.taken ? 'taken' : ''} ${s.locked ? 'locked' : ''}" data-uid="${s.taken ? escapeHtml(s.userId || '') : ''}" onclick="handleSeatClick(${i})">
+        <div class="seat-circle">${inner}${s.taken ? '<span class="seat-muted-badge">' + MIC_OFF_SVG + '</span>' : ''}</div>${s.taken ? '<span class="seat-block-badge" title="You blocked this person">🚫</span>' : ''}
         <div class="seat-label">${label}</div>
       </button>
     `;}).join('');
+    syncSeatVoiceUi();   // put the green ring / muted icon straight back after a redraw
+    syncSeatBlockUi();
   }
 
   function buildSeatsFromRows(rows){
@@ -1963,8 +2280,7 @@ html, body{ overscroll-behavior-y: contain; }
           name,
           idNumber,
           initial: isMe ? 'Me' : TextPolicy.initial(name),
-          avatarUrl: r.profiles?.avatar_url || null,
-          speaking:true
+          avatarUrl: r.profiles?.avatar_url || null
         };
         rememberProfile(name, { userId: r.occupied_by, idNumber, avatarUrl: r.profiles?.avatar_url || null, initial: isMe ? 'Me' : TextPolicy.initial(name) });
       }
@@ -2040,10 +2356,7 @@ html, body{ overscroll-behavior-y: contain; }
       showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
       return;
     }
-    if(roomMembers[currentUser.id]?.seat_blocked && !isStaff()){
-      showToast('You were removed from the seats. Ask an admin to invite you back.');
-      return;
-    }
+    // Being removed from a seat no longer locks you out: you can sit again yourself whenever you like.
     openSeatMenu(i, 'empty');
   }
 
@@ -2160,6 +2473,15 @@ html, body{ overscroll-behavior-y: contain; }
   let leavingRoom = false;        // set once the person taps Exit / the page is closing
   let micEnabled = false;
   let deafened = false;
+  function applyAudioMute(){
+    document.querySelectorAll('[id^="lk-audio-"]').forEach(el => { el.muted = deafened || Safety.isBlocked(el.dataset.uid); });
+  }
+  // blocking / unblocking changes what you see and hear straight away
+  Safety.onChange(() => {
+    renderMessages(); applyAudioMute(); syncSeatBlockUi();
+    const mm = document.getElementById('members-modal');
+    if(mm && mm.classList.contains('show')) openMembersModal();   // redraw the online list so the "Blocked" marks follow
+  });
   let voiceFailures = 0;
 
   async function getLiveKitToken(){
@@ -2210,18 +2532,24 @@ html, body{ overscroll-behavior-y: contain; }
       const room = new Room();
       lkRoom = room;
 
-      room.on(RoomEvent.TrackSubscribed, (track) => {
+      room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
         if(track.kind === 'audio'){
           const el = track.attach();
           el.id = 'lk-audio-' + track.sid;
           el.autoplay = true;
-          el.muted = deafened; // respect the listener's current mute-room state
+          el.dataset.uid = participant ? participant.identity : '';
+          el.muted = deafened || Safety.isBlocked(el.dataset.uid); // respect the listener's mute-room state, and never play a blocked person
           document.body.appendChild(el);
         }
       });
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
         track.detach().forEach(el => el.remove());
       });
+      // keep the seats' green ring (talking) and crossed-mic icon (muted) in step with the real voice
+      [RoomEvent.ActiveSpeakersChanged, RoomEvent.TrackMuted, RoomEvent.TrackUnmuted,
+       RoomEvent.TrackPublished, RoomEvent.TrackUnpublished, RoomEvent.LocalTrackPublished, RoomEvent.LocalTrackUnpublished,
+       RoomEvent.ParticipantConnected, RoomEvent.ParticipantDisconnected, RoomEvent.Connected
+      ].forEach(ev => { if(ev) room.on(ev, () => { if(lkRoom === room) syncSeatVoiceUi(); }); });
       room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
         if(!room.canPlaybackAudio) showToast('Tap anywhere to turn on the room sound');
       });
@@ -2242,6 +2570,7 @@ html, body{ overscroll-behavior-y: contain; }
         micEnabled = false;
       }
       voiceFailures = 0;
+      syncSeatVoiceUi();
       try{ await room.startAudio(); }catch(err){}
     }catch(err){
       console.error('LiveKit connect failed:', err);
@@ -2262,6 +2591,7 @@ html, body{ overscroll-behavior-y: contain; }
     lkMode = null;
     micEnabled = false;
     document.querySelectorAll('[id^="lk-audio-"]').forEach(el => el.remove());
+    syncSeatVoiceUi();
   }
 
   // Full stop (Exit, banned, kicked)
@@ -2322,7 +2652,7 @@ html, body{ overscroll-behavior-y: contain; }
   // doesn't affect anyone else's mic or what other users hear.
   function toggleDeafen(){
     deafened = !deafened;
-    document.querySelectorAll('[id^="lk-audio-"]').forEach(el => el.muted = deafened);
+    applyAudioMute();
     const btn = document.getElementById('deafen-btn');
     if(btn) btn.classList.toggle('deafened', deafened);
     showToast(deafened ? 'Room muted for you' : 'Room unmuted for you');
@@ -2332,6 +2662,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(!lkRoom || lkMode !== 'speak') return;
     micEnabled = !micEnabled;
     await lkRoom.localParticipant.setMicrophoneEnabled(micEnabled);
+    syncSeatVoiceUi();
     showToast(micEnabled ? 'Mic on' : 'Mic off');
     // Refresh the seat menu label if it's currently open for my own seat
     const menu = document.getElementById('seat-action-menu');
@@ -2396,6 +2727,7 @@ html, body{ overscroll-behavior-y: contain; }
   function renderMessages(){
     const box = document.getElementById('messages');
     box.innerHTML = messages.map((m, i) => {
+      if(m.from !== 'me' && Safety.isBlocked(m.senderId)) return '';   // blocked: you do not see their messages
       const senderName = m.name;
       const initial = m.from === 'me' ? 'Me' : (m.initial || TextPolicy.initial(senderName));
       const avatarUrl = m.avatarUrl;
@@ -2407,12 +2739,14 @@ html, body{ overscroll-behavior-y: contain; }
           <div class="msg-name-row">
             <span class="msg-avatar" onclick="openProfileFor('${attrJs(m.senderId || '')}','${attrJs(senderName)}')">${avatarHtml(avatarUrl, initial)}</span>
             <span class="sender-name copyable ${m.from === 'me' ? 'me' : ''}">${escapeHtml(senderName)}</span>
+            <span class="pf-pills pf-mini" data-pf="${escapeHtml(m.senderId || '')}" data-pf-compact="1" style="display:none;"></span>
           </div>
           <span class="bubble">${quoted}${escapeHtml(m.text)}</span>
         </div>
       </div>
     `;
     }).join('');
+    ProfileExtras.fillIn(box);   // known profiles fill instantly, the rest in one request
     box.scrollTop = box.scrollHeight;
     attachSwipeHandlers();
   }
@@ -2465,6 +2799,12 @@ html, body{ overscroll-behavior-y: contain; }
     document.getElementById('reply-preview-bar').classList.remove('show');
   }
 
+  // For text placed inside an onclick="fn('...')" attribute
+  function escapeAttr(str){
+    return String(str || '')
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
   function escapeHtml(str){
     const div = document.createElement('div');
     div.textContent = str;

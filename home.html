@@ -414,6 +414,66 @@
     flex-shrink:0;
   }
 
+  /* ---------- red numbers (unread) ---------- */
+  .nav-btn{ position:relative; }
+  .nav-badge{
+    position:absolute; top:0; left:calc(50% + 4px); min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+    background:#e53935; color:#fff; font-size:0.66rem; font-weight:700; line-height:1;
+    display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 2px var(--card);
+  }
+  .social-tab-btn{ position:relative; }
+  .tab-dot{ position:absolute; top:5px; right:10px; width:9px; height:9px; border-radius:50%; background:#e53935; box-shadow: 0 0 0 2px var(--card); }
+  .avatar-wrap{ position:relative; flex-shrink:0; }
+  .row-badge{
+    position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 5px; border-radius:10px;
+    background:#e53935; color:#fff; font-size:0.68rem; font-weight:700; line-height:1;
+    display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 2px var(--card);
+  }
+  .sys-ico{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; }
+  .sys-ico.bell{ background: linear-gradient(135deg,#ffd166,#f4a300); }
+  .sys-ico.people{ background: linear-gradient(135deg,#4aa8ff,#1f6fe0); }
+  .friend-row.unread .name{ font-weight:800; }
+  .friend-row.unread .sub{ color: var(--ink); font-weight:600; }
+  .nt-row{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .nt-row.new .nt-title::before{ content:''; display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:#e53935; }
+  .nt-title{ font-weight:700; color: var(--ink); font-size:0.92rem; }
+  .nt-body{ margin-top:3px; color: var(--ink-soft); font-size:0.86rem; line-height:1.45; overflow-wrap:anywhere; }
+  .nt-time{ margin-top:4px; color: var(--ink-soft); font-size:0.72rem; }
+
+  /* ---------- Blocked users + owner Reports ---------- */
+  .bl-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .bl-row .bl-av{ width:44px; height:44px; border-radius:50%; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; background: var(--teal-soft); color: var(--teal-deep); font-weight:700; }
+  .bl-row .bl-av img{ width:100%; height:100%; object-fit:cover; }
+  .bl-row .bl-name{ font-weight:600; color: var(--ink); overflow-wrap:anywhere; }
+  .bl-row .bl-id{ font-size:0.76rem; color: var(--ink-soft); }
+  .bl-row .bl-un{ margin-left:auto; border:1.5px solid var(--line); background: var(--card); color: var(--teal-deep); font-weight:600; font-size:0.8rem; padding:8px 14px; border-radius:999px; cursor:pointer; }
+  .rp-tabs{ display:flex; gap:8px; margin: 6px 0 12px; }
+  .rp-tab{ flex:1; border:none; border-radius:12px; padding:10px 2px; white-space:nowrap; font-family:'Inter',sans-serif; font-weight:700; font-size:0.72rem; background: var(--teal-soft); color: var(--teal-deep); cursor:pointer; }
+  .rp-tab.active{ background: var(--teal-deep); color:#fff; }
+  .rp-row{ background: var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+  .rp-top{ display:flex; justify-content:space-between; gap:8px; font-size:0.86rem; color: var(--ink); }
+  .rp-top span{ color: var(--ink-soft); font-size:0.76rem; }
+  .rp-who{ margin-top:6px; font-size:0.84rem; color: var(--ink); overflow-wrap:anywhere; }
+  .rp-who small{ color: var(--ink-soft); }
+  .rp-note{ margin-top:6px; font-size:0.84rem; color: var(--ink); overflow-wrap:anywhere; }
+  .rp-quote{ margin-top:6px; padding:6px 10px; border-left:3px solid var(--line); font-size:0.8rem; color: var(--ink-soft); overflow-wrap:anywhere; }
+  .rp-meta{ margin-top:6px; font-size:0.74rem; color: var(--ink-soft); }
+  .rp-resolve{ margin-top:10px; border:none; background: var(--teal-deep); color:#fff; font-weight:600; font-size:0.8rem; padding:9px 16px; border-radius:10px; cursor:pointer; }
+  .rp-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .rp-btns button{ border:none; border-radius:10px; padding:9px 14px; font-weight:600; font-size:0.8rem; cursor:pointer; background: var(--teal-soft); color: var(--teal-deep); }
+  .rp-btns button.warn{ background:#fff3d6; color:#8a5a00; }
+  .rp-btns button.bad{ background:#fbe4e2; color:#b1362f; }
+  .rp-btns button.good{ background: var(--teal-deep); color:#fff; }
+  .rp-urgent{ margin-bottom:6px; display:inline-block; padding:3px 10px; border-radius:999px; background:#b1362f; color:#fff; font-size:0.72rem; font-weight:700; }
+  .rp-row.urgent{ border-color:#e9b3ae; }
+  .rp-statement{ margin-top:8px; padding:8px 12px; background: var(--bg); border-radius:10px; font-size:0.86rem; color: var(--ink); white-space:pre-line; overflow-wrap:anywhere; }
+  .rp-pics{ display:flex; gap:10px; margin-top:8px; }
+  .rp-pics figure{ margin:0; flex:1; text-align:center; }
+  .rp-pics img, .rp-pics .rp-nopic{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:12px; background: var(--bg); display:flex; align-items:center; justify-content:center; color: var(--ink-soft); font-size:0.74rem; cursor:pointer; }
+  .rp-pics figcaption{ margin-top:4px; font-size:0.72rem; color: var(--ink-soft); }
+  .rp-behalf{ margin-top:6px; padding:6px 10px; border-radius:10px; background:#fff3d6; color:#8a5a00; font-size:0.8rem; font-weight:600; overflow-wrap:anywhere; }
+  .rp-act{ margin-top:6px; font-size:0.78rem; color: var(--teal-deep); font-weight:600; }
+
   /* ---------- Edit profile screen ---------- */
   #edit-profile{ z-index:36; }
   .ep-header{ display:flex; align-items:center; gap:6px; }
@@ -544,6 +604,16 @@
   <!-- OWNER PANEL (only visible to the site owner) -->
   <div class="screen" id="screen-owner" style="padding: 24px 18px 96px;">
     <div class="section-title">Owner Panel</div>
+
+    <div class="section-title" style="margin-top:4px;">Reports</div>
+    <div class="rp-tabs">
+      <button type="button" class="rp-tab active" id="rp-tab-open" onclick="showReportTab('open')">Open</button>
+      <button type="button" class="rp-tab" id="rp-tab-resolved" onclick="showReportTab('resolved')">Resolved</button>
+      <button type="button" class="rp-tab" id="rp-tab-appeals" onclick="showReportTab('appeals')">Appeals</button>
+      <button type="button" class="rp-tab" id="rp-tab-suspended" onclick="showReportTab('suspended')">Suspended</button>
+    </div>
+    <div id="rp-list"><p class="hint">Loading...</p></div>
+    <div class="section-title" style="margin-top:24px;">App theme</div>
     <p class="hint" style="margin-bottom:16px;">Common App Theme — applies across Home, Inbox, Login/Signup, Profile, Search, Friends, Settings. Room themes and profile pictures are separate and unaffected.</p>
 
     <label style="font-size:0.8rem; color:var(--ink-soft); font-weight:600;">Primary color</label>
@@ -597,7 +667,7 @@
   <!-- SOCIAL -->
   <div class="screen" id="screen-social">
     <div class="social-tabs">
-      <button class="social-tab-btn active" id="stab-message" onclick="showSocialTab('message')">Message</button>
+      <button class="social-tab-btn active" id="stab-message" onclick="showSocialTab('message')">Message<span class="tab-dot" id="stab-dot" style="display:none;"></span></button>
       <button class="social-tab-btn" id="stab-friends" onclick="showSocialTab('friends')">Friends</button>
       <button class="social-tab-btn" id="stab-requests" onclick="showSocialTab('requests')">Requests</button>
     </div>
@@ -644,6 +714,8 @@
     <div class="you-card" onclick="showToast('Change password — coming soon')"><span>Change password</span><span class="arrow">›</span></div>
     <div class="you-card" onclick="showToast('Notification settings — coming soon')"><span>Notifications</span><span class="arrow">›</span></div>
     <div class="you-card" onclick="showToast('Privacy settings — coming soon')"><span>Privacy</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="openBlockedModal()"><span>Blocked users</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="location.href='appeal.html'"><span>Appeal for another account</span><span class="arrow">›</span></div>
     <div class="section-title" style="margin-top:18px;">More</div>
     <div class="you-card" onclick="confirmLogout()" style="color:#b1362f;"><span>Log out</span><span class="arrow">›</span></div>
   </div>
@@ -665,6 +737,7 @@
     <button class="nav-btn" id="nav-social" onclick="showScreen('social')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c2.6.4 4.5 2.6 4.5 5.3"/></svg></span>
       <span class="nav-label">Social</span>
+      <span class="nav-badge" id="nav-social-badge" style="display:none;"></span>
     </button>
   </div>
 
@@ -698,7 +771,28 @@
       </span>
       <div class="pf-pills" id="profile-modal-pills" style="display:none;"></div>
       <div class="pf-bio" id="profile-modal-bio" style="display:none;"></div>
+      <div class="sf-actions" id="profile-modal-safety"></div>
     </div>
+  </div>
+
+  <div class="profile-modal" id="system-modal">
+    <div class="profile-modal-header ep-header">
+      <button class="icon-btn" onclick="closeSystemModal()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="ep-title">System</span>
+    </div>
+    <div class="ep-body" id="system-list"></div>
+  </div>
+
+  <div class="profile-modal" id="blocked-modal">
+    <div class="profile-modal-header ep-header">
+      <button class="icon-btn" onclick="closeBlockedModal()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="ep-title">Blocked users</span>
+    </div>
+    <div class="ep-body" id="blocked-list"></div>
   </div>
 
   <div class="profile-modal" id="edit-profile">
@@ -745,6 +839,8 @@
 <script src="supabase-config.js"></script>
 <script src="text-policy.js"></script>
 <script src="profile-extras.js"></script>
+<script src="safety.js"></script>
+<script src="notify.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script>
@@ -933,7 +1029,7 @@
     btn.disabled = false;
     if(error || !rows || !rows.length){
       console.error('Profile save failed:', error);
-      showToast('Could not save your profile.');
+      showToast(error ? ('Could not save your profile: ' + String(error.message || error.code || '').slice(0, 110)) : 'Could not save your profile.');
       return;
     }
     Object.assign(currentProfile, rows[0]);   // the server's cleaned values are the truth
@@ -963,6 +1059,7 @@
     if(navBtn) navBtn.classList.add('active');
     try{ localStorage.setItem('home-active-tab', name); }catch(err){}
     if(name === 'chat' && typeof refreshChatScreen === 'function') refreshChatScreen();   // fresh Recently list + live counts
+    if(name === 'owner' && typeof loadReports === 'function') loadReports();
   }
 
   async function confirmLogout(){
@@ -986,8 +1083,13 @@
     const pillsEl = document.getElementById('profile-modal-pills'), bioEl = document.getElementById('profile-modal-bio');
     ProfileExtras.render(pillsEl, bioEl, null);
     const token = ++profileModalToken;
+    const safetyEl = document.getElementById('profile-modal-safety');
+    safetyEl.style.display = 'none';
     ProfileExtras.load({ idNumber }).then(extras => {
-      if(token === profileModalToken && extras) ProfileExtras.render(pillsEl, bioEl, extras);
+      if(token === profileModalToken && extras){
+        ProfileExtras.render(pillsEl, bioEl, extras);
+        Safety.renderButtons(safetyEl, { userId: extras.id, name });   // Block + Report (hidden on your own profile)
+      }
     });
     document.getElementById('profile-modal').classList.add('show');
   }
@@ -1071,23 +1173,68 @@
   // "Message" — only people you have an actual conversation with
   function renderMessageList(){
     const box = document.getElementById('spanel-message');
+    const N = Notify.state;
+    const sys = N.latestSystem;
+    const row = (ico, cls, title, sub, time, count, onclick) => `
+      <div class="friend-row ${count ? 'unread' : ''}" onclick="${onclick}">
+        <div class="avatar-wrap"><div class="sys-ico ${cls}">${ico}</div>${count ? `<span class="row-badge">${Notify.badgeText(count)}</span>` : ''}</div>
+        <div style="min-width:0;flex:1;">
+          <div class="name">${title}</div>
+          <div class="sub">${escapeHtml(sub)}</div>
+        </div>
+        ${time ? `<div class="sub" style="margin-left:auto;white-space:nowrap;">${escapeHtml(time)}</div>` : ''}
+      </div>`;
+    const top =
+      row('🔔', 'bell', 'System', sys ? sys.title : 'No notifications yet', sys ? formatTimeAgo(sys.created_at) : '', N.system, 'openSystemModal()') +
+      row('👥', 'people', 'Friend Requests', N.requests ? (N.requests + ' waiting for you') : 'No new requests', '', N.requests, "showSocialTab('requests')");
+
     const withMessages = homeFriends.filter(f => f.lastAt);
-    if(!withMessages.length){
-      box.innerHTML = '<p class="hint">No conversations yet.</p>';
-      return;
-    }
-    box.innerHTML = withMessages.map(f => {
+    const chats = withMessages.map(f => {
       const initial = TextPolicy.initial(f.name);
+      const unread = Notify.unreadFor(f.id);
       return `
-      <div class="friend-row" onclick="location.href='inbox.html?open=${f.id}'">
-        <div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>
+      <div class="friend-row ${unread ? 'unread' : ''}" onclick="location.href='inbox.html?open=${f.id}'">
+        <div class="avatar-wrap"><div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>${unread ? `<span class="row-badge">${Notify.badgeText(unread)}</span>` : ''}</div>
         <div>
           <div class="name copyable">${escapeHtml(f.name)}</div>
           <div class="sub">${escapeHtml(f.lastMessage)} · ${formatTimeAgo(f.lastAt)}</div>
+          <div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(f.id)}" style="display:none;"></div>
         </div>
       </div>
     `;}).join('');
+    box.innerHTML = top + (chats || '<p class="hint">No conversations yet.</p>');
+    ProfileExtras.fillIn(box);
   }
+
+  // the red numbers: Social icon, the dot on "Message", the rows in the Messages list
+  function paintUnread(){
+    const N = Notify.state;
+    const badge = document.getElementById('nav-social-badge');
+    if(badge){ badge.textContent = Notify.badgeText(N.total); badge.style.display = N.total > 0 ? 'flex' : 'none'; }
+    const dot = document.getElementById('stab-dot');
+    if(dot) dot.style.display = N.total > 0 ? 'block' : 'none';
+    renderMessageList();
+  }
+  Notify.onChange(paintUnread);
+
+  // System notifications (warning, suspension, appeal result, "your report was reviewed")
+  async function openSystemModal(){
+    document.getElementById('system-modal').classList.add('show');
+    const box = document.getElementById('system-list');
+    box.innerHTML = '<p class="hint">Loading...</p>';
+    const { data, error } = await supabaseClient.from('user_notifications').select('*')
+      .order('created_at', { ascending: false }).limit(50);
+    if(error){ box.innerHTML = '<p class="hint">Could not load.</p>'; return; }
+    if(!data || !data.length){ box.innerHTML = '<p class="hint">No notifications yet.</p>'; return; }
+    box.innerHTML = data.map(n => `
+      <div class="nt-row ${n.read_at ? '' : 'new'}">
+        <div class="nt-title">${escapeHtml(n.title)}</div>
+        ${n.body ? `<div class="nt-body" dir="auto">${escapeHtml(n.body)}</div>` : ''}
+        <div class="nt-time">${escapeHtml(formatTimeAgo(n.created_at))}</div>
+      </div>`).join('');
+    Notify.markSystemRead();    // the red number goes away; the dots above stay until you leave this page
+  }
+  function closeSystemModal(){ document.getElementById('system-modal').classList.remove('show'); }
 
   // "Friends" — everyone you're friends with, messaged or not
   function renderFriendsList(){
@@ -1105,9 +1252,11 @@
         <div>
           <div class="name copyable">${escapeHtml(f.name)}</div>
           <div class="sub">${sub}</div>
+          <div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(f.id)}" style="display:none;"></div>
         </div>
       </div>
     `;}).join('');
+    ProfileExtras.fillIn(box);
   }
 
   // ---------- Requests sub-tab (Add Friends) — real Supabase ----------
@@ -1176,7 +1325,8 @@
     usersBox.innerHTML =
       '<div class="friend-row" style="cursor:pointer;" onclick="openProfileModal(\'' + escapeAttr(user.name) + '\', ' + (user.avatar_url ? "'" + user.avatar_url + "'" : 'null') + ', \'' + user.id_number + '\')">' +
       '<div class="avatar">' + avatarHtml(user.avatar_url, initial) + '</div>' +
-      '<div><div class="name copyable">' + escapeHtml(user.name) + '</div></div>' + actionBtn + '</div>';
+      '<div><div class="name copyable">' + escapeHtml(user.name) + '</div><div class="pf-pills pf-mini pf-left" data-pf="' + escapeHtml(user.id) + '" style="display:none;"></div></div>' + actionBtn + '</div>';
+    ProfileExtras.fillIn(usersBox);
     roomsBox.innerHTML = room
       ? `<div class="room-card" onclick="goRoom('${escapeAttr(room.id)}')">
           <div class="mine-badge">${room.is_official ? 'Official' : 'Room'}</div>
@@ -1247,6 +1397,7 @@
     row.style.opacity = '0.5';
     setTimeout(() => row.remove(), 300);
     showStatus(outcome === 'accepted' ? 'Friend request accepted.' : 'Request declined.', 'success');
+    Notify.refresh();
   }
 
   async function renderRequestLists(){
@@ -1262,13 +1413,14 @@
       return `
       <div class="friend-row" style="cursor:pointer;" onclick="openProfileModal('${escapeAttr(p?.name)}', ${p?.avatar_url ? "'" + p.avatar_url + "'" : 'null'}, '${p?.id_number || ''}')">
         <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
-        <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
+        <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div><div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(r.from_user)}" style="display:none;"></div></div>
         <div class="req-actions">
           <button class="action-btn accept-btn" onclick="event.stopPropagation(); respondRequest('${r.id}','accepted',this,'${r.from_user}')">Accept</button>
           <button class="action-btn reject-btn" onclick="event.stopPropagation(); respondRequest('${r.id}','declined',this,'${r.from_user}')">Reject</button>
         </div>
       </div>`;
     }).join('') || '<p class="hint">No pending requests.</p>';
+    ProfileExtras.fillIn(document.getElementById('pending-requests'));
 
     const { data: sent } = await supabaseClient
       .from('friend_requests')
@@ -1282,10 +1434,11 @@
       return `
       <div class="friend-row" style="cursor:pointer;" onclick="openProfileModal('${escapeAttr(p?.name)}', ${p?.avatar_url ? "'" + p.avatar_url + "'" : 'null'}, '${p?.id_number || ''}')">
         <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
-        <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div></div>
+        <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div><div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(r.to_user)}" style="display:none;"></div></div>
         <button class="action-btn add-btn sent" style="margin-left:auto;">Pending</button>
       </div>`;
     }).join('') || '<p class="hint">No sent requests.</p>';
+    ProfileExtras.fillIn(document.getElementById('sent-requests'));
   }
 
   // ---------- Common App Theme (site-wide, separate from room themes/avatars) ----------
@@ -1406,6 +1559,249 @@
     showPreview('room', null, '', 'No default set.');
     showToast('Default room theme removed');
   }
+
+  // ---------- Block / Report ----------
+  async function openBlockedModal(){
+    document.getElementById('blocked-modal').classList.add('show');
+    await renderBlockedList();
+  }
+  function closeBlockedModal(){ document.getElementById('blocked-modal').classList.remove('show'); }
+  async function renderBlockedList(){
+    const box = document.getElementById('blocked-list');
+    box.innerHTML = '<p class="hint">Loading...</p>';
+    const list = await Safety.listBlocked();
+    if(!list.length){ box.innerHTML = '<p class="hint">You have not blocked anyone.</p>'; return; }
+    box.innerHTML = list.map(u => `
+      <div class="bl-row">
+        <div class="bl-av">${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" alt="">` : escapeHtml(TextPolicy.initial(u.name))}</div>
+        <div><div class="bl-name" dir="auto">${escapeHtml(u.name)}</div><div class="bl-id">ID: ${escapeHtml(u.id_number || '')}</div></div>
+        <button class="bl-un" onclick="unblockFromList('${escapeAttr(u.id)}', '${escapeAttr(u.name)}')">Unblock</button>
+      </div>`).join('');
+  }
+  async function unblockFromList(id, name){
+    if(await Safety.unblock(id, name)) renderBlockedList();
+  }
+  // a block removes the friendship, so refresh the friend lists whenever the block list changes
+  Safety.onChange(() => { if(typeof loadHomeFriends === 'function' && currentUser) loadHomeFriends(); });
+
+  // ---------- Owner: reports -> warn / suspend / dismiss, appeals, suspended people ----------
+  const SUSPEND_CHOICES = [
+    [1,      '1 hour'],
+    [24,     '1 day'],
+    [168,    '7 days'],
+    [8760,   '1 year'],
+    [438000, '50 years']
+  ];
+  let reportTab = 'open';
+  function showReportTab(t){
+    reportTab = t;
+    ['open', 'resolved', 'appeals', 'suspended'].forEach(k => document.getElementById('rp-tab-' + k).classList.toggle('active', k === t));
+    loadReports();
+  }
+  const fmtDateTime = iso => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  async function fetchProfiles(ids){
+    const by = {};
+    if(!ids.length) return by;
+    const { data } = await supabaseClient.from('profiles').select('id, name, id_number, avatar_url').in('id', [...new Set(ids)]);
+    (data || []).forEach(p => { by[p.id] = p; });
+    return by;
+  }
+  const whoHtml = (by, id) => by[id] ? `${escapeHtml(by[id].name)} <small class="copyable">ID ${escapeHtml(by[id].id_number || '')}</small>` : 'Unknown';
+
+  async function refreshReportBadges(){
+    try{
+      const [o, a] = await Promise.all([
+        supabaseClient.from('user_reports').select('id').eq('status', 'open').limit(200),
+        supabaseClient.from('suspension_appeals').select('id').eq('status', 'pending').limit(200)
+      ]);
+      const no = o.data ? o.data.length : 0, na = a.data ? a.data.length : 0;
+      document.getElementById('rp-tab-open').textContent = 'Open' + (no ? ' (' + no + ')' : '');
+      document.getElementById('rp-tab-appeals').textContent = 'Appeals' + (na ? ' (' + na + ')' : '');
+    }catch(err){}
+  }
+
+  async function loadReports(){
+    const box = document.getElementById('rp-list');
+    if(!box) return;
+    const tab = reportTab;
+    refreshReportBadges();
+    if(tab === 'appeals') return loadAppeals(box);
+    if(tab === 'suspended') return loadSuspended(box);
+
+    const { data: rows, error } = await supabaseClient.from('user_reports').select('*')
+      .eq('status', tab).order('created_at', { ascending: false }).limit(100);
+    if(tab !== reportTab) return;
+    if(error){ box.innerHTML = '<p class="hint">Could not load reports. Run sql-5-block-and-report.sql first.</p>'; return; }
+    if(!rows || !rows.length){ box.innerHTML = '<p class="hint">' + (tab === 'open' ? 'No open reports.' : 'No resolved reports yet.') + '</p>'; return; }
+    const by = await fetchProfiles(rows.flatMap(r => [r.reporter_id, r.reported_id]));
+
+    // urgent: 3 or more different people reported the same person within 24 hours
+    const dayAgo = Date.now() - 24 * 3600 * 1000;
+    const recent = {}, total = {};
+    rows.forEach(r => {
+      total[r.reported_id] = (total[r.reported_id] || 0) + 1;
+      if(new Date(r.created_at).getTime() >= dayAgo){ (recent[r.reported_id] = recent[r.reported_id] || new Set()).add(r.reporter_id); }
+    });
+    const urgentOf = id => recent[id] ? recent[id].size : 0;
+    const list = tab === 'open'
+      ? rows.slice().sort((a, b) => (urgentOf(b.reported_id) >= 3 ? 1 : 0) - (urgentOf(a.reported_id) >= 3 ? 1 : 0))
+      : rows;
+
+    box.innerHTML = list.map(r => {
+      const n24 = urgentOf(r.reported_id), urgent = tab === 'open' && n24 >= 3;
+      const nm = by[r.reported_id] ? by[r.reported_id].name : 'this person';
+      return `
+      <div class="rp-row ${urgent ? 'urgent' : ''}">
+        ${urgent ? `<div class="rp-urgent">🔴 ${n24} people reported this person in 24 hours</div>` : ''}
+        <div class="rp-top"><b>${escapeHtml(Safety.reasonLabel(r.reason))}</b><span>${escapeHtml(formatTimeAgo(r.created_at))}</span></div>
+        <div class="rp-who">${whoHtml(by, r.reporter_id)} reported ${whoHtml(by, r.reported_id)}</div>
+        ${tab === 'open' && total[r.reported_id] > 1 ? `<div class="rp-meta">${total[r.reported_id]} open reports against this person</div>` : ''}
+        ${r.note ? `<div class="rp-note" dir="auto">${escapeHtml(r.note)}</div>` : ''}
+        ${r.message_text ? `<div class="rp-quote" dir="auto">“${escapeHtml(r.message_text)}”</div>` : ''}
+        ${r.room_id ? `<div class="rp-meta">From room ${escapeHtml(r.room_id)}</div>` : ''}
+        ${tab === 'open' ? `
+        <div class="rp-btns">
+          <button class="warn" data-act="warn" data-report="${escapeAttr(String(r.id))}" data-user="${escapeAttr(r.reported_id)}" data-name="${escapeAttr(nm)}">⚠️ Warn</button>
+          <button class="bad" data-act="suspend" data-report="${escapeAttr(String(r.id))}" data-user="${escapeAttr(r.reported_id)}" data-name="${escapeAttr(nm)}">⏸ Suspend</button>
+          <button data-act="dismiss" data-report="${escapeAttr(String(r.id))}">Dismiss</button>
+        </div>` : `<div class="rp-act">${escapeHtml(r.action_taken ? 'Action: ' + r.action_taken : 'Resolved')}</div>`}
+      </div>`;
+    }).join('');
+  }
+
+  async function loadAppeals(box){
+    const { data: appeals, error } = await supabaseClient.from('suspension_appeals').select('*')
+      .eq('status', 'pending').order('created_at', { ascending: true }).limit(100);
+    if(reportTab !== 'appeals') return;
+    if(error){ box.innerHTML = '<p class="hint">Could not load appeals. Run sql-6-suspensions-and-appeals.sql first.</p>'; return; }
+    if(!appeals || !appeals.length){ box.innerHTML = '<p class="hint">No appeals waiting.</p>'; return; }
+    const { data: sanctions } = await supabaseClient.from('user_sanctions').select('*').in('id', appeals.map(a => a.sanction_id));
+    const sBy = {}; (sanctions || []).forEach(x => { sBy[x.id] = x; });
+    const repIds = (sanctions || []).map(x => x.report_id).filter(Boolean);
+    const rBy = {};
+    if(repIds.length){ const { data: reps } = await supabaseClient.from('user_reports').select('*').in('id', repIds); (reps || []).forEach(x => { rBy[x.id] = x; }); }
+    const by = await fetchProfiles(appeals.flatMap(a => [a.user_id, a.submitted_by].filter(Boolean)));
+    const urls = await Promise.all(appeals.map(a => Safety.proof.url(a.proof_path)));   // private pictures -> short-lived links
+    box.innerHTML = appeals.map((a, i) => {
+      const sn = sBy[a.sanction_id] || {}, rp = rBy[sn.report_id] || null;
+      const nm = by[a.user_id] ? by[a.user_id].name : 'this person';
+      const acc = by[a.user_id] || {};
+      return `
+      <div class="rp-row">
+        <div class="rp-top"><b>Appeal for ${whoHtml(by, a.user_id)}</b><span>${escapeHtml(formatTimeAgo(a.created_at))}</span></div>
+        ${a.on_behalf ? `<div class="rp-behalf">Sent by ${whoHtml(by, a.submitted_by)} on behalf of this account (ID typed: ${escapeHtml(a.target_id_number || '')}). Compare the pictures below.</div>` : ''}
+        <div class="rp-meta">Suspended for ${escapeHtml(sn.duration_label || '')} until ${sn.ends_at ? escapeHtml(fmtDateTime(sn.ends_at)) : ''} · reason: ${escapeHtml(Safety.reasonLabel(sn.reason || 'other'))}</div>
+        ${rp && rp.note ? `<div class="rp-note" dir="auto"><b>Report note:</b> ${escapeHtml(rp.note)}</div>` : ''}
+        ${rp && rp.message_text ? `<div class="rp-quote" dir="auto">“${escapeHtml(rp.message_text)}”</div>` : ''}
+        <div class="rp-statement" dir="auto">${escapeHtml(a.statement)}</div>
+        ${(urls[i] || acc.avatar_url) ? `<div class="rp-pics">
+          <figure>${urls[i] ? `<img src="${escapeHtml(urls[i])}" data-act="zoom" data-src="${escapeHtml(urls[i])}" alt="">` : '<div class="rp-nopic">No picture</div>'}<figcaption>${a.on_behalf ? 'Picture sent with the appeal' : 'Picture attached'}</figcaption></figure>
+          <figure>${acc.avatar_url ? `<img src="${escapeHtml(acc.avatar_url)}" data-act="zoom" data-src="${escapeHtml(acc.avatar_url)}" alt="">` : '<div class="rp-nopic">No profile picture</div>'}<figcaption>Account's real profile picture</figcaption></figure>
+        </div>` : ''}
+        <div class="rp-btns">
+          <button class="good" data-act="accept" data-appeal="${escapeAttr(String(a.id))}" data-name="${escapeAttr(nm)}">Accept (lift suspension)</button>
+          <button class="bad" data-act="reject" data-appeal="${escapeAttr(String(a.id))}" data-name="${escapeAttr(nm)}">Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function loadSuspended(box){
+    const { data: rows, error } = await supabaseClient.from('user_sanctions').select('*')
+      .eq('kind', 'suspension').is('lifted_at', null).gt('ends_at', new Date().toISOString())
+      .order('ends_at', { ascending: true }).limit(100);
+    if(reportTab !== 'suspended') return;
+    if(error){ box.innerHTML = '<p class="hint">Could not load. Run sql-6-suspensions-and-appeals.sql first.</p>'; return; }
+    if(!rows || !rows.length){ box.innerHTML = '<p class="hint">Nobody is suspended right now.</p>'; return; }
+    const by = await fetchProfiles(rows.map(r => r.user_id));
+    box.innerHTML = rows.map(r => `
+      <div class="rp-row">
+        <div class="rp-top"><b>${whoHtml(by, r.user_id)}</b><span>${escapeHtml(r.duration_label || '')}</span></div>
+        <div class="rp-meta">Until ${escapeHtml(fmtDateTime(r.ends_at))} · ${escapeHtml(Safety.reasonLabel(r.reason || 'other'))} · ${r.appealable ? 'can appeal' : 'no appeal (ends by itself)'}</div>
+        ${r.message ? `<div class="rp-note" dir="auto">${escapeHtml(r.message)}</div>` : ''}
+        <div class="rp-btns"><button class="good" data-act="lift" data-sanction="${escapeAttr(String(r.id))}" data-name="${escapeAttr(by[r.user_id] ? by[r.user_id].name : 'this person')}">Lift suspension</button></div>
+      </div>`).join('');
+  }
+
+  async function ownerRpc(name, args, doneMsg){
+    const { error } = await supabaseClient.rpc(name, args);
+    if(error){ showToast('Could not do that: ' + String(error.message || '').slice(0, 100)); return false; }
+    showToast(doneMsg);
+    loadReports();
+    return true;
+  }
+
+  function openWarnSheet(reportId, userId, name){
+    const el = Safety.sheet(
+      '<h3>Warn ' + Safety.esc(name) + '</h3>' +
+      '<p class="sf-text">They will see this warning once, the next time they open the app.</p>' +
+      '<textarea class="sf-note" rows="3" dir="auto" placeholder="Message to the person (optional)"></textarea>' +
+      '<div class="sf-foot"><span></span><span class="sf-count tp-count"></span></div>' +
+      '<div class="sf-row"><button type="button" class="sf-cancel">Cancel</button><button type="button" class="sf-go">Send warning</button></div>');
+    const note = el.querySelector('.sf-note');
+    TextPolicy.bind(note, 'reportNote', { counter: el.querySelector('.sf-count') });
+    el.querySelector('.sf-cancel').onclick = () => el.remove();
+    el.querySelector('.sf-go').onclick = async () => {
+      if(await ownerRpc('owner_warn_user', { p_user: userId, p_message: TextPolicy.clean(note.value, 'reportNote') || null, p_report: Number(reportId) }, 'Warning sent')) el.remove();
+    };
+  }
+  function openSuspendSheet(reportId, userId, name){
+    const opts = SUSPEND_CHOICES.map(([h, l]) => `<option value="${h}">${l}</option>`).join('');
+    const el = Safety.sheet(
+      '<h3>Suspend ' + Safety.esc(name) + '</h3>' +
+      '<select class="sf-select" id="susp-duration">' + opts + '</select>' +
+      '<div class="sf-hint" id="susp-hint"></div>' +
+      '<textarea class="sf-note" rows="3" dir="auto" placeholder="Message to the person (optional)"></textarea>' +
+      '<div class="sf-foot"><span></span><span class="sf-count tp-count"></span></div>' +
+      '<div class="sf-row"><button type="button" class="sf-cancel">Cancel</button><button type="button" class="sf-go danger">Suspend</button></div>');
+    const sel = el.querySelector('#susp-duration'), hint = el.querySelector('#susp-hint'), note = el.querySelector('.sf-note');
+    const paint = () => {
+      hint.textContent = Number(sel.value) > 168
+        ? 'Longer than 7 days: the person can send ONE appeal and explain their side. You decide in Appeals.'
+        : '7 days or less: no appeal. The account opens again by itself when the time is over.';
+    };
+    sel.onchange = paint; paint();
+    TextPolicy.bind(note, 'reportNote', { counter: el.querySelector('.sf-count') });
+    el.querySelector('.sf-cancel').onclick = () => el.remove();
+    el.querySelector('.sf-go').onclick = async () => {
+      if(await ownerRpc('owner_suspend_user', { p_user: userId, p_hours: Number(sel.value), p_message: TextPolicy.clean(note.value, 'reportNote') || null, p_report: Number(reportId) }, name + ' is suspended for ' + sel.options[sel.selectedIndex].text)) el.remove();
+    };
+  }
+  function openDecisionSheet(appealId, name, accept){
+    const el = Safety.sheet(
+      '<h3>' + (accept ? 'Accept the appeal of ' : 'Reject the appeal of ') + Safety.esc(name) + '?</h3>' +
+      '<p class="sf-text">' + (accept ? 'The suspension is lifted at once and the person can use the app again.' : 'The suspension stays until its end time. The person cannot appeal again.') + '</p>' +
+      '<textarea class="sf-note" rows="3" dir="auto" placeholder="Note to the person (optional)"></textarea>' +
+      '<div class="sf-foot"><span></span><span class="sf-count tp-count"></span></div>' +
+      '<div class="sf-row"><button type="button" class="sf-cancel">Cancel</button><button type="button" class="sf-go ' + (accept ? '' : 'danger') + '">' + (accept ? 'Accept' : 'Reject') + '</button></div>');
+    const note = el.querySelector('.sf-note');
+    TextPolicy.bind(note, 'reportNote', { counter: el.querySelector('.sf-count') });
+    el.querySelector('.sf-cancel').onclick = () => el.remove();
+    el.querySelector('.sf-go').onclick = async () => {
+      if(await ownerRpc('owner_decide_appeal', { p_appeal: Number(appealId), p_accept: accept, p_message: TextPolicy.clean(note.value, 'reportNote') || null }, accept ? 'Appeal accepted — suspension lifted' : 'Appeal rejected')) el.remove();
+    };
+  }
+  async function dismissReport(id){
+    const { data, error } = await supabaseClient.from('user_reports')
+      .update({ status: 'resolved', resolved_at: new Date().toISOString(), action_taken: 'dismissed' }).eq('id', id).select('id');
+    if(error || !data || !data.length){ showToast('Could not update the report.'); return; }
+    showToast('Dismissed');
+    loadReports();
+  }
+  document.getElementById('rp-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if(!b) return;
+    const act = b.getAttribute('data-act');
+    if(act === 'warn') openWarnSheet(b.dataset.report, b.dataset.user, b.dataset.name);
+    else if(act === 'suspend') openSuspendSheet(b.dataset.report, b.dataset.user, b.dataset.name);
+    else if(act === 'dismiss') dismissReport(b.dataset.report);
+    else if(act === 'accept') openDecisionSheet(b.dataset.appeal, b.dataset.name, true);
+    else if(act === 'reject') openDecisionSheet(b.dataset.appeal, b.dataset.name, false);
+    else if(act === 'zoom') window.open(b.dataset.src, '_blank');
+    else if(act === 'lift'){
+      if(confirm('Lift the suspension of ' + b.dataset.name + '?')) ownerRpc('owner_lift_suspension', { p_sanction: Number(b.dataset.sanction), p_note: null }, 'Suspension lifted');
+    }
+  });
 
   // ---------- Chat tab: my room card + Recently / Friends / Official / Follow ----------
   // (a "Joined" tab can be added later next to these four once rooms can be joined)

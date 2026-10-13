@@ -318,14 +318,15 @@
     var d = parseInt(p && p.dob_day, 10), m = parseInt(p && p.dob_month, 10);
     return d && m && MONTHS[m - 1] ? d + " " + MONTHS[m - 1] : "";
   }
-  function pillsHtml(p){
+  function pillsHtml(p, opts){
     if(!p) return "";
+    var compact = !!(opts && opts.compact);
     var out = "";
     var f = flag(p.country);
     if(f) out += "<span class=\"pf-pill pf-flag\" title=\"" + esc(countryName(p.country)) + "\">" + f + "</span>";
     if(p.gender === "male")   out += "<span class=\"pf-pill pf-gender pf-male\" title=\"Male\">&#9794;&#xFE0E;</span>";
     if(p.gender === "female") out += "<span class=\"pf-pill pf-gender pf-female\" title=\"Female\">&#9792;&#xFE0E;</span>";
-    var dob = dobText(p);
+    var dob = compact ? "" : dobText(p);
     if(dob) out += "<span class=\"pf-pill pf-dob\">&#127874; " + esc(dob) + "</span>";
     return out;
   }
@@ -345,7 +346,7 @@
 
   // ---- fetch someone else's extras (by user id or by ID number), cached for a minute -------------
   var cache = {};
-  var FIELDS = "gender, country, dob_day, dob_month, bio";
+  var FIELDS = "id, gender, country, dob_day, dob_month, bio";
   function load(who){
     if(!root.supabaseClient || !who) return Promise.resolve(null);
     var key = who.userId ? "u:" + who.userId : (who.idNumber && who.idNumber !== "\u2014" ? "n:" + who.idNumber : "");
@@ -366,6 +367,39 @@
     if(who.idNumber) delete cache["n:" + who.idNumber];
   }
 
+  // ---- fill many pill rows at once (lists of people) ---------------------------------
+  // Put  <div class="pf-pills pf-mini pf-left" data-pf="USER_ID" style="display:none"></div>  in a row
+  // (add data-pf-compact="1" for flag + gender only), render the list, then call ProfileExtras.fillIn(container).
+  // Anything already known is filled instantly; the rest is fetched in ONE request.
+  function fillEl(el, d){
+    var h = pillsHtml(d, { compact: el.getAttribute("data-pf-compact") === "1" });
+    el.innerHTML = h;
+    el.style.display = h ? "flex" : "none";
+  }
+  function fillIn(container){
+    container = container || document;
+    var els = [].slice.call(container.querySelectorAll("[data-pf]"));
+    if(!els.length) return;
+    var need = [];
+    els.forEach(function(el){
+      var id = el.getAttribute("data-pf");
+      if(!id) return;
+      var hit = cache["u:" + id];
+      if(hit && Date.now() - hit.at < 300000) fillEl(el, hit.data);
+      else if(need.indexOf(id) < 0) need.push(id);
+    });
+    if(!need.length || !root.supabaseClient) return;
+    root.supabaseClient.from("profiles").select(FIELDS).in("id", need.slice(0, 80)).then(function(res){
+      var rows = res && !res.error && res.data ? res.data : [];
+      rows.forEach(function(r){ cache["u:" + r.id] = { at: Date.now(), data: r }; });
+      els.forEach(function(el){
+        if(!el.isConnected) return;
+        var hit = cache["u:" + el.getAttribute("data-pf")];
+        if(hit) fillEl(el, hit.data);
+      });
+    }, function(){});
+  }
+
   // ---- styles (injected once so every page looks the same) -------------
   var css =
     ".pf-pills{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:8px 0 0;}" +
@@ -375,6 +409,12 @@
     ".pf-pill.pf-gender{font-size:.95rem;min-width:28px;padding:2px 8px;color:#fff;}" +
     ".pf-pill.pf-male{background:#3b82f6;}" +
     ".pf-pill.pf-female{background:#ec4899;}" +
+    ".pf-pills.pf-left{justify-content:flex-start;}" +
+    ".pf-pills.pf-mini{gap:4px;margin:4px 0 0;}" +
+    ".pf-mini .pf-pill{min-height:18px;padding:1px 7px;font-size:.66rem;}" +
+    ".pf-mini .pf-pill.pf-flag{font-size:.82rem;padding:1px 6px;}" +
+    ".pf-mini .pf-pill.pf-gender{font-size:.78rem;min-width:22px;padding:1px 6px;}" +
+    ".msg-name-row .pf-pills.pf-mini{margin:0;flex-wrap:nowrap;}" +
     ".pf-bio{max-width:300px;margin:10px auto 0;text-align:center;font-size:.86rem;line-height:1.4;color:var(--ink-soft,#5c7770);word-break:break-word;overflow-wrap:anywhere;}" +
     ".tp-count{font-size:.72rem;font-weight:600;color:var(--ink-soft,#5c7770);}" +
     ".tp-count.tp-full{color:#b1362f;}";
@@ -387,6 +427,6 @@
     COUNTRIES: COUNTRIES, MONTHS: MONTHS,
     flag: flag, countryName: countryName, isValidCountry: isValidCountry, daysInMonth: daysInMonth,
     fillCountrySelect: fillCountrySelect, fillMonthSelect: fillMonthSelect, fillDaySelect: fillDaySelect, linkDayToMonth: linkDayToMonth,
-    validate: validate, pillsHtml: pillsHtml, render: render, load: load, forget: forget, dobText: dobText
+    validate: validate, pillsHtml: pillsHtml, render: render, load: load, forget: forget, dobText: dobText, fillIn: fillIn
   };
 })(window);

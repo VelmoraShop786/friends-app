@@ -955,7 +955,17 @@ html, body{ overscroll-behavior-y: contain; }
       return;
     }
     showStatus('Logged in — taking you to the app...', 'success');
-    setTimeout(function(){ location.replace('home.html'); }, 700);   // replace: the login page must not sit behind the app in Back history
+    (async function(){
+      var dest = 'home.html';
+      try{
+        var r = await supabaseClient.rpc('get_my_suspension');   // suspended? tell them right here
+        if(r && !r.error && r.data){
+          dest = 'suspended.html';
+          showStatus('Your account is suspended for ' + (r.data.duration_label || 'some time') + '. Opening the details...', 'error');
+        }
+      }catch(e){}
+      setTimeout(function(){ location.replace(dest); }, dest === 'home.html' ? 700 : 1500);   // replace: the login page must not sit behind the app in Back history
+    })();
   });
 
   document.getElementById('signup-form').addEventListener('submit', async function(e){

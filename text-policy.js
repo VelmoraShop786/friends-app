@@ -33,6 +33,8 @@
     roomName:     { max: 40,  multiline: false, required: true,  label: 'Room name' },
     message:      { max: 0,   multiline: true,  required: false, label: 'Message' },   // 0 = no length limit
     reply:        { max: 0,   multiline: false, required: false, label: 'Reply' },
+    appeal:       { max: 500, multiline: true,  required: true,  label: 'Your explanation' },
+    reportNote:   { max: 200, multiline: false, required: false, label: 'Note' },
     line:         { max: 0,   multiline: false, required: false, label: 'Text' }       // single line, no limit (display of older values)
   };
 

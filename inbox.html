@@ -298,6 +298,12 @@ html, body{ overscroll-behavior-y: contain; }
     background:none; border:none; color: var(--ink-soft); font-size:1rem; cursor:pointer; flex-shrink:0;
   }
 
+  .block-bar{
+    display:none; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; text-align:center;
+    padding: 14px 16px; border-top: 1px solid var(--line); background: var(--card);
+    font-size:0.86rem; color: var(--ink-soft); line-height:1.4;
+  }
+  .block-bar button{ border:1.5px solid var(--line); background: var(--card); color: var(--teal-deep); font-weight:600; font-size:0.82rem; padding:8px 16px; border-radius:999px; cursor:pointer; }
   .composer{
     display:flex;
     align-items:center;
@@ -509,6 +515,7 @@ html, body{ overscroll-behavior-y: contain; }
       <div class="avatar" id="chat-avatar" onclick="openProfileModal(document.getElementById('chat-name').textContent)" style="cursor:pointer;">A</div>
       <div style="flex:1;">
         <div class="name copyable" id="chat-name">Ayesha</div>
+        <div class="pf-pills pf-mini pf-left" id="chat-pills" style="display:none;"></div>
         <div class="status">Online</div>
       </div>
       <button class="icon-btn" title="Voice call">
@@ -532,7 +539,9 @@ html, body{ overscroll-behavior-y: contain; }
       <button onclick="cancelReply()">✕</button>
     </div>
 
-    <div class="composer">
+    <div class="block-bar" id="block-bar"></div>
+
+    <div class="composer" id="composer">
       <button class="attach-btn" onclick="document.getElementById('file-input-image').click()">+</button>
       <input type="text" id="text-input" placeholder="Message..." dir="auto">
       <button class="send-btn" onclick="sendText()">➤</button>
@@ -558,10 +567,13 @@ html, body{ overscroll-behavior-y: contain; }
       </span>
       <div class="pf-pills" id="profile-modal-pills" style="display:none;"></div>
       <div class="pf-bio" id="profile-modal-bio" style="display:none;"></div>
+      <div class="sf-actions" id="profile-modal-safety"></div>
     </div>
   </div>
 
   <div class="friend-menu" id="friend-menu">
+    <button onclick="chatMenuReport()">Report</button>
+    <button class="danger" id="friend-menu-block" onclick="chatMenuBlock()">Block</button>
     <button class="danger" onclick="askDeleteFriend()">Delete friend</button>
   </div>
 
@@ -580,6 +592,7 @@ html, body{ overscroll-behavior-y: contain; }
     <div class="msg-menu">
       <button type="button" onclick="msgMenuCopy()"><span class="msg-menu-icon">📋</span>Copy</button>
       <button type="button" onclick="msgMenuReply()"><span class="msg-menu-icon">↩️</span>Reply</button>
+      <button type="button" class="danger" id="msg-menu-report" onclick="msgMenuReport()"><span class="msg-menu-icon">🚩</span>Report</button>
       <button type="button" class="danger" id="msg-menu-delete" onclick="askDeleteMessage()"><span class="msg-menu-icon">🗑️</span>Delete</button>
     </div>
   </div>
@@ -603,6 +616,8 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="supabase-config.js"></script>
 <script src="text-policy.js"></script>
 <script src="profile-extras.js"></script>
+<script src="safety.js"></script>
+<script src="notify.js"></script>
 <script src="room-keeper.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
@@ -759,6 +774,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(!f) return;
     const pillsEl = document.getElementById('profile-modal-pills'), bioEl = document.getElementById('profile-modal-bio');
     ProfileExtras.render(pillsEl, bioEl, null);
+    Safety.renderButtons(document.getElementById('profile-modal-safety'), { userId: f.id, name: f.name });
     const token = ++profileModalToken;
     ProfileExtras.load({ userId: f.id, idNumber: f.idNumber }).then(extras => {
       if(token === profileModalToken && extras) ProfileExtras.render(pillsEl, bioEl, extras);
@@ -779,14 +795,47 @@ html, body{ overscroll-behavior-y: contain; }
     if(!f) return;
     document.getElementById('chat-name').textContent = f.name;
     document.getElementById('chat-avatar').innerHTML = avatarHtml(f.avatarUrl, TextPolicy.initial(f.name));
+    const chatPills = document.getElementById('chat-pills');
+    chatPills.setAttribute('data-pf', f.id);
+    chatPills.style.display = 'none';
+    ProfileExtras.fillIn(chatPills.parentNode);   // flag + gender + birthday under the friend's name
     updateChatHeaderStatus();
     cancelReply();
+    applyChatBlockState();
+    Safety.load();                 // fresh block list; the bar updates by itself when it arrives
+    Notify.markChatRead(id);       // opening the chat = read: the red number goes away
     await loadMessages(id);
   }
+
+  // Blocked (either way): the old chat stays, only the writing bar is replaced by a notice.
+  function applyChatBlockState(){
+    const bar = document.getElementById('block-bar'), composer = document.getElementById('composer');
+    if(!bar || !composer) return;
+    const id = currentChatId;
+    const mine = Safety.isBlocked(id), theirs = Safety.isBlockedBy(id);
+    if(!id || (!mine && !theirs)){
+      bar.style.display = 'none'; bar.innerHTML = '';
+      composer.style.display = 'flex';
+      return;
+    }
+    cancelReply();
+    composer.style.display = 'none';
+    bar.style.display = 'flex';
+    bar.innerHTML = mine
+      ? '<span>You blocked this person. Unblock to send messages.</span><button type="button" onclick="unblockCurrentChat()">Unblock</button>'
+      : "<span>This person has blocked you. You can't send messages.</span>";
+  }
+  async function unblockCurrentChat(){
+    const f = findFriend(currentChatId);
+    if(f) await Safety.unblock(f.id, f.name);
+  }
+  Safety.onChange(applyChatBlockState);
 
   // ---------- Chat header menu: delete friend ----------
   function toggleFriendMenu(e){
     e.stopPropagation();
+    const blk = document.getElementById('friend-menu-block');
+    if(blk) blk.textContent = Safety.isBlocked(currentChatId) ? 'Unblock' : 'Block';
     document.getElementById('friend-menu').classList.toggle('show');
   }
   document.addEventListener('click', () => {
@@ -852,6 +901,7 @@ html, body{ overscroll-behavior-y: contain; }
         const partnerId = m.sender_id === currentUser.id ? m.receiver_id : m.sender_id;
         if(currentChatId === partnerId){
           loadMessages(currentChatId);
+          if(m.sender_id === partnerId) Notify.markChatRead(partnerId);   // I am looking at it, so it is read
         }
         loadFriends();
       })
@@ -931,6 +981,7 @@ html, body{ overscroll-behavior-y: contain; }
     msgMenuIndex = i;
     const isMine = messages[i].from === 'me';
     document.getElementById('msg-menu-delete').style.display = isMine ? 'flex' : 'none';
+    document.getElementById('msg-menu-report').style.display = isMine ? 'none' : 'flex';   // you can only report what THEY wrote
     document.getElementById('msg-menu').classList.add('show');
     if(navigator.vibrate) navigator.vibrate(12);
   }
@@ -945,6 +996,25 @@ html, body{ overscroll-behavior-y: contain; }
       () => showToast('Copied'),
       () => showToast('Could not copy')
     );
+  }
+  function msgMenuReport(){
+    const m = messages[msgMenuIndex];
+    closeMsgMenu();
+    const f = findFriend(currentChatId);
+    if(!m || !f) return;
+    Safety.report({ userId: f.id, name: f.name, messageText: m.text });
+  }
+  function chatMenuReport(){
+    document.getElementById('friend-menu').classList.remove('show');
+    const f = findFriend(currentChatId);
+    if(f) Safety.report({ userId: f.id, name: f.name });
+  }
+  async function chatMenuBlock(){
+    document.getElementById('friend-menu').classList.remove('show');
+    const f = findFriend(currentChatId);
+    if(!f) return;
+    if(Safety.isBlocked(f.id)) await Safety.unblock(f.id, f.name);
+    else await Safety.block(f.id, f.name);        // the chat stays; the message bar is replaced by a notice
   }
   function msgMenuReply(){
     const m = messages[msgMenuIndex];
@@ -998,6 +1068,7 @@ html, body{ overscroll-behavior-y: contain; }
     const input = document.getElementById('text-input');
     const value = TextPolicy.clean(input.value, 'message');
     if(!value || currentChatId === null) return;
+    if(Safety.isBlocked(currentChatId) || Safety.isBlockedBy(currentChatId)){ applyChatBlockState(); return; }
     input.value = '';
     cancelReply();
     const { error } = await supabaseClient.from('direct_messages').insert({
@@ -1010,6 +1081,9 @@ html, body{ overscroll-behavior-y: contain; }
         showToast('You are no longer friends with this person.');
         await loadFriends();
         if(!findFriend(currentChatId)) closeChat();
+      } else if(/cannot message/i.test(error.message || '')){
+        showToast('You cannot message this person.');
+        Safety.load();
       } else {
         showToast('Could not send message.');
       }

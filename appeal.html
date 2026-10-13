@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Appeal for another account</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#16302a; --ink-soft:#5c7770; --line:#d6e4df; --card:#ffffff; --bg:#f4f8f6; --teal-deep:#05846a; --teal-soft:#d3f3e8; --red:#b1362f; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; min-height:100%; background:var(--bg); font-family:'Inter',system-ui,sans-serif; color:var(--ink); }
+  .wrap{ max-width:480px; margin:0 auto; padding: calc(18px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); }
+  .back{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; margin-left:-8px; background:none; border:none; border-radius:50%; padding:0; color:var(--ink); cursor:pointer; }
+  h1{ font-family:'Fraunces',Georgia,serif; font-size:1.6rem; margin:10px 0 6px; }
+  .lead{ margin:0 0 18px; color:var(--ink-soft); line-height:1.5; font-size:0.92rem; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  label.t{ display:block; font-size:0.8rem; font-weight:600; color:var(--ink-soft); margin: 10px 0 6px; }
+  input[type=text], textarea{
+    width:100%; border:1.5px solid var(--line); background:#fbfdfc; border-radius:12px; padding:12px; outline:none;
+    font-family:inherit; font-size:0.95rem; color:var(--ink); -webkit-user-select:text; user-select:text;
+  }
+  textarea{ resize:none; line-height:1.4; }
+  input:focus, textarea:focus{ border-color:var(--teal-deep); background:#fff; }
+  .foot{ display:flex; justify-content:space-between; gap:10px; margin:6px 0 4px; font-size:0.78rem; min-height:18px; }
+  .err{ color:var(--red); }
+  .tp-count{ font-size:.74rem; font-weight:600; color:var(--ink-soft); }
+  .tp-count.tp-full{ color:var(--red); }
+  .hint{ font-size:0.78rem; color:var(--ink-soft); line-height:1.4; margin:0 0 8px; }
+  .pic-row{ display:flex; align-items:center; gap:12px; margin: 4px 0 8px; }
+  .pic-btn{ flex:1; text-align:center; border:1.5px dashed var(--line); background:#fbfdfc; color:var(--teal-deep); border-radius:12px; padding:12px; font-weight:600; font-size:0.88rem; cursor:pointer; }
+  .pic-thumb{ width:56px; height:56px; border-radius:12px; object-fit:cover; border:1px solid var(--line); display:none; }
+  button.pic-x{ width:auto; padding:6px 10px; border:none; border-radius:10px; background:#f1f6f4; color:var(--ink-soft); font-size:0.78rem; font-family:inherit; cursor:pointer; display:none; }
+  button.primary{ width:100%; border:none; border-radius:12px; padding:14px; font-family:inherit; font-weight:600; font-size:0.95rem; cursor:pointer; background:var(--teal-deep); color:#fff; margin-top:6px; }
+  button.primary:disabled{ opacity:.6; }
+  .ok{ padding:12px 14px; border-radius:12px; background:var(--teal-soft); color:var(--teal-deep); font-size:0.9rem; line-height:1.45; margin-bottom:14px; }
+  h2{ font-size:1rem; margin:20px 0 8px; }
+  .item{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:8px; font-size:0.88rem; }
+  .item .top{ display:flex; justify-content:space-between; gap:8px; }
+  .item .st{ font-weight:700; }
+  .st.pending{ color:#8a5a00; } .st.accepted{ color:var(--teal-deep); } .st.rejected{ color:var(--red); }
+  .item .sm{ margin-top:4px; font-size:0.78rem; color:var(--ink-soft); overflow-wrap:anywhere; }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="back" type="button" onclick="location.href='home.html'" aria-label="Back">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <h1>Appeal for another account</h1>
+  <p class="lead">If a friend's account is suspended for <b>longer than 7 days</b>, you can send an appeal for them from your own account. Tell us the suspended account's <b>ID</b> and attach <b>that account's profile picture</b>, so we know exactly which account the appeal is for.</p>
+
+  <div class="ok hidden" id="done">Your appeal was sent. The app owner will read it and decide. You can follow it below.</div>
+
+  <div class="card">
+    <label class="t" for="target-id">ID number of the suspended account</label>
+    <input type="text" id="target-id" inputmode="numeric" autocomplete="off" placeholder="For example 123456">
+
+    <label class="t" for="statement">Why should the suspension be lifted?</label>
+    <textarea id="statement" rows="5" dir="auto" placeholder="Explain what really happened…"></textarea>
+    <div class="foot"><span class="err" id="err"></span><span class="tp-count" id="statement-count"></span></div>
+
+    <label class="t">Profile picture of the suspended account (required)</label>
+    <p class="hint">Take a screenshot of their profile picture or choose the same picture. It is only used to identify the account.</p>
+    <div class="pic-row">
+      <label class="pic-btn" for="proof-input" id="proof-label">📎 Choose the picture</label>
+      <img class="pic-thumb" id="proof-thumb" alt="">
+      <button type="button" class="pic-x" id="proof-x">Remove</button>
+    </div>
+    <input type="file" id="proof-input" accept="image/*" style="display:none;">
+
+    <button class="primary" id="send" type="button">Send appeal</button>
+  </div>
+
+  <h2>Appeals you sent</h2>
+  <div id="mine"><p class="hint">Loading…</p></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="text-policy.js"></script>
+<script src="safety.js"></script>
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  var proof = null;
+
+  function clearProof(){
+    proof = null; $('proof-input').value = '';
+    $('proof-thumb').style.display = 'none'; $('proof-x').style.display = 'none';
+    $('proof-label').textContent = '📎 Choose the picture';
+  }
+  $('proof-input').onchange = async function(){
+    $('err').textContent = '';
+    if(!this.files || !this.files[0]) return;
+    try{
+      proof = await Safety.proof.compress(this.files[0]);
+      $('proof-thumb').src = proof.previewUrl; $('proof-thumb').style.display = 'block'; $('proof-x').style.display = 'block';
+      $('proof-label').textContent = '📎 Change picture';
+    }catch(e){ clearProof(); $('err').textContent = e.message || 'Could not use that picture.'; }
+  };
+  $('proof-x').onclick = clearProof;
+  TextPolicy.bind($('statement'), 'appeal', { counter: $('statement-count') });
+
+  $('send').onclick = async function(){
+    var err = $('err'); err.textContent = ''; $('done').classList.add('hidden');
+    var id = $('target-id').value.replace(/\D/g, '');
+    if(!id){ err.textContent = "Please type the suspended account's ID number."; return; }
+    var chk = TextPolicy.check($('statement').value, 'appeal');
+    if(!chk.ok || chk.value.length < 5){ err.textContent = 'Please write a few words about what happened.'; return; }
+    if(!proof){ err.textContent = "Please attach the suspended account's profile picture."; return; }
+    var btn = this; btn.disabled = true;
+    var path;
+    try{ path = await Safety.proof.upload(proof.blob); }
+    catch(e){ btn.disabled = false; err.textContent = 'Could not upload the picture. ' + String((e && e.message) || '').slice(0, 80); return; }
+    var res = await supabaseClient.rpc('submit_appeal_for_id', { p_id_number: id, p_statement: chk.value, p_proof: path });
+    btn.disabled = false;
+    if(res.error){ err.textContent = String(res.error.message || 'Could not send the appeal.').slice(0, 140); return; }
+    $('target-id').value = ''; $('statement').value = ''; TextPolicy.refresh($('statement')); clearProof();
+    $('done').classList.remove('hidden');
+    window.scrollTo(0, 0);
+    loadMine();
+  };
+
+  async function loadMine(){
+    var s = await supabaseClient.auth.getSession();
+    var uid = s.data && s.data.session && s.data.session.user.id;
+    var res = await supabaseClient.from('suspension_appeals')
+      .select('id, status, decision_message, target_id_number, created_at')
+      .eq('submitted_by', uid).eq('on_behalf', true).order('created_at', { ascending: false }).limit(30);
+    var box = $('mine');
+    if(res.error){ box.innerHTML = '<p class="hint">Could not load.</p>'; return; }
+    if(!res.data || !res.data.length){ box.innerHTML = '<p class="hint">You have not sent any appeal for another account.</p>'; return; }
+    var label = { pending: 'Waiting for the owner', accepted: 'Accepted — suspension lifted', rejected: 'Rejected' };
+    box.innerHTML = res.data.map(function(a){
+      return '<div class="item"><div class="top"><span>Account ID ' + esc(a.target_id_number || '') + '</span><span class="st ' + a.status + '">' + esc(label[a.status] || a.status) + '</span></div>' +
+        (a.decision_message ? '<div class="sm">Owner\'s note: ' + esc(a.decision_message) + '</div>' : '') +
+        '<div class="sm">' + esc(new Date(a.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })) + '</div></div>';
+    }).join('');
+  }
+
+  (async function init(){
+    var s = await supabaseClient.auth.getSession();
+    if(!s.data || !s.data.session){ location.replace('index.html'); return; }
+    loadMine();
+  })();
+})();
+</script>
+</body>
+</html>

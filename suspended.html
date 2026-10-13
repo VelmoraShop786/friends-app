@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Account suspended</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#16302a; --ink-soft:#5c7770; --line:#d6e4df; --card:#ffffff; --bg:#f4f8f6; --teal-deep:#05846a; --teal-soft:#d3f3e8; --red:#b1362f; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; min-height:100%; background:var(--bg); font-family:'Inter',system-ui,sans-serif; color:var(--ink); }
+  .wrap{ max-width:480px; margin:0 auto; padding: calc(28px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); }
+  .icon{ width:64px; height:64px; border-radius:50%; background:#fbe4e2; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin: 8px 0 14px; }
+  h1{ font-family:'Fraunces',Georgia,serif; font-size:1.7rem; margin:0 0 6px; }
+  .lead{ margin:0 0 20px; color:var(--ink-soft); line-height:1.5; font-size:0.95rem; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  .row{ display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); font-size:0.9rem; }
+  .row:last-child{ border-bottom:none; }
+  .row span:first-child{ color:var(--ink-soft); }
+  .row b{ text-align:right; overflow-wrap:anywhere; }
+  .msg{ margin-top:10px; padding:10px 12px; border-left:3px solid var(--line); background:var(--bg); border-radius:8px; font-size:0.9rem; line-height:1.45; overflow-wrap:anywhere; }
+  h2{ font-size:1.02rem; margin:0 0 6px; }
+  p{ margin:0 0 10px; line-height:1.5; font-size:0.9rem; color:var(--ink-soft); }
+  textarea{
+    width:100%; border:1.5px solid var(--line); background:#fbfdfc; border-radius:12px; padding:12px; resize:none; outline:none;
+    font-family:inherit; font-size:0.95rem; color:var(--ink); line-height:1.4; -webkit-user-select:text; user-select:text;
+  }
+  textarea:focus{ border-color:var(--teal-deep); background:#fff; }
+  .foot{ display:flex; justify-content:space-between; gap:10px; margin:6px 0 12px; font-size:0.78rem; min-height:18px; }
+  .err{ color:var(--red); }
+  .tp-count{ font-size:.74rem; font-weight:600; color:var(--ink-soft); }
+  .tp-count.tp-full{ color:var(--red); }
+  button{ width:100%; border:none; border-radius:12px; padding:14px; font-family:inherit; font-weight:600; font-size:0.95rem; cursor:pointer; }
+  .primary{ background:var(--teal-deep); color:#fff; }
+  .primary:disabled{ opacity:.6; }
+  .ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); margin-top:10px; }
+  .status{ padding:12px 14px; border-radius:12px; font-size:0.9rem; line-height:1.45; }
+  .status.wait{ background:#fff7e0; color:#7a5a00; }
+  .status.no{ background:#fbe4e2; color:var(--red); }
+  .hidden{ display:none; }
+  .appeal-open{ margin-top:12px; }
+  .pic-row{ display:flex; align-items:center; gap:12px; margin: 4px 0 8px; }
+  .pic-btn{ flex:1; text-align:center; border:1.5px dashed var(--line); background:#fbfdfc; color:var(--teal-deep); border-radius:12px; padding:12px; font-weight:600; font-size:0.88rem; cursor:pointer; }
+  .pic-thumb{ width:56px; height:56px; border-radius:12px; object-fit:cover; border:1px solid var(--line); display:none; }
+  .pic-x{ width:auto; padding:6px 10px; background:#f1f6f4; color:var(--ink-soft); font-size:0.78rem; display:none; }
+  .small{ font-size:0.8rem; color:var(--ink-soft); line-height:1.5; text-align:center; margin:14px 4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="icon">⛔</div>
+  <h1>Your account is suspended</h1>
+  <p class="lead" id="lead">Loading…</p>
+
+  <div class="card" id="info" style="display:none;">
+    <div class="row"><span>Reason</span><b id="f-reason"></b></div>
+    <div class="row"><span>Suspended for</span><b id="f-duration"></b></div>
+    <div class="row"><span>Ends on</span><b id="f-ends"></b></div>
+    <div class="row"><span>Time left</span><b id="f-left"></b></div>
+    <div class="msg" id="f-message" style="display:none;"></div>
+  </div>
+
+  <!-- 7 days or less: no appeal, it ends by itself -->
+  <div class="card hidden" id="auto-end">
+    <h2>It ends by itself</h2>
+    <p>This suspension is 7 days or shorter, so it cannot be appealed. When the time is over your account opens again automatically — you don't need to do anything.</p>
+  </div>
+
+  <div class="status wait hidden" id="appeal-wait">Your appeal was sent. Please wait — the app owner will read it and decide. This page updates by itself.</div>
+  <div class="status no hidden" id="appeal-no"><b>Your appeal was rejected.</b><span id="appeal-no-msg"></span><br>The suspension stays until the end time above.</div>
+
+  <button class="ghost" id="logout" type="button">Log out</button>
+  <button class="primary appeal-open hidden" id="open-appeal" type="button">✍️ Submit your appeal</button>
+
+  <!-- longer than 7 days: one appeal (opens with the button above) -->
+  <div class="card hidden" id="appeal-box">
+    <h2>Appeal this suspension</h2>
+    <p>Someone reported your account for the reason above. Tell us <b>your side</b>: was the report false, or what really happened? You can appeal <b>only once</b>, so write it clearly.</p>
+    <textarea id="statement" rows="5" dir="auto" placeholder="Write your explanation here…"></textarea>
+    <div class="foot"><span class="err" id="appeal-err"></span><span class="tp-count" id="statement-count"></span></div>
+    <div class="pic-row">
+      <label class="pic-btn" for="proof-input" id="proof-label">📎 Add a picture as proof (optional)</label>
+      <img class="pic-thumb" id="proof-thumb" alt="">
+      <button type="button" class="pic-x" id="proof-x">Remove</button>
+    </div>
+    <input type="file" id="proof-input" accept="image/*" style="display:none;">
+    <button class="primary" id="send-appeal" type="button">Send appeal</button>
+  </div>
+
+
+  <p class="small">Is a friend's account suspended and you want to appeal for them? Log in with <b>your own</b> account and open <b>Settings → Appeal for another account</b>.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="text-policy.js"></script>
+<script src="safety.js"></script>
+<script>
+(function(){
+  var REASONS = { spam:'Spam or scam', abuse:'Abuse or harassment', inappropriate:'Inappropriate content', fake:'Fake account / pretending to be someone', other:'Something else' };
+  var current = null;
+  var appealOpen = false;
+  function $(id){ return document.getElementById(id); }
+  function show(id, on){ $(id).classList.toggle('hidden', !on); }
+
+  function fmtLeft(ms){
+    if(ms <= 0) return 'a few seconds';
+    var s = Math.floor(ms / 1000), d = Math.floor(s / 86400); s -= d * 86400;
+    var h = Math.floor(s / 3600); s -= h * 3600; var m = Math.floor(s / 60);
+    if(d >= 365) return Math.floor(d / 365) + ' year' + (d >= 730 ? 's' : '') + ' ' + (d % 365) + ' days';
+    if(d > 0) return d + ' day' + (d > 1 ? 's' : '') + ' ' + h + ' h';
+    if(h > 0) return h + ' h ' + m + ' min';
+    return m + ' min ' + (s % 60) + ' s';
+  }
+  function tick(){
+    if(!current) return;
+    var left = new Date(current.ends_at).getTime() - Date.now();
+    if(left <= 0){ load(); return; }
+    $('f-left').textContent = fmtLeft(left);
+  }
+
+  function render(s){
+    current = s;
+    $('lead').textContent = 'The app owner suspended your account after a report. You cannot use the app until the suspension is over.';
+    $('info').style.display = 'block';
+    $('f-reason').textContent = REASONS[s.reason] || s.reason || '—';
+    $('f-duration').textContent = s.duration_label || '';
+    $('f-ends').textContent = new Date(s.ends_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    var m = $('f-message');
+    if(s.message){ m.style.display = 'block'; m.textContent = s.message; } else { m.style.display = 'none'; }
+    tick();
+
+    var appealable = !!s.appealable;
+    var st = s.appeal_status;
+    show('auto-end', !appealable);
+    var canAppeal = appealable && !st;                  // 7 days or less: no appeal at all; already appealed: nothing more to send
+    show('open-appeal', canAppeal && !appealOpen);      // the button under "Log out"
+    show('appeal-box', canAppeal && appealOpen);        // the form appears when the button is tapped
+    show('appeal-wait', appealable && st === 'pending');
+    $('appeal-wait').textContent = s.appeal_on_behalf
+      ? 'Someone sent an appeal for your account. Please wait — the app owner will read it and decide. This page updates by itself.'
+      : 'Your appeal was sent. Please wait — the app owner will read it and decide. This page updates by itself.';
+    show('appeal-no', appealable && st === 'rejected');
+    $('appeal-no-msg').textContent = s.appeal_message ? ' Owner\'s note: ' + s.appeal_message : '';
+  }
+
+  async function load(){
+    var res = await supabaseClient.rpc('get_my_suspension');
+    if(res.error){ $('lead').textContent = 'Could not check your account. Please try again.'; return; }
+    if(!res.data){ location.replace('home.html'); return; }   // suspension over, or lifted
+    render(res.data);
+  }
+
+  TextPolicy.bind($('statement'), 'appeal', { counter: $('statement-count') });
+  $('open-appeal').onclick = function(){
+    appealOpen = true;
+    if(current) render(current);
+    $('appeal-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(function(){ $('statement').focus(); }, 350);
+  };
+
+  // optional picture
+  var proof = null;
+  function clearProof(){
+    proof = null; $('proof-input').value = '';
+    $('proof-thumb').style.display = 'none'; $('proof-x').style.display = 'none';
+    $('proof-label').textContent = '📎 Add a picture as proof (optional)';
+  }
+  $('proof-input').onchange = async function(){
+    var err = $('appeal-err'); err.textContent = '';
+    if(!this.files || !this.files[0]) return;
+    try{
+      proof = await Safety.proof.compress(this.files[0]);
+      $('proof-thumb').src = proof.previewUrl; $('proof-thumb').style.display = 'block'; $('proof-x').style.display = 'block';
+      $('proof-label').textContent = '📎 Change picture';
+    }catch(e){ clearProof(); err.textContent = e.message || 'Could not use that picture.'; }
+  };
+  $('proof-x').onclick = clearProof;
+
+  $('send-appeal').onclick = async function(){
+    var err = $('appeal-err'); err.textContent = '';
+    var chk = TextPolicy.check($('statement').value, 'appeal');
+    if(!chk.ok || chk.value.length < 5){ err.textContent = 'Please write a few words about what happened.'; return; }
+    var btn = this; btn.disabled = true;
+    var path = null;
+    if(proof){
+      try{ path = await Safety.proof.upload(proof.blob); }
+      catch(e){ btn.disabled = false; err.textContent = 'Could not upload the picture. ' + String((e && e.message) || '').slice(0, 80); return; }
+    }
+    var res = await supabaseClient.rpc('submit_appeal', { p_sanction: current.id, p_statement: chk.value, p_proof: path });
+    btn.disabled = false;
+    if(res.error){ err.textContent = String(res.error.message || 'Could not send the appeal.').slice(0, 120); return; }
+    clearProof();
+    load();
+  };
+  $('logout').onclick = async function(){
+    try{ await supabaseClient.auth.signOut(); }catch(e){}
+    location.replace('index.html');
+  };
+
+  (async function init(){
+    var s = await supabaseClient.auth.getSession();
+    if(!s.data || !s.data.session){ location.replace('index.html'); return; }
+    await load();
+    setInterval(tick, 1000);
+    setInterval(load, 20000);   // lifted / appeal decided / time over -> page follows by itself
+    try{
+      supabaseClient.channel('susp-page').on('postgres_changes', { event: '*', schema: 'public', table: 'suspension_appeals' }, load)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_sanctions' }, load).subscribe();
+    }catch(e){}
+  })();
+})();
+</script>
+</body>
+</html>
