@@ -1065,6 +1065,8 @@ html, body{ overscroll-behavior-y: contain; }
   // Which room this page is showing — defaults to the permanent Official Room
   // so any existing link (chatroom.html with no params) behaves exactly as before.
   const ROOM_ID = new URLSearchParams(location.search).get('room') || '111';
+  // true when this page is the room layer inside app.html: it is never reloaded, so Keep can leave the voice running
+  const EMBED = (window.name === 'room-frame') && window.top !== window;
 
   // The room can only be entered from the Room card or the Kept Room card — never by Back/Forward.
   // Inside the room the phone's Back button does nothing.
@@ -1077,7 +1079,7 @@ html, body{ overscroll-behavior-y: contain; }
   async function initAuth(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session){
-      location.href = 'index.html';
+      if(EMBED && window.RoomKeeper) RoomKeeper.exitAndLeave('index.html'); else location.href = 'index.html';
       return false;
     }
     currentUser = session.user;
@@ -1529,9 +1531,6 @@ html, body{ overscroll-behavior-y: contain; }
   function doRemoveFromSeat(uid, name){
     return callRoomRpc('room_seat_block', { p_room: ROOM_ID, p_user: uid, p_block: true }, name + ' was removed from the seat');
   }
-  function doPutOnSeat(uid, name){
-    return callRoomRpc('room_put_on_seat', { p_room: ROOM_ID, p_user: uid }, name + ' is back on a seat');
-  }
   async function doInviteToSeat(uid, name){
     const ok = await callRoomRpc('room_invite_to_seat', { p_room: ROOM_ID, p_user: uid }, null);
     if(!ok) return false;
@@ -1559,7 +1558,6 @@ html, body{ overscroll-behavior-y: contain; }
       if(seats.some(s => s.userId === uid)){
         items.push({ label:'Remove from seat', run: () => doRemoveFromSeat(uid, name) });
       } else {
-        items.push({ label: 'Put on seat', run: () => doPutOnSeat(uid, name) });
         items.push({ label:'Invite to seat', run: () => doInviteToSeat(uid, name) });
       }
     }
@@ -1706,12 +1704,14 @@ html, body{ overscroll-behavior-y: contain; }
 
   // KEEP: leave this screen but stay in the room — seat, presence and chat are all kept.
   async function confirmKeep(){
-    leavingRoom = true;                                   // stop voice from reconnecting
+    // Inside the app shell the room stays alive after Keep: voice keeps working on every page
+    // (on a seat: you talk and hear everyone; not on a seat: you only hear). Outside the shell the old behaviour applies.
+    if(!EMBED) leavingRoom = true;                        // stop voice from reconnecting
     setScreenAwake(false);
     clearInterval(hbTimer);
     const mySeat = seats.findIndex(s => s.taken && s.userId === currentUser.id);
     try{ await supabaseClient.rpc('room_heartbeat', { p_room: ROOM_ID, p_status: 'kept' }); }catch(err){}
-    await disconnectVoice();                              // the microphone can't stay open on another page
+    if(!EMBED) await disconnectVoice();                   // (only when the voice cannot stay open on another page)
     if(window.RoomKeeper){
       RoomKeeper.keepAndLeave({
         id: ROOM_ID,
@@ -1723,6 +1723,22 @@ html, body{ overscroll-behavior-y: contain; }
       location.href = 'home.html';
     }
   }
+
+  // Called by app.html when a kept room is opened again: the screen is back, so wake lock + heartbeat resume.
+  window.RoomShown = function(){
+    if(leavingRoom || accessBlocked) return;
+    try{
+      clearInterval(hbTimer);
+      hbTimer = setInterval(sendBeat, HEARTBEAT_MS);
+      sendBeat();
+      syncScreenAwake();
+      loadSeats();
+      if(typeof reconcileVoice === 'function') reconcileVoice();
+      closeSeatMenu();
+      const box = document.getElementById('chat-messages') || document.getElementById('messages');
+      if(box) box.scrollTop = box.scrollHeight;
+    }catch(err){}
+  };
 
   // EXIT: leave the room completely.
   async function confirmExit(){
@@ -2191,6 +2207,16 @@ html, body{ overscroll-behavior-y: contain; }
     refreshInfoMenu();
   }
 
+  // Small popups (seat menu, room info menu) close when you tap anywhere outside them.
+  // The Keep/Exit menu is left as it was on purpose.
+  document.addEventListener('pointerdown', (e) => {
+    const t = e.target;
+    const seatMenu = document.getElementById('seat-action-menu');
+    if(seatMenu && seatMenu.classList.contains('show') && !seatMenu.contains(t)) closeSeatMenu();
+    const infoMenu = document.getElementById('info-menu');
+    if(infoMenu && infoMenu.classList.contains('show') && !infoMenu.contains(t) && !(t.closest && t.closest('[title="Room info"]'))) toggleInfoMenu(false);
+  });
+
   function toggleInfoMenu(forceState){
     const menu = document.getElementById('info-menu');
     if(typeof forceState === 'boolean'){
@@ -2473,8 +2499,28 @@ html, body{ overscroll-behavior-y: contain; }
   let leavingRoom = false;        // set once the person taps Exit / the page is closing
   let micEnabled = false;
   let deafened = false;
+  // Silences every remote voice when the room is muted for me (and people I blocked). Done in three ways because
+  // LiveKit may play a voice through the <audio> element or through WebAudio, where el.muted alone does nothing.
   function applyAudioMute(){
-    document.querySelectorAll('[id^="lk-audio-"]').forEach(el => { el.muted = deafened || Safety.isBlocked(el.dataset.uid); });
+    document.querySelectorAll('audio').forEach(el => {
+      if(!(el.id || '').startsWith('lk-audio-')) return;
+      el.muted = deafened || Safety.isBlocked(el.dataset.uid);
+    });
+    try{
+      if(lkRoom && lkRoom.remoteParticipants){
+        lkRoom.remoteParticipants.forEach(p => {
+          const silent = deafened || Safety.isBlocked(p.identity);
+          const pubs = p.audioTrackPublications || p.audioTracks;
+          if(!pubs) return;
+          pubs.forEach(pub => {
+            const t = pub && (pub.audioTrack || pub.track);
+            if(!t) return;
+            if(typeof t.setVolume === 'function'){ try{ t.setVolume(silent ? 0 : 1); }catch(e){} }
+            (t.attachedElements || []).forEach(el => { el.muted = silent; });
+          });
+        });
+      }
+    }catch(e){}
   }
   // blocking / unblocking changes what you see and hear straight away
   Safety.onChange(() => {
@@ -2540,6 +2586,8 @@ html, body{ overscroll-behavior-y: contain; }
           el.dataset.uid = participant ? participant.identity : '';
           el.muted = deafened || Safety.isBlocked(el.dataset.uid); // respect the listener's mute-room state, and never play a blocked person
           document.body.appendChild(el);
+          applyAudioMute();
+          setTimeout(applyAudioMute, 400);
         }
       });
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
@@ -2645,6 +2693,7 @@ html, body{ overscroll-behavior-y: contain; }
   function unlockRoomAudio(){
     try{ if(lkRoom) lkRoom.startAudio(); }catch(err){}
     document.querySelectorAll('audio[id^="lk-audio-"]').forEach(a => { a.play().catch(() => {}); });
+    applyAudioMute();   // starting the sound must never un-mute a muted room
   }
   document.addEventListener('pointerdown', unlockRoomAudio, { passive: true });
 

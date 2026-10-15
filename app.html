@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friends</title>
+<!--
+  app.html — the "shell" every page of the app is shown inside.
+
+  Why it exists: when a person taps Keep, the room's voice (microphone + other people's sound) must keep working
+  on EVERY page of the app. A browser stops the microphone and sound the moment the page changes, so the room
+  lives here, in its own layer that is never reloaded, while the normal pages (home, inbox, search...) are
+  shown in the other layer and can change freely.
+
+    content-frame : the normal pages
+    room-frame    : chatroom.html. Visible = you are in the room screen. Hidden = room is Kept (voice keeps running).
+
+  Any page opened directly (e.g. home.html) sends itself here automatically (see room-keeper.js).
+-->
+<style>
+  html, body{ margin:0; height:100%; overflow:hidden; background:#fff; }
+  iframe{ position:fixed; left:0; top:0; width:100%; height:100%; border:0; background:#fff; }
+  #room-frame{ display:none; z-index:20; }
+</style>
+</head>
+<body>
+<iframe id="content-frame" name="content-frame" title="App"></iframe>
+
+<script>
+(function(){
+  'use strict';
+  var content = document.getElementById('content-frame');
+  var room = { frame:null, id:null, visible:false, guard:false, ignorePop:0 };
+
+  // ---- first page to show (?p=home.html). Only plain same-site paths are accepted. ----
+  function startPage(){
+    var p = '';
+    try{ p = new URLSearchParams(location.search).get('p') || ''; }catch(e){}
+    if(!p || p.indexOf('//') >= 0 || p.indexOf('\\') >= 0 || /^[a-z][a-z0-9+.-]*:/i.test(p) || /app\.html/i.test(p)) return 'index.html';
+    return p.replace(/^\/+/, '') || 'index.html';
+  }
+  content.src = startPage();
+
+  function goContent(url){
+    try{ content.contentWindow.location.replace(url); }catch(e){ content.src = url; }
+  }
+  function syncCard(){
+    try{ content.contentWindow.RoomKeeper.syncCard(); }catch(e){}
+  }
+
+  // ---- Back button while the room screen is showing: it does nothing (the person stays in the room) ----
+  function pushGuard(){
+    try{ history.pushState({ appShell:'room' }, ''); room.guard = true; }catch(e){}
+  }
+  function popGuard(done){
+    var finished = false;
+    function fin(){ if(finished) return; finished = true; if(done) done(); }
+    if(room.guard && history.state && history.state.appShell === 'room'){
+      room.guard = false;
+      room.ignorePop++;
+      window.addEventListener('popstate', function h(){ window.removeEventListener('popstate', h); fin(); });
+      setTimeout(fin, 400);
+      history.back();
+    } else {
+      room.guard = false;
+      fin();
+    }
+  }
+  window.addEventListener('popstate', function(){
+    if(room.ignorePop > 0){ room.ignorePop--; return; }
+    if(room.visible) pushGuard();
+  });
+
+  // ---- the room layer ----
+  function removeFrame(){
+    if(room.frame && room.frame.parentNode) room.frame.parentNode.removeChild(room.frame);   // its page says goodbye and the voice stops
+    room.frame = null; room.id = null; room.visible = false;
+  }
+
+  var AppShell = {
+    // open a room: show the kept one again, or start a new one
+    openRoom: function(id){
+      id = String(id);
+      if(room.frame && room.id !== id) removeFrame();
+      if(!room.frame){
+        var f = document.createElement('iframe');
+        f.id = 'room-frame';
+        f.name = 'room-frame';
+        f.title = 'Room';
+        f.setAttribute('allow', 'microphone; autoplay; screen-wake-lock');
+        f.style.display = 'block';
+        f.src = 'chatroom.html?room=' + encodeURIComponent(id);
+        document.body.appendChild(f);
+        room.frame = f; room.id = id;
+      }
+      room.visible = true;
+      room.ignorePop = 0;
+      room.frame.style.display = 'block';
+      if(!room.guard) pushGuard();
+      try{ if(room.frame.contentWindow && room.frame.contentWindow.RoomShown) room.frame.contentWindow.RoomShown(); }catch(e){}
+      syncCard();
+    },
+    // KEEP: hide the room screen, the room (and its voice) keeps running
+    hideRoom: function(url){
+      if(!room.frame) { if(url) goContent(url); return; }
+      room.visible = false;
+      room.frame.style.display = 'none';
+      popGuard(function(){ if(url) goContent(url); });
+    },
+    // EXIT / kicked / ended: remove the room completely (voice stops)
+    closeRoom: function(url){
+      room.visible = false;
+      popGuard(function(){ removeFrame(); if(url) goContent(url); else syncCard(); });
+    },
+    hasRoom: function(){ return !!room.frame; },
+    // normal pages tell the shell where they are, so a browser refresh comes back to the same page
+    noteContent: function(path, title){
+      try{
+        if(title) document.title = title;
+        history.replaceState(history.state, '', 'app.html?p=' + encodeURIComponent(path));
+      }catch(e){}
+    }
+  };
+  window.AppShell = AppShell;
+})();
+</script>
+</body>
+</html>

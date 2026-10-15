@@ -30,7 +30,7 @@
   var renders = [];
   var myId = null;
 
-  function sb(){ return root.supabaseClient; }
+  function sb(){ return root.supabaseClient || (typeof supabaseClient !== "undefined" ? supabaseClient : null); }   // supabase-config.js declares it with const, so it is NOT on window
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function toast(msg){ if(typeof root.showToast === 'function') root.showToast(msg); else alert(msg); }
 

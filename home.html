@@ -1903,7 +1903,7 @@
         .or(`from_user.eq.${currentUser.id},to_user.eq.${currentUser.id}`);
       const friendIds = (fr || []).map(r => r.from_user === currentUser.id ? r.to_user : r.from_user);
       if(!friendIds.length) return [];
-      const { data } = await supabaseClient.from('rooms').select('*').in('owner_id', friendIds).eq('is_official', false);
+      const { data } = await supabaseClient.from('rooms').select('*').in('owner_id', friendIds).or('is_official.is.null,is_official.eq.false');
       return data || [];
     }
     if(tab === 'official'){

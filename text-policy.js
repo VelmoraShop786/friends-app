@@ -1,26 +1,21 @@
 /* ============================================================================
-   text-policy.js  —  the ONE Unicode text policy for the whole app.
+   text-policy.js  —  the ONE text policy for the whole app.
 
    Used for: name, bio, room announcement, room name, room chat messages and
-   inbox messages. Every page loads this file, and the database has the same
-   rules in profile-fields-and-text-policy.sql (function tp_clean), so the
-   result is identical everywhere.
+   inbox messages.
 
-   RULE 1  Remove characters that are invisible or dangerous:
-           control characters, zero-width / filler / "blank" characters,
-           bidi-override tricks, tag characters, private-use characters,
-           lone surrogates. (Used to fake empty names or spoof text.)
-   RULE 2  Everything else is ALWAYS allowed — stylish / decorative Unicode
-           (꧁꧂ ༺༻ ★✦❀ 𝓐𝓑𝓒 ＡＢＣ ᴀʙᴄ ♛ ❝❞ …) and emoji.
-   RULE 3  Lengths are counted in characters (code points), NOT in UTF-16
-           units, so 𝓐 or 😀 count as 1 — an HTML maxlength attribute would
-           count them as 2, which is why this file enforces limits itself.
-   RULE 4  Spaces: tabs / odd space characters become a normal space, runs of
-           spaces collapse, edges are trimmed. Single-line fields have no
-           line breaks; announcements and messages keep them (max 2 in a row).
-   RULE 5  Zalgo guard: at most 3 stacked combining marks in a row.
-           ZWJ / ZWNJ are kept only BETWEEN visible characters (needed by
-           emoji sequences and Urdu/Persian/Arabic typing), never at the edges.
+   RULE 1  EVERY character is allowed: all languages, emoji, stylish / decorative
+           Unicode, symbols, zero-width and "blank" characters, combining marks.
+           The only things removed are the two that break saving to the database:
+           the NUL character (U+0000) and broken lone surrogates.
+   RULE 2  Lengths are counted in characters (code points), NOT in UTF-16
+           units, so 𝓐 or 😀 count as 1 (an HTML maxlength attribute would count 2).
+   RULE 3  Layout only: line breaks are normalised, tab / vertical-tab / form-feed
+           become a normal space, runs of normal spaces collapse, edges are trimmed.
+           Single-line fields have no line breaks; announcements and messages keep
+           them (max 2 in a row).
+   NOTE    The database must use the same rule (its tp_clean function), otherwise
+           it would still remove characters after saving.
    ========================================================================== */
 (function(root){
   'use strict';
@@ -38,33 +33,33 @@
     line:         { max: 0,   multiline: false, required: false, label: 'Text' }       // single line, no limit (display of older values)
   };
 
-  // ---- character sets (kept in sync with tp_clean in the SQL file) ---------
-  // Invisible / control characters that are always removed.
-  var INVISIBLE =
-    '\\u0000-\\u0008\\u000E-\\u001F\\u007F-\\u009F' +   // control characters (tab, LF, CR, VT, FF are handled as spaces / line breaks first)
-    '\\u00AD\\u034F\\u061C\\u115F\\u1160\\u17B4\\u17B5' + // soft hyphen, grapheme joiner, Arabic letter mark, Hangul / Khmer fillers
-    '\\u180B-\\u180F\\u200B\\u200E\\u200F' +             // Mongolian selectors, zero-width space, LRM, RLM
-    '\\u202A-\\u202E\\u2060-\\u206F\\u2800\\u3164' +     // bidi overrides, word joiner & invisible operators, braille blank, Hangul filler
-    '\\uFEFF\\uFFA0\\uFFF9-\\uFFFF' +                   // BOM, halfwidth filler, specials, non-characters
-    '\\uE000-\\uF8FF' +                                 // private use
-    '\\u{1D173}-\\u{1D17A}' +                           // musical formatting characters
-    '\\u{E0000}-\\u{E007F}' +                           // tag characters
-    '\\u{F0000}-\\u{FFFFD}\\u{100000}-\\u{10FFFD}';     // private use planes
-  var LONE_SURROGATE = '[\\uD800-\\uDFFF]';
-  var SPACES = '\\u0009\\u000B\\u000C\\u0020\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000'; // become one normal space
-  var MARKS = '\\u0300-\\u036F\\u1AB0-\\u1AFF\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F';       // stackable combining marks
+  // ---- character sets -----------------------------------------------------
+  // Only what cannot be stored: NUL, and lone (unpaired) surrogates.
+  var SPACES = '\\u0009\\u000B\\u000C';   // become one normal space
 
   var RE_LINEBREAKS   = new RegExp('\\r\\n|[\\r\\u0085\\u2028\\u2029]', 'g');
   var RE_SPACES       = new RegExp('[' + SPACES + ']', 'g');
-  var RE_INVISIBLE    = new RegExp('[' + INVISIBLE + ']|' + LONE_SURROGATE, 'gu');
-  var RE_MARK_STACK   = new RegExp('([' + MARKS + ']{3})[' + MARKS + ']+', 'g');
   var RE_MANY_SPACES  = / {2,}/g;
   var RE_SPACE_AROUND_NL = / ?\n ?/g;
   var RE_MANY_NL      = /\n{3,}/g;
-  var RE_ZW_RUN       = /([\u200C\u200D])[\u200C\u200D]+/g;
-  var RE_ZW_LEADING   = /(^|[ \n])[\u200C\u200D]+/g;
-  var RE_ZW_TRAILING  = /[\u200C\u200D]+(?=$|[ \n])/g;
-  var RE_HAS_VISIBLE  = new RegExp('[^ \\n\\u200C\\u200D\\uFE00-\\uFE0F' + MARKS + ']', 'u');
+  var RE_HAS_VISIBLE  = /[^ \n]/;
+
+  // remove NUL and lone surrogates (walks the string so valid pairs like emoji are never touched)
+  function dropBroken(s){
+    var out = '', i, c, d;
+    for(i = 0; i < s.length; i++){
+      c = s.charCodeAt(i);
+      if(c === 0) continue;
+      if(c >= 0xD800 && c <= 0xDBFF){
+        d = s.charCodeAt(i + 1);
+        if(d >= 0xDC00 && d <= 0xDFFF){ out += s.charAt(i) + s.charAt(i + 1); i++; }
+        continue;
+      }
+      if(c >= 0xDC00 && c <= 0xDFFF) continue;
+      out += s.charAt(i);
+    }
+    return out;
+  }
 
   function codePoints(s){ return Array.from(s); }
   function len(s){ return codePoints(String(s == null ? '' : s)).length; }
@@ -80,9 +75,7 @@
     s = s.replace(RE_LINEBREAKS, '\n');
     s = s.replace(RE_SPACES, ' ');
     if(!multiline) s = s.replace(/\n/g, ' ');
-    s = s.replace(RE_INVISIBLE, '');
-    s = s.replace(RE_MARK_STACK, '$1');
-    return s;
+    return dropBroken(s);
   }
 
   function clip(s, max){
@@ -96,7 +89,6 @@
       s = s.replace(RE_SPACE_AROUND_NL, '\n').replace(RE_MANY_NL, '\n\n');
     }
     s = s.replace(RE_MANY_SPACES, ' ');
-    s = s.replace(RE_ZW_RUN, '$1').replace(RE_ZW_LEADING, '$1').replace(RE_ZW_TRAILING, '');
     return s.replace(/^[ \n]+|[ \n]+$/g, '');
   }
 
@@ -106,7 +98,7 @@
     var s = strip(text, k.multiline);
     s = tidy(s, k.multiline);
     if(k.max) s = clip(s, k.max);
-    return tidy(s, k.multiline);      // second pass: removing a joiner can leave a double space, clipping can leave a dangling joiner / space
+    return tidy(s, k.multiline);      // second pass: clipping can leave a trailing space
   }
 
   // While typing: same removals + length limit, but never trims or collapses (so you can still type a space).

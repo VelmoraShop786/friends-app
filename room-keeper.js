@@ -26,6 +26,18 @@
 (function(){
   'use strict';
 
+  // Every page lives inside app.html (the shell) so a kept room's voice survives page changes.
+  // A page opened directly sends itself into the shell (once, instantly).
+  var IN_FRAME = (window.top !== window.self);
+  if(!IN_FRAME && !/(^|\/)app\.html$/.test(location.pathname)){
+    var here = location.pathname.replace(/^\/+/, '') + location.search + location.hash;
+    if(!here || here === '/') here = 'index.html';
+    location.replace('app.html?p=' + encodeURIComponent(here));
+    return;
+  }
+  var EMBEDDED = IN_FRAME && window.name === 'room-frame';        // this page is the room layer
+  function shell(){ try{ return (IN_FRAME && window.top.AppShell) ? window.top.AppShell : null; }catch(e){ return null; } }
+
   var K_ENTRY = 'kr_entry';   // the room this tab is allowed to be inside right now
   var K_KEPT  = 'kr_kept';    // JSON {id,name,picture,seat} while a room is kept
   var K_INIT  = 'kr_init';    // set once this tab-session has done its start-up cleanup
@@ -175,6 +187,7 @@
   var leavingRoomPage = false;
   var pendingUrl = null;
   function startRoomBackGuard(){
+    if(EMBEDDED) return;                       // inside the shell the room's Back button is handled by app.html
     var s = history.state;
     if(!(s && s.kr === 'room-top')){
       history.replaceState({ kr: 'room-base' }, '');
@@ -219,6 +232,8 @@
     var go = function(){
       ssSet(K_ENTRY, id);
       ssDel(K_KEPT);
+      var sh = shell();
+      if(sh && !EMBEDDED){ removeCard(); sh.openRoom(id); return; }   // the room layer (voice stays alive across pages)
       location.replace('chatroom.html?room=' + encodeURIComponent(id));
     };
     if(kept && String(kept.id) !== id){
@@ -236,6 +251,8 @@
   // room page: is this tab allowed to be here?
   function enterGuard(roomId){
     if(ssGet(K_ENTRY) === String(roomId)) return true;
+    var shE = shell();
+    if(EMBEDDED && shE){ shE.closeRoom('home.html'); return false; }
     location.replace('home.html');
     return false;
   }
@@ -244,6 +261,8 @@
   function keepAndLeave(info, url){
     ssSet(K_KEPT, JSON.stringify({ id: String(info.id), name: info.name || '', picture: info.picture || '', seat: info.seat || null }));
     ssDel(K_ENTRY);
+    var sh = shell();
+    if(EMBEDDED && sh){ sh.hideRoom(url || 'home.html'); return; }   // room keeps running (voice too), screen goes away
     navigateAwayFromRoom(url || 'home.html');
   }
 
@@ -251,6 +270,8 @@
   function exitAndLeave(url){
     ssDel(K_ENTRY);
     ssDel(K_KEPT);
+    var sh = shell();
+    if(EMBEDDED && sh){ sh.closeRoom(url || 'home.html'); return; }
     navigateAwayFromRoom(url || 'home.html');
   }
 
@@ -262,6 +283,8 @@
   function endKept(){
     ssDel(K_KEPT);
     removeCard();
+    var sh = shell();
+    if(sh && !EMBEDDED) sh.closeRoom();      // the room is over: its voice must stop too
   }
 
   function loadPos(){
@@ -601,6 +624,8 @@
 
   // ---------- start-up ----------
   function initPage(){
+    var shp = shell();
+    if(shp && !EMBEDDED){ try{ shp.noteContent(location.pathname.replace(/^\/+/, '') + location.search + location.hash, document.title); }catch(e){} }
     startPageBackGuard();
     startNet();
     startGoodbye();
@@ -631,6 +656,7 @@
     keepAndLeave: keepAndLeave,
     exitAndLeave: exitAndLeave,
     getKept: getKept,
+    syncCard: renderCard,
     isRoomPage: isRoomPage,
     net: {
       isBad: function(){ return netBad; },

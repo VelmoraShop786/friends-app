@@ -13,7 +13,7 @@
   var myId = null;
   var timer = null;
 
-  function sb(){ return root.supabaseClient; }
+  function sb(){ return root.supabaseClient || (typeof supabaseClient !== "undefined" ? supabaseClient : null); }   // supabase-config.js declares it with const, so it is NOT on window
   function recompute(){
     var n = 0;
     Object.keys(state.messages).forEach(function(k){ n += Number(state.messages[k]) || 0; });

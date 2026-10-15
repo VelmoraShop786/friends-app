@@ -345,15 +345,17 @@
   }
 
   // ---- fetch someone else's extras (by user id or by ID number), cached for a minute -------------
+  // supabase-config.js declares supabaseClient with const, so it is NOT on window: look it up by name
+  function sbc(){ return root.supabaseClient || (typeof supabaseClient !== "undefined" ? supabaseClient : null); }
   var cache = {};
   var FIELDS = "id, gender, country, dob_day, dob_month, bio";
   function load(who){
-    if(!root.supabaseClient || !who) return Promise.resolve(null);
+    if(!sbc() || !who) return Promise.resolve(null);
     var key = who.userId ? "u:" + who.userId : (who.idNumber && who.idNumber !== "\u2014" ? "n:" + who.idNumber : "");
     if(!key) return Promise.resolve(null);
     var hit = cache[key];
     if(hit && Date.now() - hit.at < 60000) return Promise.resolve(hit.data);
-    var q = root.supabaseClient.from("profiles").select(FIELDS);
+    var q = sbc().from("profiles").select(FIELDS);
     q = who.userId ? q.eq("id", who.userId) : q.eq("id_number", String(who.idNumber));
     return q.maybeSingle().then(function(res){
       var data = res && !res.error ? res.data : null;
@@ -388,8 +390,8 @@
       if(hit && Date.now() - hit.at < 300000) fillEl(el, hit.data);
       else if(need.indexOf(id) < 0) need.push(id);
     });
-    if(!need.length || !root.supabaseClient) return;
-    root.supabaseClient.from("profiles").select(FIELDS).in("id", need.slice(0, 80)).then(function(res){
+    if(!need.length || !sbc()) return;
+    sbc().from("profiles").select(FIELDS).in("id", need.slice(0, 80)).then(function(res){
       var rows = res && !res.error && res.data ? res.data : [];
       rows.forEach(function(r){ cache["u:" + r.id] = { at: Date.now(), data: r }; });
       els.forEach(function(el){
