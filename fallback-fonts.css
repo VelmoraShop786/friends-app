@@ -1,0 +1,11 @@
+/* fallback-fonts.css
+   A few symbols (e.g. ⏤ in stylish names) have no glyph in some phones' Chrome, so they showed as empty boxes.
+   fallback-symbols.woff (GNU Unifont subset, SIL OFL) supplies ONLY those few ranges. It is attached to the
+   same family names the app already uses ('Inter', 'Fraunces') and is loaded BEFORE Google Fonts, so Google's
+   own faces win wherever they have the character. Nothing else changes. */
+@font-face{ font-family:'Inter'; font-weight:100 900; font-style:normal; font-display:swap;
+  src:url('fallback-symbols.woff') format('woff');
+  unicode-range:U+035C-0362,U+2300-2327,U+2329-23CE,U+23D0-23E8,U+23F4-23F7,U+23FB-23FF; }
+@font-face{ font-family:'Fraunces'; font-weight:100 900; font-style:normal; font-display:swap;
+  src:url('fallback-symbols.woff') format('woff');
+  unicode-range:U+035C-0362,U+2300-2327,U+2329-23CE,U+23D0-23E8,U+23F4-23F7,U+23FB-23FF; }

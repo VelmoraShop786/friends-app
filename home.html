@@ -21,6 +21,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home</title>
+<link rel="stylesheet" href="fallback-fonts.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -85,6 +86,16 @@
   }
   .you-name{ font-family:'Fraunces', serif; font-weight:600; font-size:1.4rem; margin-bottom:4px; }
   .you-id{ font-size:0.85rem; color: var(--ink-soft); margin-bottom:0; }
+  .you-id-row{ position:relative; width:100%; min-height:44px; display:flex; align-items:center; justify-content:center; }
+  .you-edit-btn{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; border-radius:50%; border:0; padding:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    background:linear-gradient(180deg,#4fdcb0,#1fb58a);
+    box-shadow:0 2px 6px rgba(20,120,90,.35), inset 0 1px 0 rgba(255,255,255,.45);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .you-edit-btn:active{ transform:translateY(-50%) scale(.93); }
   #you-pills{ margin: 10px 0 0; }
   #you-bio{ margin: 10px 0 0; }
   .you-extras-gap{ height:24px; flex-shrink:0; }
@@ -592,12 +603,16 @@
     <div class="you-avatar" onclick="document.getElementById('my-avatar-input').click()" style="cursor:pointer;">Me</div>
     <input type="file" id="my-avatar-input" accept="image/*" style="display:none" onchange="changeMyAvatar(this.files[0])">
     <div class="you-name copyable">You</div>
-    <div class="you-id copyable">ID: 123456</div>
+    <div class="you-id-row">
+      <div class="you-id copyable">ID: 123456</div>
+      <button type="button" class="you-edit-btn" onclick="openEditProfile()" aria-label="Edit profile" title="Edit profile">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L12 14.8 8 16l1.2-4z"/></svg>
+      </button>
+    </div>
     <div class="pf-pills" id="you-pills" style="display:none;"></div>
     <div class="pf-bio" id="you-bio" style="display:none;"></div>
     <div class="you-extras-gap"></div>
-    <div class="you-card" onclick="openEditProfile()"><span>Edit profile</span><span class="arrow">›</span></div>
-    <div class="you-card" onclick="showScreen('settings')"><span>Settings</span><span class="arrow">›</span></div>
+    <div id="my-level"></div>
     <div class="you-card" id="owner-panel-link" style="display:none;" onclick="showScreen('owner')"><span>👑 Owner Panel</span><span class="arrow">›</span></div>
   </div>
 
@@ -771,6 +786,7 @@
       </span>
       <div class="pf-pills" id="profile-modal-pills" style="display:none;"></div>
       <div class="pf-bio" id="profile-modal-bio" style="display:none;"></div>
+      <div id="profile-modal-level" style="display:none; width:100%; max-width:340px; margin:14px auto 0;"></div>
       <div class="sf-actions" id="profile-modal-safety"></div>
     </div>
   </div>
@@ -841,6 +857,7 @@
 <script src="profile-extras.js"></script>
 <script src="safety.js"></script>
 <script src="notify.js"></script>
+<script src="levels.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script>
@@ -1085,10 +1102,13 @@
     const token = ++profileModalToken;
     const safetyEl = document.getElementById('profile-modal-safety');
     safetyEl.style.display = 'none';
+    const lvEl = document.getElementById('profile-modal-level');
+    lvEl.style.display = 'none';
     ProfileExtras.load({ idNumber }).then(extras => {
       if(token === profileModalToken && extras){
         ProfileExtras.render(pillsEl, bioEl, extras);
         Safety.renderButtons(safetyEl, { userId: extras.id, name });   // Block + Report (hidden on your own profile)
+        Levels.showFor(lvEl, extras.id);                               // their level (tap it to open / close the XP bar)
       }
     });
     document.getElementById('profile-modal').classList.add('show');
@@ -2041,6 +2061,8 @@
     try{
       await requireLoginAndLoadProfile();
       if(!currentUser) return;   // redirected to login, or the profile failed to load — don't trap them
+      // Level row on "You": the database gives the 100 bonus (once) + today's login XP, then it updates live
+      try{ Levels.startMine(currentUser.id, Levels.mount(document.getElementById('my-level'))); }catch(err){}
       loadHomeFriends();
       renderRequestLists();
       loadAppTheme();

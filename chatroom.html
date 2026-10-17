@@ -21,6 +21,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat Room</title>
+<link rel="stylesheet" href="fallback-fonts.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -1153,6 +1154,16 @@ html, body{ overscroll-behavior-y: contain; }
     hbTimer = setInterval(sendBeat, HEARTBEAT_MS);
     refreshDbPresence();
   }
+
+  // Seat XP: once a minute, while I am really on a seat, ask the database for my 3 XP.
+  // The database checks the seat itself, allows one tick a minute and 10 a day, so this cannot be abused.
+  setInterval(function(){
+    try{
+      if(accessBlocked || leavingRoom || !currentUser || !serverPresenceOk) return;
+      if(!seats.some(s => s && s.taken && s.userId === currentUser.id)) return;
+      supabaseClient.rpc('xp_seat_tick', { p_room: String(ROOM_ID) }).then(function(){}, function(){});
+    }catch(err){}
+  }, 60000);
 
   async function sendBeat(){
     if(accessBlocked || leavingRoom || !serverPresenceOk) return;
