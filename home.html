@@ -600,7 +600,7 @@
 
   <!-- YOU -->
   <div class="screen active" id="screen-you">
-    <div class="you-avatar" onclick="document.getElementById('my-avatar-input').click()" style="cursor:pointer;">Me</div>
+    <div class="you-avatar" onclick="openMyPicker()" style="cursor:pointer;">Me</div>
     <input type="file" id="my-avatar-input" accept="image/*" style="display:none" onchange="changeMyAvatar(this.files[0])">
     <div class="you-name copyable">You</div>
     <div class="you-id-row">
@@ -858,6 +858,7 @@
 <script src="safety.js"></script>
 <script src="notify.js"></script>
 <script src="levels.js"></script>
+<script src="frames.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script>
@@ -927,6 +928,16 @@
       el.style.backgroundImage = '';   // '' (not 'none') so the default green gradient behind the initial comes back
       el.textContent = initial;
     }
+  }
+
+  // tap my profile picture: popup with "Profile Photo" (upload) and "Profile Frame"
+  function openMyPicker(){
+    if(!currentUser) return;
+    Frames.openPicker({
+      userId: currentUser.id,
+      sourceEl: document.querySelector('.you-avatar'),
+      onUploadPhoto: () => document.getElementById('my-avatar-input').click()
+    });
   }
 
   async function changeMyAvatar(file){
@@ -1099,6 +1110,7 @@
     document.getElementById('profile-modal-id').textContent = 'ID: ' + (idNumber || '—');
     const pillsEl = document.getElementById('profile-modal-pills'), bioEl = document.getElementById('profile-modal-bio');
     ProfileExtras.render(pillsEl, bioEl, null);
+    document.getElementById('profile-modal-avatar').removeAttribute('data-fr');
     const token = ++profileModalToken;
     const safetyEl = document.getElementById('profile-modal-safety');
     safetyEl.style.display = 'none';
@@ -1108,7 +1120,8 @@
       if(token === profileModalToken && extras){
         ProfileExtras.render(pillsEl, bioEl, extras);
         Safety.renderButtons(safetyEl, { userId: extras.id, name });   // Block + Report (hidden on your own profile)
-        Levels.showFor(lvEl, extras.id);                               // their level (tap it to open / close the XP bar)
+        Levels.showFor(lvEl, extras.id);
+        document.getElementById('profile-modal-avatar').setAttribute('data-fr', extras.id);   // their frame                               // their level (tap it to open / close the XP bar)
       }
     });
     document.getElementById('profile-modal').classList.add('show');
@@ -1214,7 +1227,7 @@
       const unread = Notify.unreadFor(f.id);
       return `
       <div class="friend-row ${unread ? 'unread' : ''}" onclick="location.href='inbox.html?open=${f.id}'">
-        <div class="avatar-wrap"><div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>${unread ? `<span class="row-badge">${Notify.badgeText(unread)}</span>` : ''}</div>
+        <div class="avatar-wrap"><div class="avatar" data-fr="${escapeHtml(f.id)}">${avatarHtml(f.avatarUrl, initial)}</div>${unread ? `<span class="row-badge">${Notify.badgeText(unread)}</span>` : ''}</div>
         <div>
           <div class="name copyable">${escapeHtml(f.name)}</div>
           <div class="sub">${escapeHtml(f.lastMessage)} · ${formatTimeAgo(f.lastAt)}</div>
@@ -1268,7 +1281,7 @@
       const sub = f.lastAt ? (escapeHtml(f.lastMessage) + ' · ' + formatTimeAgo(f.lastAt)) : 'Tap to say hi 👋';
       return `
       <div class="friend-row" onclick="location.href='inbox.html?open=${f.id}'">
-        <div class="avatar">${avatarHtml(f.avatarUrl, initial)}</div>
+        <div class="avatar" data-fr="${escapeHtml(f.id)}">${avatarHtml(f.avatarUrl, initial)}</div>
         <div>
           <div class="name copyable">${escapeHtml(f.name)}</div>
           <div class="sub">${sub}</div>
@@ -1344,7 +1357,7 @@
     const initial = TextPolicy.initial(user.name);
     usersBox.innerHTML =
       '<div class="friend-row" style="cursor:pointer;" onclick="openProfileModal(\'' + escapeAttr(user.name) + '\', ' + (user.avatar_url ? "'" + user.avatar_url + "'" : 'null') + ', \'' + user.id_number + '\')">' +
-      '<div class="avatar">' + avatarHtml(user.avatar_url, initial) + '</div>' +
+      '<div class="avatar" data-fr="' + escapeHtml(user.id) + '">' + avatarHtml(user.avatar_url, initial) + '</div>' +
       '<div><div class="name copyable">' + escapeHtml(user.name) + '</div><div class="pf-pills pf-mini pf-left" data-pf="' + escapeHtml(user.id) + '" style="display:none;"></div></div>' + actionBtn + '</div>';
     ProfileExtras.fillIn(usersBox);
     roomsBox.innerHTML = room
@@ -1432,7 +1445,7 @@
       const initial = TextPolicy.initial(p?.name);
       return `
       <div class="friend-row" style="cursor:pointer;" onclick="openProfileModal('${escapeAttr(p?.name)}', ${p?.avatar_url ? "'" + p.avatar_url + "'" : 'null'}, '${p?.id_number || ''}')">
-        <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
+        <div class="avatar" data-fr="${escapeHtml(r.from_user || r.to_user || '')}">${avatarHtml(p?.avatar_url, initial)}</div>
         <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div><div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(r.from_user)}" style="display:none;"></div></div>
         <div class="req-actions">
           <button class="action-btn accept-btn" onclick="event.stopPropagation(); respondRequest('${r.id}','accepted',this,'${r.from_user}')">Accept</button>
@@ -1453,7 +1466,7 @@
       const initial = TextPolicy.initial(p?.name);
       return `
       <div class="friend-row" style="cursor:pointer;" onclick="openProfileModal('${escapeAttr(p?.name)}', ${p?.avatar_url ? "'" + p.avatar_url + "'" : 'null'}, '${p?.id_number || ''}')">
-        <div class="avatar">${avatarHtml(p?.avatar_url, initial)}</div>
+        <div class="avatar" data-fr="${escapeHtml(r.from_user || r.to_user || '')}">${avatarHtml(p?.avatar_url, initial)}</div>
         <div><div class="name copyable">${escapeHtml(p?.name || 'Unknown')}</div><div class="sub">ID: ${p?.id_number || ''}</div><div class="pf-pills pf-mini pf-left" data-pf="${escapeHtml(r.to_user)}" style="display:none;"></div></div>
         <button class="action-btn add-btn sent" style="margin-left:auto;">Pending</button>
       </div>`;
@@ -2062,7 +2075,8 @@
       await requireLoginAndLoadProfile();
       if(!currentUser) return;   // redirected to login, or the profile failed to load — don't trap them
       // Level row on "You": the database gives the 100 bonus (once) + today's login XP, then it updates live
-      try{ Levels.startMine(currentUser.id, Levels.mount(document.getElementById('my-level'))); }catch(err){}
+      document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => el.setAttribute('data-fr', currentUser.id));   // my frame
+      try{ Levels.startMine(currentUser.id, Levels.mount(document.getElementById('my-level'), { about: true })); }catch(err){}
       loadHomeFriends();
       renderRequestLists();
       loadAppTheme();

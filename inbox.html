@@ -619,6 +619,7 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="profile-extras.js"></script>
 <script src="safety.js"></script>
 <script src="notify.js"></script>
+<script src="frames.js"></script>
 <script src="room-keeper.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
@@ -781,6 +782,7 @@ html, body{ overscroll-behavior-y: contain; }
       if(token === profileModalToken && extras) ProfileExtras.render(pillsEl, bioEl, extras);
     });
     document.getElementById('profile-modal-avatar').innerHTML = avatarHtml(f.avatarUrl, TextPolicy.initial(f.name));
+    document.getElementById('profile-modal-avatar').setAttribute('data-fr', f.id);   // their frame
     document.getElementById('profile-modal-name').textContent = f.name;
     document.getElementById('profile-modal-id').textContent = 'ID: ' + (f.idNumber || '—');
     document.getElementById('profile-modal').classList.add('show');
@@ -796,6 +798,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(!f) return;
     document.getElementById('chat-name').textContent = f.name;
     document.getElementById('chat-avatar').innerHTML = avatarHtml(f.avatarUrl, TextPolicy.initial(f.name));
+    document.getElementById('chat-avatar').setAttribute('data-fr', f.id);   // their frame
     const chatPills = document.getElementById('chat-pills');
     chatPills.setAttribute('data-pf', f.id);
     chatPills.style.display = 'none';
