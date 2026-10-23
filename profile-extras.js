@@ -318,10 +318,17 @@
     var d = parseInt(p && p.dob_day, 10), m = parseInt(p && p.dob_month, 10);
     return d && m && MONTHS[m - 1] ? d + " " + MONTHS[m - 1] : "";
   }
+  // privacy: show_country / show_gender / show_birthday = false hides that detail from OTHER people (never from the owner)
+  var myId = null;
+  function setMe(id){ myId = id || null; }
+  function hidden(p, field){ return !!(p && p.id && p.id !== myId && p[field] === false); }
   function pillsHtml(p, opts){
     if(!p) return "";
     var compact = !!(opts && opts.compact);
     var out = "";
+    if(hidden(p, "show_country")) p = Object.assign({}, p, { country: "" });
+    if(hidden(p, "show_gender"))  p = Object.assign({}, p, { gender: "" });
+    if(hidden(p, "show_birthday")) p = Object.assign({}, p, { dob_day: null, dob_month: null });
     var f = flag(p.country);
     if(f) out += "<span class=\"pf-pill pf-flag\" title=\"" + esc(countryName(p.country)) + "\">" + f + "</span>";
     if(p.gender === "male")   out += "<span class=\"pf-pill pf-gender pf-male\" title=\"Male\">&#9794;&#xFE0E;</span>";
@@ -348,16 +355,23 @@
   // supabase-config.js declares supabaseClient with const, so it is NOT on window: look it up by name
   function sbc(){ return root.supabaseClient || (typeof supabaseClient !== "undefined" ? supabaseClient : null); }
   var cache = {};
-  var FIELDS = "id, gender, country, dob_day, dob_month, bio";
+  var FIELDS = "id, gender, country, dob_day, dob_month, bio, show_country, show_gender, show_birthday";
+  var FIELDS_OLD = "id, gender, country, dob_day, dob_month, bio";    // used if the settings columns are not installed yet (sql-17)
   function load(who){
     if(!sbc() || !who) return Promise.resolve(null);
     var key = who.userId ? "u:" + who.userId : (who.idNumber && who.idNumber !== "\u2014" ? "n:" + who.idNumber : "");
     if(!key) return Promise.resolve(null);
     var hit = cache[key];
     if(hit && Date.now() - hit.at < 60000) return Promise.resolve(hit.data);
-    var q = sbc().from("profiles").select(FIELDS);
-    q = who.userId ? q.eq("id", who.userId) : q.eq("id_number", String(who.idNumber));
-    return q.maybeSingle().then(function(res){
+    function ask(fields){
+      var q = sbc().from("profiles").select(fields);
+      q = who.userId ? q.eq("id", who.userId) : q.eq("id_number", String(who.idNumber));
+      return q.maybeSingle();
+    }
+    return ask(FIELDS).then(function(res){
+      if(res && res.error) return ask(FIELDS_OLD);
+      return res;
+    }).then(function(res){
       var data = res && !res.error ? res.data : null;
       if(data) cache[key] = { at: Date.now(), data: data };
       return data;
@@ -392,6 +406,9 @@
     });
     if(!need.length || !sbc()) return;
     sbc().from("profiles").select(FIELDS).in("id", need.slice(0, 80)).then(function(res){
+      if(res && res.error) return sbc().from("profiles").select(FIELDS_OLD).in("id", need.slice(0, 80));
+      return res;
+    }).then(function(res){
       var rows = res && !res.error && res.data ? res.data : [];
       rows.forEach(function(r){ cache["u:" + r.id] = { at: Date.now(), data: r }; });
       els.forEach(function(el){
@@ -429,6 +446,14 @@
     COUNTRIES: COUNTRIES, MONTHS: MONTHS,
     flag: flag, countryName: countryName, isValidCountry: isValidCountry, daysInMonth: daysInMonth,
     fillCountrySelect: fillCountrySelect, fillMonthSelect: fillMonthSelect, fillDaySelect: fillDaySelect, linkDayToMonth: linkDayToMonth,
-    validate: validate, pillsHtml: pillsHtml, render: render, load: load, forget: forget, dobText: dobText, fillIn: fillIn
+    validate: validate, setMe: setMe, pillsHtml: pillsHtml, render: render, load: load, forget: forget, dobText: dobText, fillIn: fillIn
   };
+  // learn who "me" is, so my own hidden details are still shown to me
+  try{
+    var c0 = sbc();
+    if(c0 && c0.auth) Promise.resolve(c0.auth.getSession()).then(function(r){
+      var u = r && r.data && r.data.session && r.data.session.user;
+      if(u) myId = u.id;
+    }, function(){});
+  }catch(err){}
 })(window);

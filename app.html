@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Friends</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#06D6A0">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <!--
   app.html — the "shell" every page of the app is shown inside.
 
@@ -26,6 +31,10 @@
 <body>
 <iframe id="content-frame" name="content-frame" title="App"></iframe>
 
+<script>
+// makes the website installable on a phone ("Add to Home screen" / install app). The worker caches nothing.
+if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
 <script>
 (function(){
   'use strict';

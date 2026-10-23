@@ -9,16 +9,21 @@
 (function(root){
   'use strict';
   var state = { messages: {}, system: 0, requests: 0, latestSystem: null, messageTotal: 0, total: 0, ready: false };
+  var raw = { system: 0, requests: 0 };                       // what the database says; state.* below is what the person chose to see
+  // Settings > Notifications saves {messages, requests, system} here (false = do not show those red numbers)
+  function prefs(){ try{ return JSON.parse(localStorage.getItem('notify-prefs-v1') || '{}') || {}; }catch(err){ return {}; } }
   var listeners = [];
   var myId = null;
   var timer = null;
 
   function sb(){ return root.supabaseClient || (typeof supabaseClient !== "undefined" ? supabaseClient : null); }   // supabase-config.js declares it with const, so it is NOT on window
   function recompute(){
-    var n = 0;
-    Object.keys(state.messages).forEach(function(k){ n += Number(state.messages[k]) || 0; });
+    var pf = prefs(), n = 0;
+    if(pf.messages !== false) Object.keys(state.messages).forEach(function(k){ n += Number(state.messages[k]) || 0; });
     state.messageTotal = n;
-    state.total = n + (Number(state.system) || 0) + (Number(state.requests) || 0);
+    state.system = pf.system === false ? 0 : (Number(raw.system) || 0);
+    state.requests = pf.requests === false ? 0 : (Number(raw.requests) || 0);
+    state.total = n + state.system + state.requests;
   }
   function emit(){ listeners.forEach(function(fn){ try{ fn(state); }catch(err){} }); }
   function onChange(fn){ listeners.push(fn); }
@@ -40,8 +45,8 @@
         if(!res || res.error || !res.data) return;
         var d = res.data;
         state.messages = d.messages || {};
-        state.system = Number(d.system) || 0;
-        state.requests = Number(d.requests) || 0;
+        raw.system = Number(d.system) || 0;
+        raw.requests = Number(d.requests) || 0;
         state.latestSystem = d.latest_system || null;
         state.ready = true;
         recompute();
@@ -57,7 +62,7 @@
     return me().then(function(){ return sb().rpc('mark_chat_read', { p_friend: friendId }); }).then(later, later);
   }
   function markSystemRead(){
-    if(state.system){ state.system = 0; recompute(); emit(); }
+    if(raw.system){ raw.system = 0; recompute(); emit(); }
     return me().then(function(){ return sb().rpc('mark_notifications_read'); }).then(later, later);
   }
 
@@ -79,8 +84,9 @@
 
   root.Notify = {
     state: state, onChange: onChange, refresh: refresh,
+    applyPrefs: function(){ recompute(); emit(); },           // Settings > Notifications calls this after a change
     markChatRead: markChatRead, markSystemRead: markSystemRead,
-    unreadFor: function(friendId){ return Number(state.messages[friendId]) || 0; },
+    unreadFor: function(friendId){ return prefs().messages === false ? 0 : (Number(state.messages[friendId]) || 0); },
     badgeText: function(n){ n = Number(n) || 0; return n > 99 ? '99+' : String(n); }
   };
   start();

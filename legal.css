@@ -1,0 +1,23 @@
+:root{ --teal-deep:#05846a; --teal:#06D6A0; --teal-soft:#d3f3e8; --bg:#f6faf8; --card:#fff; --ink:#16332c; --ink-soft:#5c7770; --line:#dfeee8; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--ink); line-height:1.65; font-size:16px; -webkit-user-select:text; user-select:text; }
+header{ position:sticky; top:0; z-index:5; background:rgba(246,250,248,.94); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+.bar{ max-width:760px; margin:0 auto; display:flex; align-items:center; gap:10px; padding:10px 14px; }
+.back{ width:40px; height:40px; border:0; border-radius:50%; background:none; color:var(--teal-deep); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.back:active{ background:var(--teal-soft); }
+.bar b{ font-weight:700; font-size:1.02rem; }
+main{ max-width:760px; margin:0 auto; padding:22px 18px 40px; }
+h1{ font-family:'Fraunces',Georgia,serif; font-weight:600; font-size:1.9rem; line-height:1.2; margin-bottom:6px; }
+.upd{ color:var(--ink-soft); font-size:.88rem; margin-bottom:22px; }
+h2{ font-size:1.12rem; margin:28px 0 8px; color:var(--teal-deep); }
+p{ margin:0 0 12px; }
+ul{ margin:0 0 14px 22px; }
+li{ margin-bottom:6px; }
+a{ color:var(--teal-deep); }
+.box{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin:14px 0; }
+.mail{ font-weight:700; font-size:1.08rem; word-break:break-all; }
+.btn{ display:inline-block; margin:6px 8px 0 0; padding:11px 18px; border-radius:22px; background:var(--teal-deep); color:#fff; text-decoration:none; font-weight:700; border:0; font:700 .95rem 'Inter',system-ui,sans-serif; cursor:pointer; }
+.btn.alt{ background:var(--teal-soft); color:var(--teal-deep); }
+footer{ max-width:760px; margin:0 auto; padding:18px 18px 34px; border-top:1px solid var(--line); text-align:center; color:var(--ink-soft); font-size:.88rem; }
+footer a{ margin:0 8px; white-space:nowrap; }

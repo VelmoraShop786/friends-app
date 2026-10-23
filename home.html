@@ -726,13 +726,17 @@
   <!-- SETTINGS -->
   <div class="screen" id="screen-settings" style="padding: 24px 18px;">
     <div class="section-title">Account</div>
-    <div class="you-card" onclick="showToast('Change password — coming soon')"><span>Change password</span><span class="arrow">›</span></div>
-    <div class="you-card" onclick="showToast('Notification settings — coming soon')"><span>Notifications</span><span class="arrow">›</span></div>
-    <div class="you-card" onclick="showToast('Privacy settings — coming soon')"><span>Privacy</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="Settings.openPassword()"><span>Change password</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="Settings.openNotifications()"><span>Notifications</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="Settings.openPrivacy()"><span>Privacy</span><span class="arrow">›</span></div>
     <div class="you-card" onclick="openBlockedModal()"><span>Blocked users</span><span class="arrow">›</span></div>
     <div class="you-card" onclick="location.href='appeal.html'"><span>Appeal for another account</span><span class="arrow">›</span></div>
     <div class="section-title" style="margin-top:18px;">More</div>
+    <div class="you-card" onclick="location.href='terms.html'"><span>Terms &amp; Conditions</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="location.href='privacy.html'"><span>Privacy Policy</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="location.href='contact.html'"><span>Contact us</span><span class="arrow">›</span></div>
     <div class="you-card" onclick="confirmLogout()" style="color:#b1362f;"><span>Log out</span><span class="arrow">›</span></div>
+    <div class="you-card" onclick="Settings.openDelete()" style="color:#b1362f;"><span>Delete account</span><span class="arrow">›</span></div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -859,6 +863,8 @@
 <script src="notify.js"></script>
 <script src="levels.js"></script>
 <script src="frames.js"></script>
+<script src="session-guard.js"></script>
+<script src="settings.js"></script>
 <script src="image-editor.js"></script>
 <script src="room-keeper.js"></script>
 <script>
@@ -1092,7 +1098,8 @@
 
   async function confirmLogout(){
     if(confirm('Log out of your account?')){
-      await supabaseClient.auth.signOut();
+      try{ localStorage.removeItem('device-token'); }catch(err){}      // this device is no longer the active one
+      await supabaseClient.auth.signOut({ scope: 'local' });
       location.href = 'index.html';
     }
   }
@@ -2076,6 +2083,7 @@
       if(!currentUser) return;   // redirected to login, or the profile failed to load — don't trap them
       // Level row on "You": the database gives the 100 bonus (once) + today's login XP, then it updates live
       document.querySelectorAll('.you-avatar, .nav-avatar').forEach(el => el.setAttribute('data-fr', currentUser.id));   // my frame
+      try{ ProfileExtras.setMe(currentUser.id); Settings.sync(); }catch(err){}      // my own details are never hidden from me; my notification choices apply on this phone
       try{ Levels.startMine(currentUser.id, Levels.mount(document.getElementById('my-level'), { about: true })); }catch(err){}
       loadHomeFriends();
       renderRequestLists();

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us — Friends App</title>
+<meta name="robots" content="index,follow">
+<link rel="stylesheet" href="fallback-fonts.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+<header><div class="bar">
+  <button class="back" type="button" aria-label="Back" onclick="if(history.length>1){history.back();}else{location.href='index.html';}">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <b>Contact Us</b>
+</div></header>
+<main>
+
+<h1>Contact Us</h1>
+<p class="upd">We read every message. We aim to reply within 3 to 5 working days.</p>
+
+<div class="box">
+  <p style="margin-bottom:6px;color:var(--ink-soft);">Email</p>
+  <p class="mail" id="mail">velmoraofficial786@gmail.com</p>
+  <a class="btn" href="mailto:velmoraofficial786@gmail.com">Send an email</a>
+  <button class="btn alt" type="button" onclick="copyMail(this)">Copy email</button>
+</div>
+
+<h2>What can I write to you about?</h2>
+<ul>
+<li><b>Help or a problem:</b> tell us what happened and on which screen. A screenshot helps.</li>
+<li><b>Report someone:</b> the fastest way is inside the app: open the person’s profile and tap Report.</li>
+<li><b>Suspended account:</b> use the appeal form on the suspended-account page.</li>
+<li><b>Delete my account:</b> write from the email you registered with and use the subject “Delete my account”.</li>
+<li><b>Privacy questions:</b> ask about your data, or ask for a copy or a correction.</li>
+</ul>
+
+<h2>Please include</h2>
+<ul>
+<li>Your app ID number (shown on your profile).</li>
+<li>A short description of the problem.</li>
+</ul>
+<p><b>Never send your password or login codes</b> to anyone. We will never ask for them.</p>
+
+<p style="margin-top:20px;">See also: <a href="terms.html">Terms &amp; Conditions</a> · <a href="privacy.html">Privacy Policy</a></p>
+<script>
+function copyMail(btn){
+  var t = document.getElementById('mail').textContent;
+  function done(){ btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = 'Copy email'; }, 1600); }
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, done); }
+  else { var r = document.createRange(); r.selectNode(document.getElementById('mail')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try{ document.execCommand('copy'); }catch(e){} done(); }
+}
+</script>
+</main>
+<footer>
+  <a href="terms.html">Terms &amp; Conditions</a> · <a href="privacy.html">Privacy Policy</a> · <a href="contact.html">Contact Us</a>
+  <div style="margin-top:8px;">© 2026 Friends App</div>
+</footer>
+</body>
+</html>

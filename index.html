@@ -20,6 +20,9 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#06D6A0">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Join the Circle</title>
 <link rel="stylesheet" href="fallback-fonts.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -63,6 +66,12 @@ html, body{ overscroll-behavior-y: contain; }
     overflow-x: hidden;
   }
 
+  /* Terms / Privacy / Contact links */
+  .legal-foot{ margin-top:26px; padding-top:16px; border-top:1px solid var(--line); text-align:center; font-size:.82rem; color:var(--ink-soft); line-height:2; }
+  .legal-foot a{ color:var(--ink-soft); text-decoration:underline; white-space:nowrap; }
+  .legal-foot span{ margin:0 7px; }
+  .legal-note{ font-size:.8rem; color:var(--ink-soft); line-height:1.5; margin:2px 0 12px; }
+  .legal-note a{ color:var(--teal-deep); text-decoration:underline; }
   .blob{
     position:absolute;
     border-radius:50%;
@@ -532,6 +541,7 @@ html, body{ overscroll-behavior-y: contain; }
         <input type="email" id="signup-email" placeholder="you@example.com" required>
       </div>
 
+      <p class="legal-note">By creating an account you agree to our <a href="terms.html">Terms &amp; Conditions</a> and <a href="privacy.html">Privacy Policy</a>.</p>
       <button type="button" class="submit-btn" id="signup-send-code-btn" onclick="sendSignupCode()">Send code</button>
 
       <div class="field" id="signup-otp-field" style="display:none;">
@@ -599,6 +609,10 @@ html, body{ overscroll-behavior-y: contain; }
         <input type="password" id="confirm-password" placeholder="Re-enter password" minlength="6">
       </div>
       <button type="button" class="submit-btn" id="forgot-save-btn" style="margin-top:12px;" onclick="saveNewPassword()">Save new password</button>
+    </div>
+
+    <div class="legal-foot">
+      <a href="terms.html">Terms &amp; Conditions</a><span>·</span><a href="privacy.html">Privacy Policy</a><span>·</span><a href="contact.html">Contact Us</a>
     </div>
   </div>
 </div>
@@ -1106,6 +1120,18 @@ html, body{ overscroll-behavior-y: contain; }
     showForm('login');
     showStatus('Password updated — log in with your new password.', 'success');
   }
+  // sent here after the account was deleted
+  try{
+    if(new URLSearchParams(location.search).get('deleted')){
+      showStatus('Your account has been deleted.', 'success');
+    }
+  }catch(err){}
+  // sent here by session-guard.js when the account was opened on another device
+  try{
+    if(new URLSearchParams(location.search).get('kicked')){
+      showStatus('You were logged out because your account was opened on another device.', 'error');
+    }
+  }catch(err){}
 </script>
 
 </body>

@@ -735,10 +735,10 @@ html, body{ overscroll-behavior-y: contain; }
     flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
   }
-  .icon-btn-light.deafened{
-    background: #fbecec;
-    color: #b1362f;
-  }
+  /* two icons per button: on / off (the button keeps the same colours either way) */
+  .icon-btn-light .ic-off{ display:none; }
+  .icon-btn-light.deafened .ic-on, .icon-btn-light.mic-off .ic-on{ display:none; }
+  .icon-btn-light.deafened .ic-off, .icon-btn-light.mic-off .ic-off{ display:block; }
 
   .toast{
     position:fixed;
@@ -885,9 +885,6 @@ html, body{ overscroll-behavior-y: contain; }
         <span class="room-title copyable" id="room-title-display">Official Room</span>
         <span class="id-row">
           <span class="room-id copyable" id="room-id-display">ID: 111</span>
-          <span class="copy-icon" title="Room info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </span>
         </span>
       </div>
     </div>
@@ -1045,7 +1042,12 @@ html, body{ overscroll-behavior-y: contain; }
 
     <div class="composer">
       <button class="icon-btn-light" id="deafen-btn" title="Mute room for me" onclick="toggleDeafen()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14l-1.41-1.41a8 8 0 0 0 0-11.32l1.41-1.41zM15.54 8.46a5 5 0 0 1 0 7.07l-1.41-1.41a3 3 0 0 0 0-4.24l1.41-1.42z"/></svg>
+        <svg class="ic-on" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="ic-off" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M16 9l6 6M22 9l-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn-light" id="mic-btn" title="Mic" style="display:none" onclick="toggleMic()">
+        <svg class="ic-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
+        <svg class="ic-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/><path d="M3.5 3.5l17 17" stroke-width="2.6"/></svg>
       </button>
       <input type="text" id="text-input" placeholder="Say something..." dir="auto">
       <button class="send-btn" onclick="sendText()">
@@ -1102,6 +1104,7 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="safety.js"></script>
 <script src="notify.js"></script>
 <script src="frames.js"></script>
+<script src="session-guard.js"></script>
 <script src="levels.js"></script>
 <script src="room-level.js"></script>
 <script src="image-editor.js"></script>
@@ -2315,6 +2318,7 @@ html, body{ overscroll-behavior-y: contain; }
     });
   }
   function syncSeatVoiceUi(){
+    syncMicBtn();
     const v = voiceState();
     document.querySelectorAll('#seats-grid .seat[data-uid]').forEach(el => {
       const uid = el.getAttribute('data-uid');
@@ -2665,7 +2669,7 @@ html, body{ overscroll-behavior-y: contain; }
       });
       room.on(RoomEvent.Disconnected, () => {
         if(lkRoom !== room || lkClosing) return;   // we closed it ourselves / an older connection
-        lkRoom = null; lkMode = null; micEnabled = false;
+        lkRoom = null; lkMode = null; micEnabled = false; syncMicBtn();
         if(!leavingRoom) setTimeout(syncVoice, 2000);   // connection dropped: rejoin with a fresh token
       });
 
@@ -2684,7 +2688,7 @@ html, body{ overscroll-behavior-y: contain; }
       try{ await room.startAudio(); }catch(err){}
     }catch(err){
       console.error('LiveKit connect failed:', err);
-      lkRoom = null; lkMode = null; micEnabled = false;
+      lkRoom = null; lkMode = null; micEnabled = false; syncMicBtn();
       voiceFailures++;
       if(voiceFailures === 1 || voiceFailures === 3) showToast('Voice connect failed');
       if(voiceFailures < 3 && !leavingRoom) setTimeout(syncVoice, 4000 * voiceFailures);
@@ -2769,10 +2773,21 @@ html, body{ overscroll-behavior-y: contain; }
     showToast(deafened ? 'Room muted for you' : 'Room unmuted for you');
   }
 
+  // the mic button next to the speaker button: only while I am on a seat; slash icon when my mic is muted
+  function syncMicBtn(){
+    const btn = document.getElementById('mic-btn');
+    if(!btn) return;
+    const seated = !!currentUser && seats.some(s => s && s.taken && s.userId === currentUser.id);
+    btn.style.display = seated ? 'flex' : 'none';
+    btn.classList.toggle('mic-off', !micEnabled);
+    btn.title = micEnabled ? 'Mute mic' : 'Unmute mic';
+  }
+
   async function toggleMic(){
     if(!lkRoom || lkMode !== 'speak') return;
     micEnabled = !micEnabled;
     await lkRoom.localParticipant.setMicrophoneEnabled(micEnabled);
+    syncMicBtn();
     syncSeatVoiceUi();
     showToast(micEnabled ? 'Mic on' : 'Mic off');
     // Refresh the seat menu label if it's currently open for my own seat
