@@ -735,6 +735,36 @@ html, body{ overscroll-behavior-y: contain; }
     flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
   }
+  /* ---- emoji: bottom panel and the emoji playing on a seat ---- */
+  .emoji-back{ position:fixed; inset:0; z-index:90; display:none; align-items:flex-end; background:rgba(0,0,0,.35); }
+  .emoji-back.show{ display:flex; }
+  .emoji-sheet{ width:100%; max-height:62vh; display:flex; flex-direction:column; background:#101b22; border-radius:22px 22px 0 0; color:#fff; box-shadow:0 -6px 24px rgba(0,0,0,.4); }
+  .emoji-handle{ width:56px; height:5px; border-radius:3px; background:#e6edf0; margin:12px auto 8px; flex:none; }
+  .emoji-grid{ overflow-y:auto; -webkit-overflow-scrolling:touch; display:grid; grid-template-columns:repeat(4,1fr); gap:14px 4px; padding:14px 10px 18px; }
+  .emoji-item{ border:0; background:none; color:#fff; display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px 0; cursor:pointer; font-family:inherit; -webkit-tap-highlight-color:transparent; }
+  .emoji-item:active{ transform:scale(.92); }
+  .emoji-item .em-ch{ font-size:46px; line-height:1.15; font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif; }
+  .emoji-item .em-nm{ font-size:.82rem; font-weight:600; opacity:.95; }
+  .emoji-soon{ padding:36px 24px 44px; text-align:center; color:#b9c8cf; font-size:.95rem; line-height:1.5; }
+  .emoji-tabs{ flex:none; display:flex; background:#16242d; border-top:1px solid rgba(255,255,255,.08); padding-bottom:env(safe-area-inset-bottom,0px); }
+  .emoji-tab{ flex:none; width:96px; height:56px; border:0; background:none; font-size:30px; cursor:pointer; opacity:.55; font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif; }
+  .emoji-tab.on{ background:#1f313c; opacity:1; }
+  .seat-circle{ position:relative; }
+  .seat-emoji{ position:absolute; inset:-4%; z-index:7; border-radius:50%; display:flex; align-items:center; justify-content:center; pointer-events:none;
+    background:radial-gradient(circle at 50% 38%,#fff6c9 0%,#ffd75e 55%,#f3a712 100%); box-shadow:0 0 0 3px rgba(255,255,255,.55),0 3px 12px rgba(0,0,0,.35); overflow:visible; }
+  .seat-emoji .em-main{ font-size:46px; line-height:1; font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif; animation-duration:.9s; animation-iteration-count:infinite; animation-timing-function:ease-in-out; }
+  .seat-emoji .em-fx{ position:absolute; font-size:16px; opacity:0; font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif; animation:emfx 1.5s ease-out infinite; }
+  .seat-emoji.leaving{ animation:emout .25s ease-in forwards; }
+  @keyframes emin{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  @keyframes emout{ to{ transform:scale(.6); opacity:0; } }
+  @keyframes embounce{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-7%) scale(1.14); } }
+  @keyframes emshake{ 0%,100%{ transform:rotate(0); } 20%{ transform:rotate(-12deg); } 40%{ transform:rotate(11deg); } 60%{ transform:rotate(-9deg); } 80%{ transform:rotate(8deg); } }
+  @keyframes empulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.22); } }
+  @keyframes emsway{ 0%,100%{ transform:rotate(-8deg); } 50%{ transform:rotate(8deg); } }
+  @keyframes emspin{ to{ transform:rotate(360deg); } }
+  @keyframes emfx{ 0%{ transform:translateY(8px) scale(.6); opacity:0; } 25%{ opacity:1; } 100%{ transform:translateY(-34px) scale(1.1); opacity:0; } }
+  .seat-emoji{ animation:emin .22s ease-out; }
+  @media (prefers-reduced-motion:reduce){ .seat-emoji .em-main, .seat-emoji .em-fx{ animation:none; } .seat-emoji .em-fx{ opacity:.9; } }
   /* two icons per button: on / off (the button keeps the same colours either way) */
   .icon-btn-light .ic-off{ display:none; }
   .icon-btn-light.deafened .ic-on, .icon-btn-light.mic-off .ic-on{ display:none; }
@@ -925,6 +955,18 @@ html, body{ overscroll-behavior-y: contain; }
     <div class="members-modal-list" id="members-modal-list"></div>
   </div>
 
+  <div class="emoji-back" id="emoji-back" onclick="if(event.target===this) closeEmojiSheet()">
+    <div class="emoji-sheet" role="dialog" aria-label="Emoji">
+      <div class="emoji-handle"></div>
+      <div class="emoji-grid" id="emoji-grid"></div>
+      <div class="emoji-soon" id="emoji-soon" style="display:none">Premium emoji packs will come soon.<br>They will be bought with diamonds.</div>
+      <div class="emoji-tabs">
+        <button type="button" class="emoji-tab on" id="emoji-tab-1" onclick="emojiTab(1)">😀</button>
+        <button type="button" class="emoji-tab" id="emoji-tab-2" onclick="emojiTab(2)">😎</button>
+      </div>
+    </div>
+  </div>
+
   <div class="profile-modal" id="room-profile-modal">
     <div class="profile-modal-header">
       <button class="icon-btn" onclick="closeRoomProfile()" title="Back">
@@ -1048,6 +1090,9 @@ html, body{ overscroll-behavior-y: contain; }
       <button class="icon-btn-light" id="mic-btn" title="Mic" style="display:none" onclick="toggleMic()">
         <svg class="ic-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
         <svg class="ic-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/><path d="M3.5 3.5l17 17" stroke-width="2.6"/></svg>
+      </button>
+      <button class="icon-btn-light" id="emoji-btn" title="Emoji" style="display:none" onclick="openEmojiSheet()">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2.5 4 2.5S16 14 16 14"/><circle cx="9" cy="9.5" r="1" fill="currentColor"/><circle cx="15" cy="9.5" r="1" fill="currentColor"/></svg>
       </button>
       <input type="text" id="text-input" placeholder="Say something..." dir="auto">
       <button class="send-btn" onclick="sendText()">
@@ -2351,6 +2396,7 @@ html, body{ overscroll-behavior-y: contain; }
       </button>
     `;}).join('');
     syncSeatVoiceUi();   // put the green ring / muted icon straight back after a redraw
+    applySeatEmojis();   // and an emoji that is still playing
     syncSeatBlockUi();
   }
 
@@ -2773,12 +2819,116 @@ html, body{ overscroll-behavior-y: contain; }
     showToast(deafened ? 'Room muted for you' : 'Room unmuted for you');
   }
 
+  // ---------- Emoji on a seat: pick one, it plays on my seat for 3 seconds and everyone in the room sees it ----------
+  // (made with the phone's own emoji + a small animation, so there are no files to download)
+  const EMOJIS = [
+    { k:'blowkiss', n:'Blowkiss', c:'😘', a:'embounce', fx:['💗','💗','💗'] },
+    { k:'kiss',     n:'Kiss',     c:'😚', a:'embounce', fx:['💋'] },
+    { k:'shocked',  n:'Shocked',  c:'😱', a:'emshake' },
+    { k:'cry',      n:'Cry',      c:'😭', a:'emshake',  fx:['💧','💧'] },
+    { k:'like',     n:'Like',     c:'😍', a:'empulse',  fx:['❤️','❤️'] },
+    { k:'grin',     n:'Grin',     c:'😀', a:'embounce' },
+    { k:'lol',      n:'Lol',      c:'😂', a:'emshake' },
+    { k:'sleep',    n:'Sleep',    c:'😴', a:'emsway',   fx:['💤','💤'] },
+    { k:'clap',     n:'Clap',     c:'👏', a:'embounce' },
+    { k:'giftme',   n:'Gift Me',  c:'🥺', a:'empulse',  fx:['🎁'] },
+    { k:'thinking', n:'Thinking', c:'🤔', a:'emsway' },
+    { k:'dizzy',    n:'Dizzy',    c:'😵‍💫', a:'emspin' },
+    { k:'shy',      n:'Shy',      c:'😊', a:'empulse' },
+    { k:'wink',     n:'Wink',     c:'😉', a:'embounce' },
+    { k:'party',    n:'Party',    c:'🥳', a:'embounce', fx:['🎉','✨'] },
+    { k:'angry',    n:'Angry',    c:'😡', a:'emshake' }
+  ];
+  const EMOJI_BY_KEY = {}; EMOJIS.forEach(e => { EMOJI_BY_KEY[e.k] = e; });
+  const EMOJI_MS = 3000;
+  let emojiChannel = null, emojiReady = false, lastEmojiSent = 0;
+  const lastEmojiFrom = {};           // who sent last, to stop spam
+  const activeEmoji = {};             // userId -> { key, from }
+
+  function setupEmojiChannel(){
+    try{
+      emojiChannel = supabaseClient.channel('room-emoji-' + ROOM_ID, { config: { broadcast: { self: false } } });
+      emojiChannel.on('broadcast', { event: 'emoji' }, (msg) => onEmoji(msg && msg.payload)).subscribe((status) => { emojiReady = (status === 'SUBSCRIBED'); });
+    }catch(err){}
+  }
+  function iAmSeated(){ return !!currentUser && seats.some(s => s && s.taken && s.userId === currentUser.id); }
+
+  function openEmojiSheet(){
+    if(!iAmSeated()) return;
+    const grid = document.getElementById('emoji-grid');
+    if(!grid.childElementCount){
+      grid.innerHTML = EMOJIS.map(e => '<button type="button" class="emoji-item" onclick="sendEmoji(\'' + e.k + '\')"><span class="em-ch">' + e.c + '</span><span class="em-nm">' + e.n + '</span></button>').join('');
+    }
+    emojiTab(1);
+    document.getElementById('emoji-back').classList.add('show');
+  }
+  function closeEmojiSheet(){ const b = document.getElementById('emoji-back'); if(b) b.classList.remove('show'); }
+  function emojiTab(n){
+    document.getElementById('emoji-grid').style.display = n === 1 ? '' : 'none';
+    document.getElementById('emoji-soon').style.display = n === 1 ? 'none' : 'block';
+    document.getElementById('emoji-tab-1').classList.toggle('on', n === 1);
+    document.getElementById('emoji-tab-2').classList.toggle('on', n === 2);
+  }
+
+  function sendEmoji(key){
+    if(!EMOJI_BY_KEY[key] || !iAmSeated()) return;
+    closeEmojiSheet();
+    const now = Date.now();
+    if(now - lastEmojiSent < 200) return;           // only guards against an accidental double tap; there is NO waiting between emojis
+    lastEmojiSent = now;
+    playSeatEmoji(currentUser.id, key);             // plays on my seat at once; if another emoji was still playing it stops right now
+    if(emojiChannel && emojiReady){
+      try{ emojiChannel.send({ type: 'broadcast', event: 'emoji', payload: { uid: currentUser.id, key: key } }); }catch(err){}
+    }
+  }
+  // an emoji arrived from someone else in the room
+  function onEmoji(p){
+    if(!p || typeof p.uid !== 'string' || !EMOJI_BY_KEY[p.key]) return;
+    if(currentUser && p.uid === currentUser.id) return;
+    if(!seats.some(s => s && s.taken && s.userId === p.uid)) return;                   // only people really on a seat
+    try{ if(Safety.isBlocked(p.uid)) return; }catch(err){}                              // I blocked them: I do not see it
+    const now = Date.now();
+    if(now - (lastEmojiFrom[p.uid] || 0) < 150) return;                                 // flood guard for THIS person only
+    lastEmojiFrom[p.uid] = now;
+    playSeatEmoji(p.uid, p.key);                                                         // replaces that person's own earlier emoji at once
+  }
+  function playSeatEmoji(uid, key){
+    activeEmoji[uid] = { key: key, from: Date.now() };
+    applySeatEmojis();
+    setTimeout(applySeatEmojis, EMOJI_MS + 60);
+  }
+  // draws the emoji on the seat circles (called again after every seat redraw, so it never disappears early)
+  function applySeatEmojis(){
+    const now = Date.now();
+    Object.keys(activeEmoji).forEach(uid => {
+      const a = activeEmoji[uid], e = EMOJI_BY_KEY[a.key], age = now - a.from;
+      const circle = document.querySelector('.seat[data-uid="' + CSS.escape(uid) + '"] .seat-circle');
+      if(age >= EMOJI_MS || !e || !circle){
+        if(age >= EMOJI_MS || !e) delete activeEmoji[uid];
+        const old = circle && circle.querySelector('.seat-emoji'); if(old) old.remove();
+        return;
+      }
+      if(circle.querySelector('.seat-emoji[data-k="' + a.key + '"][data-t="' + a.from + '"]')) return;     // already showing
+      const old = circle.querySelector('.seat-emoji'); if(old) old.remove();
+      const el = document.createElement('div');
+      el.className = 'seat-emoji'; el.setAttribute('data-k', a.key); el.setAttribute('data-t', String(a.from));
+      const delay = '-' + (age / 1000).toFixed(2) + 's';
+      const fxPos = [[8, 62], [68, 58], [38, 4]];
+      el.innerHTML = '<span class="em-main" style="animation-name:' + e.a + ';animation-delay:' + delay + '">' + e.c + '</span>' +
+        (e.fx || []).map((f, i) => '<span class="em-fx" style="left:' + fxPos[i % 3][0] + '%;top:' + fxPos[i % 3][1] + '%;animation-delay:' + (i * 0.45 - age / 1000).toFixed(2) + 's">' + f + '</span>').join('');
+      circle.appendChild(el);
+    });
+  }
+
   // the mic button next to the speaker button: only while I am on a seat; slash icon when my mic is muted
   function syncMicBtn(){
     const btn = document.getElementById('mic-btn');
     if(!btn) return;
     const seated = !!currentUser && seats.some(s => s && s.taken && s.userId === currentUser.id);
     btn.style.display = seated ? 'flex' : 'none';
+    const eb = document.getElementById('emoji-btn');
+    if(eb) eb.style.display = seated ? 'flex' : 'none';
+    if(!seated) closeEmojiSheet();
     btn.classList.toggle('mic-off', !micEnabled);
     btn.title = micEnabled ? 'Mute mic' : 'Unmute mic';
   }
@@ -3019,6 +3169,7 @@ html, body{ overscroll-behavior-y: contain; }
       recordRoomVisit();              // feeds the "Recently" tab on the home page
       syncScreenAwake();              // the screen stays on while in the room
       setupPresence();
+      setupEmojiChannel();
       await loadSeats();
       syncVoice();                    // everyone can hear the room; only seated people can speak
       subscribeSeats();
