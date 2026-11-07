@@ -287,6 +287,13 @@
     if(sh && !EMBEDDED) sh.closeRoom();      // the room is over: its voice must stop too
   }
 
+  // Starting a game ends a kept room (a game and a room both use live voice, so they cannot run together)
+  function leaveKeptForGame(){
+    var kept = getKept();
+    if(!kept) return Promise.resolve();
+    return Promise.resolve(serverLeave(kept.id)).then(function(){ endKept(); }, function(){ endKept(); });
+  }
+
   function loadPos(){
     try{ return JSON.parse(localStorage.getItem('kr_pos') || 'null'); }catch(e){ return null; }
   }
@@ -655,6 +662,7 @@
     startRoomBackGuard: startRoomBackGuard,
     keepAndLeave: keepAndLeave,
     exitAndLeave: exitAndLeave,
+    leaveKeptForGame: leaveKeptForGame,
     getKept: getKept,
     syncCard: renderCard,
     isRoomPage: isRoomPage,

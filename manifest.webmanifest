@@ -1,12 +1,12 @@
 {
-  "name": "Friends App",
-  "short_name": "Friends",
+  "name": "Fesgo Fun",
+  "short_name": "Fesgo Fun",
   "description": "Voice rooms, chat and games with friends.",
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f6faf8",
+  "background_color": "#1c0a78",
   "theme_color": "#06D6A0",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

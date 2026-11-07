@@ -23,7 +23,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#06D6A0">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Join the Circle</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Fesgo Fun</title>
 <link rel="stylesheet" href="fallback-fonts.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -103,6 +104,7 @@ html, body{ overscroll-behavior-y: contain; }
     justify-content:space-between;
     position:relative;
   }
+  .brand-logo{ width:92px; height:92px; display:block; margin-bottom:20px; filter:drop-shadow(0 8px 16px rgba(0,0,0,.3)); }
   .side h1{
     font-family:'Fraunces', serif;
     font-weight:600;
@@ -410,6 +412,7 @@ html, body{ overscroll-behavior-y: contain; }
     .wrap{ flex-direction:column; }
     .side{ padding: 32px 28px; }
     .side h1{ font-size:1.6rem; max-width:none; }
+    .brand-logo{ width:72px; height:72px; margin-bottom:14px; }
     .bubbles{ margin-top:24px; }
     .form-side{ padding:36px 28px; }
   }
@@ -454,6 +457,7 @@ html, body{ overscroll-behavior-y: contain; }
 <div class="wrap">
   <div class="side">
     <div>
+      <img class="brand-logo" src="icon-192.png" alt="Fesgo Fun">
       <h1>Where the group actually talks.</h1>
       <div class="bubbles">
         <div class="bubble">did anyone feed the group chat today 👀</div>

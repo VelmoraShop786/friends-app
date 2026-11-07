@@ -170,6 +170,16 @@ html, body{ overscroll-behavior-y: contain; }
   }
   .chat-header .name{ font-weight:600; font-size:0.95rem; }
   .chat-header .status{ font-size:0.75rem; color: var(--teal-deep); }
+  /* Track Friend: centred under the header, only while this friend is in a room */
+  .track-bar{ display:none; justify-content:center; padding:8px 12px; background: var(--bg); border-bottom:1px solid var(--line); }
+  .track-bar.show{ display:flex; }
+  .track-bar button{
+    border:0; border-radius:999px; padding:9px 22px; cursor:pointer;
+    font:800 0.86rem Inter,system-ui,sans-serif; color:#fff;
+    background: linear-gradient(180deg,#19c79a,#05846a);
+    box-shadow: 0 3px 0 #046652, 0 4px 8px rgba(0,0,0,0.18);
+  }
+  .track-bar button:active{ transform: translateY(2px); box-shadow: 0 1px 0 #046652; }
   .icon-btn{
     width:36px; height:36px;
     border-radius:50%;
@@ -232,6 +242,19 @@ html, body{ overscroll-behavior-y: contain; }
     color:white;
     border-bottom-right-radius: 4px;
   }
+  /* shared room card (Yalla Ludo style) */
+  .bubble-row .bubble.room-card{ background:#fff; color:#16302a; padding:10px 10px 8px; width:262px; max-width:78%; border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,0.14); }
+  .rsc{ display:flex; gap:10px; align-items:center; }
+  .rsc-pic{ width:62px; height:62px; border-radius:10px; overflow:hidden; flex-shrink:0; background:linear-gradient(135deg,var(--teal-deep),var(--teal)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:1.5rem; }
+  .rsc-pic img{ width:100%; height:100%; object-fit:cover; max-width:none; border-radius:0; }
+  .rsc-info{ min-width:0; }
+  .rsc-name{ font-weight:700; font-size:0.95rem; line-height:1.25; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .rsc-id{ font-size:0.8rem; color:#8a9b96; font-weight:600; margin-top:3px; }
+  .rsc-tap{ display:flex; align-items:center; gap:7px; margin-top:9px; font-size:0.82rem; font-weight:600; color:#7d8e89; }
+  .rsc-hand{ width:22px; height:22px; border-radius:50%; background:#0fa77f; display:flex; align-items:center; justify-content:center; font-size:0.7rem; }
+  .bubble-row .bubble.room-card .bubble-time{ color:#8a9b96; opacity:1; }
+  .bubble-row.me .vmsg{ --vm-ink: var(--teal-deep); }
+  .bubble-row.them .vmsg{ --vm-ink: #fff; }
   .bubble img{
     max-width: 220px;
     border-radius: 12px;
@@ -314,6 +337,7 @@ html, body{ overscroll-behavior-y: contain; }
     background: var(--card);
   }
   .attach-btn{
+    display:flex; align-items:center; justify-content:center;
     width:38px; height:38px;
     border-radius:50%;
     border:none;
@@ -530,6 +554,8 @@ html, body{ overscroll-behavior-y: contain; }
       </button>
     </div>
 
+    <div class="track-bar" id="track-bar"><button type="button" onclick="Track.go(this.dataset.room)">📍 Track your friend</button></div>
+
     <div class="messages" id="messages"></div>
 
     <div class="reply-preview-bar" id="reply-preview-bar">
@@ -543,9 +569,15 @@ html, body{ overscroll-behavior-y: contain; }
     <div class="block-bar" id="block-bar"></div>
 
     <div class="composer" id="composer">
-      <button class="attach-btn" onclick="document.getElementById('file-input-image').click()">+</button>
+      <button class="attach-btn" onclick="openGameLobby()" title="Play Ludo" aria-label="Play Ludo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7.5h11a4 4 0 0 1 4 4v1a4 4 0 0 1-4 4c-1.2 0-1.9-.5-2.6-1.3-.4-.5-.9-.7-1.5-.7h-2.8c-.6 0-1.1.2-1.5.7-.7.8-1.4 1.3-2.6 1.3a4 4 0 0 1-4-4v-1a4 4 0 0 1 4-4z"/><path d="M8 10v3M6.5 11.5h3"/><circle cx="15.5" cy="10.8" r=".5"/><circle cx="17.5" cy="12.6" r=".5"/></svg>
+      </button>
       <input type="text" id="text-input" placeholder="Message..." dir="auto">
-      <button class="send-btn" onclick="sendText()">➤</button>
+      <div class="rec-bar" id="rec-bar" hidden><span class="rec-dot"></span><span id="rec-time">0:00</span><span class="rec-hint" id="rec-hint">‹ Slide to cancel</span></div>
+      <button class="mic-btn" id="mic-btn" type="button" aria-label="Hold to record a voice message">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22"/></svg>
+      </button>
+      <button class="send-btn" id="send-btn" onclick="sendText()" style="display:none">➤</button>
     </div>
   </div>
 
@@ -622,6 +654,8 @@ html, body{ overscroll-behavior-y: contain; }
 <script src="frames.js"></script>
 <script src="session-guard.js"></script>
 <script src="room-keeper.js"></script>
+<script src="track.js"></script>
+<script src="voice.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
   (async function loadAppTheme(){
@@ -717,6 +751,18 @@ html, body{ overscroll-behavior-y: contain; }
     });
   }
 
+  // the game button next to the message box opens the same Ludo lobby as Play on the Game page
+  function openGameLobby(){ location.href = 'ludo.html'; }
+
+  function paintTrackBar(){
+    const bar = document.getElementById('track-bar');
+    if(!bar) return;
+    const t = (currentChatId !== null && window.Track) ? Track.get(currentChatId) : null;
+    bar.classList.toggle('show', !!t);
+    if(t){ const b = bar.querySelector('button'); b.dataset.room = t.room_id; b.title = t.room_name || ''; }
+  }
+  if(window.Track) Track.onChange(paintTrackBar);
+
   function updateChatHeaderStatus(){
     if(currentChatId === null) return;
     const statusEl = document.querySelector('.chat-header .status');
@@ -751,7 +797,7 @@ html, body{ overscroll-behavior-y: contain; }
         name: other.name || 'Unknown',
         avatarUrl: other.avatar_url || null,
         idNumber: other.id_number || '',
-        lastMessage: last ? TextPolicy.clean(last.content, 'message') : 'Say hi 👋',
+        lastMessage: last ? TextPolicy.preview(TextPolicy.clean(last.content, 'message')) : 'Say hi 👋',
         lastAt: last ? last.created_at : null
       };
     }).sort((a, b) => {
@@ -805,6 +851,7 @@ html, body{ overscroll-behavior-y: contain; }
     chatPills.style.display = 'none';
     ProfileExtras.fillIn(chatPills.parentNode);   // flag + gender + birthday under the friend's name
     updateChatHeaderStatus();
+    paintTrackBar();
     cancelReply();
     applyChatBlockState();
     Safety.load();                 // fresh block list; the bar updates by itself when it arrives
@@ -890,10 +937,13 @@ html, body{ overscroll-behavior-y: contain; }
     messages = (data || []).map(m => ({
       id: m.id,
       from: m.sender_id === currentUser.id ? 'me' : 'them',
-      text: TextPolicy.clean(m.content, 'message'),   // older rows may predate the policy
+      text: TextPolicy.preview(TextPolicy.clean(m.content, 'message')),   // older rows may predate the policy
+      roomId: TextPolicy.roomShareId(TextPolicy.clean(m.content, 'message')),
+      voice: TextPolicy.voiceParse(TextPolicy.clean(m.content, 'message')),
       time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       replyTo: null
     }));
+    await loadSharedRooms(messages);
     renderMessages();
   }
 
@@ -913,6 +963,33 @@ html, body{ overscroll-behavior-y: contain; }
       .subscribe();
   }
 
+  // ---------- shared room cards ----------
+  const roomCache = {};   // roomId -> { id, name, picture_url } (null = room no longer exists)
+  let rsSuppress = false;  // a long press or swipe must not also "tap" the card
+  async function loadSharedRooms(list){
+    const ids = [...new Set(list.filter(m => m.roomId).map(m => m.roomId))].filter(id => !(id in roomCache));
+    if(!ids.length) return;
+    const { data } = await supabaseClient.from('rooms').select('id, name, picture_url').in('id', ids);
+    ids.forEach(id => { roomCache[id] = null; });
+    (data || []).forEach(r => { roomCache[String(r.id)] = r; });
+  }
+  function roomCardHtml(m){
+    const r = roomCache[m.roomId];
+    const name = r ? r.name : 'Room not available';
+    const pic = r && r.picture_url ? `<img src="${escapeHtml(r.picture_url)}" alt="">` : escapeHtml(TextPolicy.initial(name));
+    return `<div class="bubble room-card" onclick="openSharedRoom('${escapeHtml(m.roomId)}')">
+      <div class="rsc"><div class="rsc-pic">${pic}</div>
+        <div class="rsc-info"><div class="rsc-name" dir="auto">${escapeHtml(name)}</div><div class="rsc-id">ID:${escapeHtml(m.roomId)}</div></div></div>
+      <div class="rsc-tap"><span class="rsc-hand">👆</span>Tap to enter the room</div>
+      <div class="bubble-time">${m.time}</div></div>`;
+  }
+  function openSharedRoom(id){
+    if(rsSuppress){ rsSuppress = false; return; }
+    if(!roomCache[id]){ showToast('This room is no longer available.'); return; }
+    if(window.RoomKeeper) RoomKeeper.openRoom(id);
+    else location.href = 'chatroom.html?room=' + encodeURIComponent(id);
+  }
+
   function renderMessages(){
     const box = document.getElementById('messages');
     box.innerHTML = messages.map((m, i) => bubbleHtml(m, i)).join('');
@@ -926,7 +1003,7 @@ html, body{ overscroll-behavior-y: contain; }
     return `<div class="bubble-row ${m.from === 'me' ? 'me' : 'them'}" data-index="${i}" data-name="${escapeHtml(senderName)}" data-text="${escapeHtml(m.text)}">
       <div class="bubble-row-inner">
         <div class="reply-icon">↩</div>
-        <div class="bubble">${quoted}${escapeHtml(m.text)}<div class="bubble-time">${m.time}</div></div>
+        ${m.roomId ? roomCardHtml(m) : m.voice ? `<div class="bubble">${VoiceMsg.bubbleHtml(m.voice.path, m.voice.secs)}<div class="bubble-time">${m.time}</div></div>` : `<div class="bubble">${quoted}${escapeHtml(m.text)}<div class="bubble-time">${m.time}</div></div>`}
       </div>
     </div>`;
   }
@@ -940,15 +1017,15 @@ html, body{ overscroll-behavior-y: contain; }
 
       function clearPressTimer(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } }
       function start(x){
-        startX = x; dragging = true; dx = 0;
+        startX = x; dragging = true; dx = 0; rsSuppress = false;
         clearPressTimer();
         // Holding still (not swiping) for a moment opens Copy / Reply / Delete for this message.
-        pressTimer = setTimeout(() => { openMsgMenu(row); dragging = false; }, 480);
+        pressTimer = setTimeout(() => { rsSuppress = true; openMsgMenu(row); dragging = false; }, 480);
       }
       function move(x){
         if(!dragging) return;
         dx = x - startX;
-        if(Math.abs(dx) > 8) clearPressTimer();   // it's a swipe, not a long press
+        if(Math.abs(dx) > 8){ clearPressTimer(); rsSuppress = true; }   // it's a swipe, not a long press
         const valid = isMe ? dx < 0 : dx > 0;
         const clamped = valid ? Math.max(Math.min(dx, 60), -60) : 0;
         inner.style.transform = `translateX(${clamped}px)`;
@@ -1045,6 +1122,7 @@ html, body{ overscroll-behavior-y: contain; }
     btn.disabled = false;
     closeDeleteMsgDialog();
     if(error){ showToast(error.message || 'Could not delete the message.'); return; }
+    if(m.voice && m.from === 'me'){ try{ supabaseClient.storage.from('voice-messages').remove([m.voice.path]); }catch(err){} }
     messages = messages.filter(x => x.id !== m.id);
     renderMessages();
     showToast('Message deleted');
@@ -1075,6 +1153,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(!value || currentChatId === null) return;
     if(Safety.isBlocked(currentChatId) || Safety.isBlockedBy(currentChatId)){ applyChatBlockState(); return; }
     input.value = '';
+    input.dispatchEvent(new Event('input'));    // the mic comes back when the box is empty
     cancelReply();
     const { error } = await supabaseClient.from('direct_messages').insert({
       sender_id: currentUser.id,
@@ -1096,6 +1175,26 @@ html, body{ overscroll-behavior-y: contain; }
       loadMessages(currentChatId);
     }
   }
+
+  // sends a ready-made message (used for voice messages); true if it was saved
+  async function sendRaw(content){
+    if(currentChatId === null) return false;
+    if(Safety.isBlocked(currentChatId) || Safety.isBlockedBy(currentChatId)){ applyChatBlockState(); return false; }
+    const { error } = await supabaseClient.from('direct_messages').insert({ sender_id: currentUser.id, receiver_id: currentChatId, content: content });
+    if(error){
+      if(/row-level security|violates/i.test(error.message || '')){ showToast('You are no longer friends with this person.'); await loadFriends(); if(!findFriend(currentChatId)) closeChat(); }
+      else if(/cannot message/i.test(error.message || '')){ showToast('You cannot message this person.'); Safety.load(); }
+      else showToast('Could not send message.');
+      return false;
+    }
+    loadMessages(currentChatId);
+    return true;
+  }
+  VoiceMsg.init({
+    mic: document.getElementById('mic-btn'), send: document.getElementById('send-btn'), input: document.getElementById('text-input'), composer: document.getElementById('composer'),
+    getReceiver: () => currentChatId, me: () => currentUser.id, toast: showToast,
+    onSend: (path, secs) => sendRaw(TextPolicy.voiceText(path, secs))
+  });
 
   TextPolicy.bind(document.getElementById('text-input'), 'message');   // same policy while typing / pasting
   document.getElementById('text-input').addEventListener('keydown', function(e){
@@ -1128,6 +1227,7 @@ html, body{ overscroll-behavior-y: contain; }
       rkReveal();   // safety net: reveal even if there is no theme row yet, or the fetch above is slow
       if(!ok) return;
       setupOnlinePresence();
+      try{ Track.start(); }catch(err){}
       await loadFriends();
       subscribeMessages();
       openChat(openId);

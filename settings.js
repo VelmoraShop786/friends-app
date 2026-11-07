@@ -45,8 +45,8 @@
   }
 
   // ---- my settings row (profiles.*) ------------------------------------------------
-  var COLS = 'notify_messages, notify_requests, notify_system, allow_requests, show_birthday, show_country, show_gender';
-  var DEFAULTS = { notify_messages: true, notify_requests: true, notify_system: true, allow_requests: true, show_birthday: true, show_country: true, show_gender: true };
+  var COLS = 'notify_messages, notify_requests, notify_system, allow_requests, show_birthday, show_country, show_gender, show_room_status';
+  var DEFAULTS = { notify_messages: true, notify_requests: true, notify_system: true, allow_requests: true, show_birthday: true, show_country: true, show_gender: true, show_room_status: true };
   var mine = null;
 
   function myId(){
@@ -132,6 +132,7 @@
           '<div class="st-row"><div class="st-txt"><div class="st-name">Show my birthday</div><div class="st-sub">Day and month on your profile</div></div>' + sw('show_birthday', s.show_birthday) + '</div>' +
           '<div class="st-row"><div class="st-txt"><div class="st-name">Show my country</div><div class="st-sub">The flag on your profile and in lists</div></div>' + sw('show_country', s.show_country) + '</div>' +
           '<div class="st-row"><div class="st-txt"><div class="st-name">Show my gender</div><div class="st-sub">The gender icon on your profile and in lists</div></div>' + sw('show_gender', s.show_gender) + '</div>' +
+          '<div class="st-row"><div class="st-txt"><div class="st-name">Let friends track my room</div><div class="st-sub">Friends see a Track button while you are in a room and can join you</div></div>' + sw('show_room_status', s.show_room_status) + '</div>' +
           '<div class="st-note">Hidden details are not shown to other people in the app. You always see your own. People you have already added stay your friends. To stop one person, use Block.</div>';
         wireSwitches(body);
         body.querySelectorAll('.st-seg button').forEach(function(b){

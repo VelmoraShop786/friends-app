@@ -280,6 +280,15 @@ html, body{ overscroll-behavior-y: contain; }
   .modal-member-row .name{ font-weight:600; font-size:0.92rem; }
   .modal-member-row .sub{ font-size:0.76rem; color: var(--ink-soft); }
 
+  /* share room: pick friends */
+  #share-modal{ z-index:34; }
+  .share-row .tick{ margin-left:auto; flex-shrink:0; width:24px; height:24px; border-radius:50%; border:2px solid #b9c9c4; display:flex; align-items:center; justify-content:center; color:transparent; font-size:0.8rem; font-weight:700; }
+  .share-row.on .tick{ background: var(--teal-deep); border-color: var(--teal-deep); color:#fff; }
+  .share-empty{ text-align:center; color: var(--ink-soft); font-size:0.9rem; line-height:1.5; padding:40px 18px; }
+  .share-foot{ padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line); }
+  .share-foot button{ width:100%; border:none; border-radius:12px; padding:13px; font-family:'Inter',sans-serif; font-weight:700; font-size:0.95rem; color:#fff; background: var(--teal-deep); cursor:pointer; }
+  .share-foot button:disabled{ opacity:0.45; cursor:default; }
+
   .profile-modal{
     display:none;
     position:absolute;
@@ -967,6 +976,15 @@ html, body{ overscroll-behavior-y: contain; }
     <div class="members-modal-list" id="members-modal-list"></div>
   </div>
 
+  <div class="members-modal" id="share-modal">
+    <div class="members-modal-header">
+      <span>Share room</span>
+      <button class="modal-close" onclick="closeShareModal()">✕</button>
+    </div>
+    <div class="members-modal-list" id="share-list"></div>
+    <div class="share-foot"><button type="button" id="share-send-btn" disabled onclick="sendRoomShare()">Send</button></div>
+  </div>
+
   <div class="emoji-back" id="emoji-back" onclick="if(event.target===this) closeEmojiSheet()">
     <div class="emoji-sheet" role="dialog" aria-label="Emoji">
       <div class="emoji-handle"></div>
@@ -1057,6 +1075,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   <div class="info-menu" id="info-menu">
     <button onclick="toggleInfoMenu(false); openRoomProfile();">ℹ️ &nbsp;Room info</button>
+    <button id="info-share-btn" onclick="openShareModal()">📤 &nbsp;Share room</button>
     <button id="info-rename-btn" style="display:none;" onclick="openRenameDialog()">✏️ &nbsp;Edit room name</button>
     <button id="info-follow-btn" style="display:none;" onclick="toggleFollowRoom()">⭐ &nbsp;Follow room</button>
     <button id="info-manage-btn" style="display:none;" onclick="openManageModal()">🛡️ &nbsp;Manage room</button>
@@ -1978,7 +1997,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   // The Common App Theme (Owner Panel) is applied to the full-screen panels only — Online Users, the profile
   // page and Manage room. The room screen itself keeps its own look (room themes are separate).
-  const THEMED_PANELS = ['members-modal', 'profile-modal', 'manage-modal', 'room-profile-modal'];
+  const THEMED_PANELS = ['members-modal', 'profile-modal', 'manage-modal', 'room-profile-modal', 'share-modal'];
   function applyPanelTheme(theme){
     if(!theme) return;
     THEMED_PANELS.forEach(id => {
@@ -2267,7 +2286,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(msView !== 'chat' || msChatId !== id) return;
     const rows = (data || []).slice().reverse();
     const body = msEl('ms-body');
-    body.innerHTML = '<div class="ms-chat">' + rows.map(m => `<div class="ms-b ${m.sender_id === currentUser.id ? 'me' : 'them'}" dir="auto">${escapeHtml(TextPolicy.clean(m.content, 'message'))}</div>`).join('') + '</div>';
+    body.innerHTML = '<div class="ms-chat">' + rows.map(m => `<div class="ms-b ${m.sender_id === currentUser.id ? 'me' : 'them'}" dir="auto">${escapeHtml(TextPolicy.preview(TextPolicy.clean(m.content, 'message')))}</div>`).join('') + '</div>';
     body.scrollTop = body.scrollHeight;
   }
   async function msSend(){
@@ -2327,6 +2346,64 @@ html, body{ overscroll-behavior-y: contain; }
       showToast('Following this room');
     }
     refreshInfoMenu();
+  }
+
+  // ---------- Share this room with friends: the room arrives in their inbox as a room card ----------
+  let shareFriends = [], shareSel = new Set(), shareSending = false;
+  async function openShareModal(){
+    toggleInfoMenu(false);
+    if(!currentUser) return;
+    shareSel = new Set(); shareSending = false;
+    const list = document.getElementById('share-list');
+    list.innerHTML = '<div class="share-empty">Loading...</div>';
+    document.getElementById('share-modal').classList.add('show');
+    paintShareBtn();
+    const { data: rows } = await supabaseClient.from('friend_requests')
+      .select('id, from_user, to_user, from_profile:from_user(id, name, avatar_url, id_number), to_profile:to_user(id, name, avatar_url, id_number)')
+      .eq('status', 'accepted')
+      .or(`from_user.eq.${currentUser.id},to_user.eq.${currentUser.id}`);
+    const seen = new Set();
+    shareFriends = (rows || []).map(r => (r.from_user === currentUser.id ? r.to_profile : r.from_profile))
+      .filter(p => p && p.id && !seen.has(p.id) && seen.add(p.id))
+      .filter(p => !Safety.isBlocked(p.id) && !Safety.isBlockedBy(p.id))
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    renderShareList();
+  }
+  function closeShareModal(){ document.getElementById('share-modal').classList.remove('show'); }
+  function renderShareList(){
+    const list = document.getElementById('share-list');
+    if(!shareFriends.length){ list.innerHTML = '<div class="share-empty">You have no friends to share with yet.<br>Add friends first, then share the room.</div>'; return; }
+    list.innerHTML = shareFriends.map(p => {
+      const on = shareSel.has(p.id);
+      return `<div class="modal-member-row share-row ${on ? 'on' : ''}" onclick="toggleShareFriend('${attrJs(p.id)}')">
+        <div class="avatar" data-fr="${escapeHtml(p.id)}">${avatarHtml(p.avatar_url, escapeHtml(TextPolicy.initial(p.name)))}</div>
+        <div style="min-width:0;"><div class="name" dir="auto">${escapeHtml(p.name || 'Friend')}</div><div class="sub">ID: ${escapeHtml(String(p.id_number || ''))}</div></div>
+        <div class="tick">✓</div></div>`;
+    }).join('');
+  }
+  function toggleShareFriend(id){
+    if(shareSel.has(id)) shareSel.delete(id); else shareSel.add(id);
+    renderShareList(); paintShareBtn();
+  }
+  function paintShareBtn(){
+    const b = document.getElementById('share-send-btn');
+    b.disabled = shareSending || shareSel.size === 0;
+    b.textContent = shareSel.size ? 'Send (' + shareSel.size + ')' : 'Send';
+  }
+  async function sendRoomShare(){
+    if(shareSending || !shareSel.size) return;
+    shareSending = true; paintShareBtn();
+    const content = TextPolicy.roomShareText(ROOM_ID);
+    const ids = [...shareSel];
+    const results = await Promise.all(ids.map(id =>
+      supabaseClient.from('direct_messages').insert({ sender_id: currentUser.id, receiver_id: id, content: content })
+        .then(r => !r.error, () => false)));
+    const ok = results.filter(Boolean).length;
+    shareSending = false;
+    closeShareModal();
+    if(ok === ids.length) showToast('Room shared with ' + ok + (ok === 1 ? ' friend' : ' friends'));
+    else if(ok > 0) showToast('Shared with ' + ok + ' of ' + ids.length + ' friends');
+    else showToast('Could not share the room.');
   }
 
   // Small popups (seat menu, room info menu) close when you tap anywhere outside them.

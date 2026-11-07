@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en" class="rk-boot">
+<head>
+<style>
+  html.rk-boot body > *:not(#rk-boot){ visibility:hidden !important; }
+  #rk-boot{
+    position:fixed; inset:0; z-index:999999; visibility:visible !important;
+    background:var(--bg,#f4fbf8); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    font-family:'Inter',system-ui,sans-serif; font-weight:600; font-size:0.95rem; color:var(--ink,#123b2e); text-align:center; padding:24px;
+  }
+  #rk-boot .rk-boot-spin{
+    width:40px; height:40px; border-radius:50%;
+    border:4px solid color-mix(in srgb, var(--teal-deep,#05846a) 25%, transparent); border-top-color:var(--teal-deep,#05846a);
+    animation:rkbootspin .8s linear infinite;
+  }
+  @keyframes rkbootspin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ #rk-boot .rk-boot-spin{ animation-duration:2.4s; } }
+
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ludo</title>
+<link rel="stylesheet" href="fallback-fonts.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-deep:#05846a; --teal:#06D6A0; --teal-soft:#d3f3e8; --bg:#f6faf8; --card:#ffffff; --ink:#16332c; --ink-soft:#5c7770; --line:#dfeee8;
+    --c0:#e53935; --c1:#2e9e44; --c2:#f2b705; --c3:#1e88e5;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ min-height:100%; }
+  body{ font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); display:flex; justify-content:center; user-select:none; -webkit-user-select:none; }
+  .phone{ width:100%; max-width:420px; min-height:100vh; background:var(--card); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  [hidden]{ display:none !important; }
+  .scr{ flex:1; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+
+  /* header */
+  .hdr{ display:flex; align-items:center; gap:8px; padding:12px 12px 8px; }
+  .hdr .ttl{ font-family:'Fraunces',serif; font-weight:600; font-size:1.4rem; flex:1; }
+  .ibtn{ width:38px; height:38px; border:none; border-radius:50%; background:transparent; color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .ibtn:active{ background:var(--teal-soft); }
+  .wl-chips{ display:flex; gap:6px; }
+  .wl-chip{ display:inline-flex; align-items:center; gap:5px; padding:5px 10px 5px 6px; border-radius:999px; background:rgba(5,132,106,.10); border:1px solid rgba(5,132,106,.22); font-size:.82rem; white-space:nowrap; }
+  .wl-chip b{ font-weight:800; }
+  .wl-ico{ width:18px; height:18px; }
+
+  /* lobby */
+  .sec{ padding:6px 16px 4px; }
+  .sec h3{ font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin:12px 0 8px; }
+  .card{ border:1px solid var(--line); border-radius:16px; padding:14px; background:var(--card); }
+  .row{ display:flex; gap:8px; }
+  .btn{ flex:1; border:none; border-radius:12px; padding:13px 10px; font:700 .92rem 'Inter',sans-serif; color:#fff; background:var(--teal-deep); cursor:pointer; }
+  .btn:active{ transform:translateY(1px); opacity:.9; }
+  .btn.alt{ background:var(--teal-soft); color:var(--teal-deep); }
+  .btn.red{ background:#c0392b; }
+  .btn:disabled{ opacity:.45; cursor:default; }
+  .seg{ display:flex; background:var(--teal-soft); border-radius:12px; padding:3px; margin-bottom:10px; }
+  .seg button{ flex:1; border:none; background:transparent; padding:9px; border-radius:10px; font:700 .88rem 'Inter',sans-serif; color:var(--teal-deep); cursor:pointer; }
+  .seg button.on{ background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .bets{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .bet{ border:1.5px solid var(--line); background:#fff; border-radius:999px; padding:8px 14px; font:700 .86rem 'Inter',sans-serif; cursor:pointer; display:flex; align-items:center; gap:5px; }
+  .bet.on{ border-color:var(--teal-deep); background:var(--teal-soft); color:var(--teal-deep); }
+  .bet:disabled{ opacity:.4; }
+  /* bet roller: scroll up/down, the amount in the middle band is the bet */
+  .wheel-wrap{ position:relative; height:132px; margin-bottom:8px; }
+  .wheel-wrap::before, .wheel-wrap::after{ content:''; position:absolute; left:0; right:0; height:40px; z-index:2; pointer-events:none; }
+  .wheel-wrap::before{ top:0; background:linear-gradient(#fff, rgba(255,255,255,0)); }
+  .wheel-wrap::after{ bottom:0; background:linear-gradient(rgba(255,255,255,0), #fff); }
+  .wheel-band{ position:absolute; left:0; right:0; top:44px; height:44px; border-radius:12px; background:var(--teal-soft); border:1.5px solid var(--teal-deep); pointer-events:none; }
+  .wheel{ position:relative; z-index:1; height:100%; overflow-y:auto; padding:44px 0; scroll-snap-type:y mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+  .wheel::-webkit-scrollbar{ display:none; }
+  .wheel .it{ height:44px; scroll-snap-align:center; display:flex; align-items:center; justify-content:center; gap:8px; font:700 1rem 'Inter',sans-serif; color:var(--ink-soft); opacity:.4; cursor:pointer; transition:opacity .15s; }
+  .wheel .it.near{ opacity:.7; }
+  .wheel .it.sel{ opacity:1; color:var(--ink); font-size:1.35rem; font-weight:800; }
+  .wheel .it.dis.sel{ color:#b1362f; }
+  .wheel .it .wl-ico{ width:20px; height:20px; }
+  .themes{ display:flex; gap:10px; }
+  .th-tile{ flex:1; border:2px solid var(--line); border-radius:14px; padding:8px; text-align:center; cursor:pointer; }
+  .th-tile.on{ border-color:var(--teal-deep); background:var(--teal-soft); }
+  .th-prev{ width:64px; height:64px; margin:0 auto 6px; } .th-prev svg{ width:100%; height:100%; }
+  .th-name{ font-size:.82rem; font-weight:700; }
+  .hint{ font-size:.8rem; color:var(--ink-soft); line-height:1.45; margin:4px 2px 10px; }
+  .hint b{ color:var(--ink); }
+  .hint:empty{ display:none; }
+
+  /* waiting */
+  .wait{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; }
+  .spin{ width:46px; height:46px; border-radius:50%; border:5px solid var(--teal-soft); border-top-color:var(--teal-deep); animation:sp .8s linear infinite; }
+  @keyframes sp{ to{ transform:rotate(360deg); } }
+  .wait h2{ font-family:'Fraunces',serif; font-weight:600; }
+  .wait .row{ width:100%; max-width:300px; flex-direction:column; }
+
+  /* game */
+  .gtop{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px 0; font-size:.82rem; font-weight:700; }
+  .pot{ display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:999px; background:rgba(242,183,5,.18); border:1px solid rgba(242,183,5,.5); }
+  .prow{ display:flex; justify-content:space-between; padding:6px 8px; min-height:74px; }
+  .prow.bot{ align-items:flex-start; }
+  .pslot{ width:49%; display:flex; align-items:center; gap:8px; padding:6px; border-radius:14px; border:2px solid transparent; background:rgba(0,0,0,.03); }
+  .pslot.right{ flex-direction:row-reverse; text-align:right; }
+  .pslot.on{ border-color:var(--sc); background:color-mix(in srgb, var(--sc) 14%, white); box-shadow:0 0 0 3px color-mix(in srgb, var(--sc) 25%, transparent); }
+  .pslot.out{ opacity:.45; }
+  .pslot.empty{ visibility:hidden; }
+  .av{ width:40px; height:40px; border-radius:50%; flex-shrink:0; border:3px solid var(--sc); background:#e8f1ee center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; overflow:hidden; }
+  .pinfo{ min-width:0; flex:1; }
+  .pname{ font-size:.78rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ptimer{ height:5px; border-radius:3px; background:rgba(0,0,0,.1); margin-top:4px; overflow:hidden; }
+  .ptimer i{ display:block; height:100%; width:0; background:var(--sc); }
+  .pwarn{ font-size:.66rem; color:#c0392b; font-weight:700; min-height:12px; }
+  .die{ width:40px; height:40px; border-radius:9px; background:#fff; border:2px solid #cfd8d5; box-shadow:0 2px 0 #b8c4c0; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:5px; flex-shrink:0; }
+  .die i{ border-radius:50%; margin:1px; }
+  .die i.on{ background:#222; }
+  .die.go{ border-color:var(--teal-deep); box-shadow:0 0 0 3px rgba(5,132,106,.35), 0 2px 0 #b8c4c0; animation:pl 1s ease-in-out infinite; cursor:pointer; }
+  .die.rolling{ animation:shake .18s linear infinite; }
+  @keyframes pl{ 50%{ transform:scale(1.1); } }
+  @keyframes shake{ 0%{ transform:rotate(-8deg); } 50%{ transform:rotate(8deg) scale(1.05); } 100%{ transform:rotate(-8deg); } }
+
+  .bwrap{ padding:0 6px; display:flex; justify-content:center; }
+  .board{ position:relative; width:min(100%, calc(100vh - 290px)); aspect-ratio:1/1; background:#fff; border:2px solid #444; border-radius:6px; transition:transform .3s; flex-shrink:0; }
+  .board .bk{ position:absolute; }
+  .board .cell{ position:absolute; width:6.6667%; height:6.6667%; background:#fff; border:1px solid #c9c9c9; display:flex; align-items:center; justify-content:center; font-size:.62rem; color:#777; line-height:1; }
+  .tok{ position:absolute; width:5.4%; height:5.4%; transform:translate(-50%,-50%); border-radius:50%; background:var(--tc); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.2); transition:left .14s linear, top .14s linear; z-index:3; }
+  .tok::after{ content:''; position:absolute; inset:28%; border-radius:50%; background:rgba(255,255,255,.55); }
+  .tok.legal{ z-index:6; animation:tp .7s ease-in-out infinite; cursor:pointer; box-shadow:0 0 0 3px rgba(255,255,255,.95), 0 0 0 5px var(--tc); }
+  @keyframes tp{ 50%{ transform:translate(-50%,-50%) scale(1.28); } }
+
+  /* Golden Hawk theme */
+  .board.hawk{ background:#8d6529; border:none; border-radius:6px; margin:10px; box-shadow:0 0 0 4px #f0cd6e, 0 0 0 8px #7a4f14, 0 10px 26px rgba(0,0,0,.65); }
+  .board.hawk .cell{ background:linear-gradient(145deg,#ecc98b,#cf9f58); border:1px solid #a47638; color:#8a5a14; font-size:.8rem; }
+  .board.hawk .cell .ring{ width:46%; height:46%; border-radius:50%; box-shadow:inset 0 0 0 2px rgba(255,255,255,.85); display:block; }
+  /* token design "Crown": glossy gold-rimmed piece in the player's colour with a crown on top (colour = player's colour, never part of the design) */
+  .tok-crown .tok{ background:radial-gradient(circle at 35% 28%, color-mix(in srgb,var(--tc) 50%, #fff) 0, var(--tc) 55%, color-mix(in srgb,var(--tc) 70%, #000) 100%); border:2px solid #f6dc8a; box-shadow:0 2px 4px rgba(0,0,0,.7), inset 0 -3px 0 rgba(0,0,0,.25); }
+  .tok-crown .tok::after{ inset:19%; border-radius:0; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5z' fill='white' fill-opacity='.93'/%3E%3Crect x='5' y='19' width='14' height='2' rx='1' fill='white' fill-opacity='.93'/%3E%3C/svg%3E") center/contain no-repeat; transform:rotate(var(--unrot,0deg)); }
+  /* dice design "Royal": black glossy dice with gold pips and a gold edge (its own look, not tied to the board theme) */
+  .dice-royal .die{ background:linear-gradient(145deg,#37373d,#0f0f12); border:2px solid #e0b050; box-shadow:0 2px 0 #7a4f14, inset 0 0 6px rgba(255,255,255,.14); }
+  .dice-royal .die i.on{ background:radial-gradient(circle at 35% 30%,#fff3b8,#e0b050 60%,#8a5a14); }
+  .dice-royal .die.go{ border-color:#ffe08a; box-shadow:0 0 0 3px rgba(255,214,120,.75), 0 0 16px rgba(255,200,80,.8), 0 2px 0 #7a4f14; }
+  .phone.hawk #scr-game{ background:linear-gradient(#1b110a 0%, #43280f 50%, #a8692a 100%); }
+  .hawk .gtop, .hawk .pname, .hawk .msg{ color:#fff1cc; }
+  .hawk .pot{ background:rgba(0,0,0,.35); border-color:#e0b050; }
+  .hawk #scr-game .wl-chip{ background:rgba(0,0,0,.35); border-color:#e0b050; color:#fff1cc; }
+  .hawk .pslot{ background:rgba(0,0,0,.35); border-color:rgba(224,176,80,.45); }
+  .hawk .pslot.on{ background:rgba(255,214,120,.2); border-color:var(--sc); box-shadow:0 0 0 3px rgba(240,205,110,.35); }
+  .hawk .ptimer{ background:rgba(255,255,255,.2); }
+  .hawk .leave{ color:#ffb0a0; }
+  .msg{ text-align:center; font-size:.85rem; font-weight:700; min-height:22px; padding:8px 12px 2px; color:var(--teal-deep); }
+  .gbot{ display:flex; justify-content:flex-end; padding:2px 12px 8px; margin-top:auto; }
+  .leave{ border:none; background:transparent; color:#b1362f; font:700 .82rem 'Inter',sans-serif; padding:8px 10px; cursor:pointer; }
+
+  /* overlays */
+  .ov{ position:absolute; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:24px; z-index:50; }
+  .dlg{ width:100%; max-width:320px; background:#fff; border-radius:18px; padding:20px; text-align:center; }
+  .dlg h2{ font-family:'Fraunces',serif; font-weight:600; font-size:1.4rem; margin-bottom:6px; }
+  .dlg p{ color:var(--ink-soft); font-size:.9rem; line-height:1.45; margin-bottom:14px; }
+  .dlg .row{ flex-direction:column; }
+  .big{ font-size:2.4rem; }
+  .toast{ position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:rgba(20,30,28,.92); color:#fff; padding:10px 16px; border-radius:12px; font-size:.86rem; font-weight:600; z-index:80; max-width:88%; text-align:center; }
+</style>
+</head>
+<body>
+<div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
+<script>
+
+  // Boot overlay: covers the page's placeholder markup (default theme, "ID: 000000", empty lists, demo seats)
+  // until the page itself calls rkReveal() once it has applied real (cached or live) data. A safety timer reveals
+  // the page anyway after 12 s so a bug elsewhere can never trap the person behind a spinner forever.
+  (function(){
+    var done = false;
+    window.rkReveal = function(){
+      if(done) return;
+      done = true;
+      document.documentElement.classList.remove('rk-boot');
+      var o = document.getElementById('rk-boot');
+      if(o) o.remove();
+      clearInterval(netWatch);
+      clearTimeout(safety);
+    };
+    var netWatch = setInterval(function(){
+      if(done) return;
+      var t = document.getElementById('rk-boot-text');
+      if(!t) return;
+      var bad = window.RoomKeeper && RoomKeeper.net && RoomKeeper.net.isBad();
+      t.textContent = bad ? 'Please check your network connection' : 'Loading...';
+    }, 500);
+    var safety = setTimeout(window.rkReveal, 12000);
+  })();
+
+</script>
+
+<div class="phone">
+
+  <!-- LOBBY -->
+  <div class="scr" id="scr-lobby">
+    <div class="hdr">
+      <button class="ibtn" onclick="goHome()" title="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="ttl">Ludo</div>
+      <div class="wl-chips" id="lobby-wallet"></div>
+    </div>
+    <div class="sec">
+      <h3>Quick match</h3>
+      <div class="card">
+        <div class="seg" id="seg-seats"><button data-n="2" class="on">2 players</button><button data-n="4">4 players</button></div>
+        <div class="wheel-wrap"><div class="wheel-band"></div><div class="wheel" id="wheel"></div></div>
+        <div class="hint" id="bet-hint"></div>
+        <button class="btn" id="btn-quick" style="width:100%">Find match</button>
+      </div>
+      <h3>Practice (free, no coins)</h3>
+      <div class="card">
+        <div class="hint">Play against computer players to learn the game. No coins are won or lost.</div>
+        <div class="row"><button class="btn alt" onclick="startPractice(2)">1 vs 1 bot</button><button class="btn alt" onclick="startPractice(4)">With 3 bots</button></div>
+      </div>
+      <div class="hint" style="margin-top:14px">Rules: you need a 6 to bring a token out. A 6, a capture or reaching home gives another throw. Three 6s in a row cancel the throw. Stars and start squares are safe. You have 12 seconds for each move.</div>
+    </div>
+  </div>
+
+  <!-- WAITING -->
+  <div class="scr" id="scr-wait" hidden>
+    <div class="wait">
+      <div class="spin"></div>
+      <h2>Finding players...</h2>
+      <div id="wait-info" class="hint"></div>
+      <div class="row">
+        <button class="btn alt" id="btn-bots" hidden onclick="waitToBots()">Play with bots instead</button>
+        <button class="btn red" onclick="cancelWait()">Cancel (bet returned)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="scr" id="scr-game" hidden>
+    <div class="gtop"><div class="pot" id="pot"></div><div class="wl-chips" id="game-wallet"></div></div>
+    <div class="prow" id="row-top"></div>
+    <div class="bwrap"><div class="board" id="board"></div></div>
+    <div class="prow bot" id="row-bot"></div>
+    <div class="msg" id="msg"></div>
+    <div class="gbot"><button class="leave" onclick="askLeave()">Leave game</button></div>
+  </div>
+
+  <div class="ov" id="ov-result" hidden><div class="dlg" id="dlg-result"></div></div>
+  <div class="ov" id="ov-leave" hidden>
+    <div class="dlg"><h2>Leave the game?</h2><p id="leave-txt"></p>
+      <div class="row"><button class="btn red" onclick="doLeave()">Yes, leave</button><button class="btn alt" onclick="document.getElementById('ov-leave').hidden=true">Keep playing</button></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="session-guard.js"></script>
+<script src="room-keeper.js"></script>
+<script src="wallet.js"></script>
+<script>
+  // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
+  (async function loadAppTheme(){
+    let hadCache = false;
+    try{
+      const cached = JSON.parse(localStorage.getItem('app-theme-cache') || 'null');
+      if(cached){ applyAppTheme(cached); hadCache = true; }
+    }catch(err){}
+    if(hadCache) rkReveal();
+    try{
+      const { data: theme } = await supabaseClient.from('app_theme').select('*').eq('id','global').single();
+      if(theme){
+        applyAppTheme(theme);
+        try{ localStorage.setItem('app-theme-cache', JSON.stringify(theme)); }catch(err){}
+      }
+    }catch(err){ console.error('Theme load failed:', err); }
+    rkReveal();
+  })();
+  function applyAppTheme(theme){
+    if(!theme) return;
+    const root = document.documentElement.style;
+    if(theme.primary_color){
+      const c = theme.primary_color;
+      root.setProperty('--teal-deep', c);                                        // buttons, links, active icons
+      root.setProperty('--teal', `color-mix(in srgb, ${c} 72%, white)`);          // lighter end of gradients
+      root.setProperty('--teal-soft', `color-mix(in srgb, ${c} 15%, white)`);     // light tinted backgrounds
+    }
+    if(theme.background_color){ root.setProperty('--bg', theme.background_color); }
+    if(theme.background_image_url){
+      // .phone has its own solid white background that hides the body image on a phone screen,
+      // so the picture is set on .phone itself, under a light wash so the chat list stays readable.
+      const wash = 'color-mix(in srgb, var(--bg) 55%, transparent)';
+      const phone = document.querySelector('.phone');
+      if(phone){
+        phone.style.background = `linear-gradient(${wash}, ${wash}), url('${theme.background_image_url}') center/cover no-repeat`;
+      }
+    }
+  }
+
+
+  // ======================================================================== Ludo (screen). All rules live in the database; this draws and asks.
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+  // board geometry (row, col) — must match sql-22: 52 shared squares, clockwise, seat s starts at square 13*s
+  const TRACK = [[6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],
+    [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+    [14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0]];
+  const HOME_COL = { 0:[[7,1],[7,2],[7,3],[7,4],[7,5]], 1:[[1,7],[2,7],[3,7],[4,7],[5,7]], 2:[[7,13],[7,12],[7,11],[7,10],[7,9]], 3:[[13,7],[12,7],[11,7],[10,7],[9,7]] };
+  const BASE = { 0:[[2,2],[2,4],[4,2],[4,4]], 1:[[2,11],[2,13],[4,11],[4,13]], 2:[[11,11],[11,13],[13,11],[13,13]], 3:[[11,2],[11,4],[13,2],[13,4]] };
+  const HOME_CTR = { 0:[7,6.1], 1:[6.1,7], 2:[7,7.9], 3:[7.9,7] };
+  const COLORS = ['#e53935', '#2e9e44', '#f2b705', '#1e88e5'];
+  const SAFE = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+  const BETS = [500, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000];
+  const PIPS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+
+  function xy(seat, pos, idx){            // token centre in board units [y, x]
+    if(pos === -1) return BASE[seat][idx];
+    if(pos <= 50){ const c = TRACK[(pos + seat * 13) % 52]; return [c[0] + .5, c[1] + .5]; }
+    if(pos <= 55){ const c = HOME_COL[seat][pos - 51]; return [c[0] + .5, c[1] + .5]; }
+    const h = HOME_CTR[seat], o = (idx - 1.5) * .34;
+    return (seat % 2 === 0) ? [h[0] + o, h[1]] : [h[0], h[1] + o];
+  }
+  function dieHtml(n, cls){ return '<div class="die ' + (cls || '') + '">' + Array.from({ length: 9 }, (_, i) => '<i class="' + (n && PIPS[n].includes(i) ? 'on' : '') + '"></i>').join('') + '</div>'; }
+  function toast(t){ const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
+  function say(t){ $('msg').textContent = t || ''; }
+  function goHome(){ location.href = 'home.html'; }
+  function errText(e){ return (e && e.message) ? e.message.replace(/^.*?:\s*/, '') : 'Something went wrong. Try again.'; }
+  async function rpc(name, args){
+    const { data, error } = await supabaseClient.rpc(name, args || {});
+    if(error) throw error;
+    return data;
+  }
+
+  let me = null, G = null, gameId = null, offset = 0, applied = -1, queue = [], pumping = false, ticking = false, polling = null, chan = null;
+  let disp = {};            // what is drawn: 'seat-idx' -> position
+  let lastDice = {}, rolling = {}, waitSince = 0, boardBuilt = false, boardK = 0, autoKey = '';
+
+  // ---------------------------------------------------------------- start
+  (async function init(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session){ location.replace('index.html'); return; }
+    me = session.user;
+    try{ Wallet.onChange(w => { const h = Wallet.chips(); ['lobby-wallet', 'game-wallet'].forEach(id => { if($(id)) $(id).innerHTML = h; }); renderBets(); }); Wallet.start(me.id); }catch(e){}
+    applyThemeClass();
+    buildLobby();
+    // leave any kept room: games and rooms both use live voice
+    try{ if(window.RoomKeeper && RoomKeeper.leaveKeptForGame) await RoomKeeper.leaveKeptForGame(); }catch(e){}
+    try{
+      const a = await rpc('ludo_active');
+      if(a && a.game_id){ await openGame(a.game_id); }
+    }catch(e){ console.error(e); }
+    rkReveal();
+  })();
+
+  // ---------------------------------------------------------------- lobby
+  let selSeats = 2, selBet = 500;
+  function buildLobby(){
+    document.querySelectorAll('#seg-seats button').forEach(b => b.onclick = () => {
+      selSeats = +b.dataset.n; document.querySelectorAll('#seg-seats button').forEach(x => x.classList.toggle('on', x === b)); renderBets();
+    });
+    $('btn-quick').onclick = quick;
+    renderBets();
+  }
+  // bet roller (wheel): the amounts are fixed; the one in the middle band is the bet
+  const ROW = 44; let wheelBuilt = false, wheelTimer = null;
+  function wheelIndex(){ return Math.max(0, Math.min(BETS.length - 1, Math.round($('wheel').scrollTop / ROW))); }
+  function buildWheel(){
+    const w = $('wheel');
+    w.innerHTML = BETS.map((b, i) => '<div class="it" data-i="' + i + '">' + Wallet.coinSvg + '<span>' + Wallet.short(b) + '</span></div>').join('');
+    w.querySelectorAll('.it').forEach(el => el.onclick = () => w.scrollTo({ top: (+el.dataset.i) * ROW, behavior: 'smooth' }));
+    w.onscroll = () => {
+      paintWheel(wheelIndex());
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => { selBet = BETS[wheelIndex()]; renderBets(); }, 100);
+    };
+    w.scrollTop = BETS.indexOf(selBet) * ROW;
+    wheelBuilt = true;
+  }
+  function paintWheel(idx){
+    const coins = ((window.Wallet && Wallet.get()) || { coins: 0 }).coins;
+    $('wheel').querySelectorAll('.it').forEach((el, i) => {
+      el.classList.toggle('sel', i === idx);
+      el.classList.toggle('near', Math.abs(i - idx) === 1);
+      el.classList.toggle('dis', BETS[i] > coins);
+    });
+  }
+  function renderBets(){
+    if(!wheelBuilt) buildWheel();
+    const w = (window.Wallet && Wallet.get()) || { coins: 0 };
+    paintWheel(BETS.indexOf(selBet));
+    $('bet-hint').innerHTML = w.coins < selBet
+      ? '<b style="color:#b1362f">Not enough coins for this bet.</b> You have ' + Wallet.short(w.coins) + ' coins.'
+      : '';
+    $('btn-quick').disabled = w.coins < selBet;
+  }
+  async function quick(){
+    $('btn-quick').disabled = true;
+    try{ const r = await rpc('ludo_quick', { p_seats: selSeats, p_bet: selBet }); await openGame(r.game_id); Wallet.refresh(); }
+    catch(e){ toast(errText(e)); }
+    renderBets();
+  }
+  async function startPractice(n){
+    try{ const r = await rpc('ludo_practice', { p_seats: n }); await openGame(r.game_id); }
+    catch(e){ toast(errText(e)); }
+  }
+
+  // ---------------------------------------------------------------- opening a game
+  function show(which){ ['lobby', 'wait', 'game'].forEach(x => $('scr-' + x).hidden = (x !== which)); }
+  async function openGame(id){
+    gameId = id; G = null; applied = -1; queue = []; disp = {}; lastDice = {}; rolling = {}; boardBuilt = false; autoKey = '';
+    const st = await rpc('ludo_state', { p_game: id });
+    offset = Date.parse(st.now) - Date.now();
+    subscribe(id);
+    ingest(st);
+    if(polling) clearInterval(polling);
+    polling = setInterval(refresh, 1500);
+  }
+  function subscribe(id){
+    try{
+      if(chan) supabaseClient.removeChannel(chan);
+      chan = supabaseClient.channel('ludo-' + id)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ludo_games', filter: 'id=eq.' + id }, refresh)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ludo_players', filter: 'game_id=eq.' + id }, refresh)
+        .subscribe();
+    }catch(e){}
+  }
+  let refreshing = false;
+  async function refresh(){
+    if(!gameId || refreshing) return;
+    refreshing = true;
+    try{ ingest(await rpc(G && G.status === 'waiting' ? 'ludo_tick' : 'ludo_state', { p_game: gameId })); }catch(e){ console.error(e); }
+    refreshing = false;
+  }
+  function ingest(st){
+    if(!st || st.id !== gameId) return;
+    offset = Date.parse(st.now) - Date.now();
+    if(st.version <= applied && G && G.status === st.status) { G.deadline = st.deadline; return; }
+    queue.push(st); pump();
+  }
+  async function pump(){
+    if(pumping) return;
+    pumping = true;
+    while(queue.length){
+      const st = queue.shift();
+      if(st.version < applied) continue;
+      const prev = G;
+      await present(prev, st);
+      G = st; applied = st.version;
+    }
+    pumping = false;
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ---------------------------------------------------------------- showing a state
+  async function present(prev, st){
+    if(st.status === 'waiting'){ show('wait'); renderWait(st); return; }
+    if(st.status === 'cancelled' && (!prev || prev.status === 'waiting')){
+      toast(prev ? 'No players found. Your bet was returned.' : 'That game has ended.'); Wallet.refresh(); leaveToLobby(); return;
+    }
+    show('game');
+    if(!boardBuilt) buildBoard(st);
+    const ev = st.last_event || {};
+    const fresh = prev && st.version > prev.version;
+    if(fresh && ev.type === 'roll'){ await rollAnim(ev.seat, ev.dice); if(ev.forfeit) say('Three 6s in a row: throw cancelled'); else if(ev.nomove) say('No token can move'); }
+    if(fresh && ev.type === 'move'){ await moveAnim(ev); }
+    if(fresh && ev.type === 'out'){ say((st.players.find(p => p.seat === ev.seat) || {}).name + ' is out of the game'); }
+    syncTokens(st);
+    renderPlayers(st);
+    renderPot(st);
+    if(st.status === 'playing' && !(fresh && ev.type === 'roll' && (ev.forfeit || ev.nomove))) { if(!fresh || ev.type !== 'move' || !(ev.captured || []).length) say(statusLine(st)); }
+    if(st.status === 'finished' || st.status === 'cancelled') showResult(st);
+    maybeAuto(st);
+  }
+  function statusLine(st){
+    if(st.turn_seat === st.my_seat) return st.phase === 'roll' ? 'Your turn: tap the dice' : (st.legal.length > 1 ? 'Tap a glowing token' : '');
+    const p = st.players.find(x => x.seat === st.turn_seat);
+    return p ? (p.is_bot ? 'Computer' : p.name) + ' is playing...' : '';
+  }
+  function renderWait(st){
+    const n = st.players.length;
+    $('wait-info').innerHTML = 'Players found: <b>' + n + ' / ' + st.seats + '</b><br>Bet: <b>' + Wallet.short(st.bet) + '</b> coins each. The game starts when everyone is here.';
+    if(!waitSince) waitSince = Date.now();
+    $('btn-bots').hidden = (Date.now() - waitSince) < 15000;
+    setTimeout(() => { if(G && G.status === 'waiting') $('btn-bots').hidden = (Date.now() - waitSince) < 15000; }, 15500);
+  }
+  async function cancelWait(){
+    try{ await rpc('ludo_cancel', { p_game: gameId }); }catch(e){ toast(errText(e)); }
+    leaveToLobby(); Wallet.refresh();
+  }
+  async function waitToBots(){
+    const n = G ? G.seats : 2;
+    try{ await rpc('ludo_cancel', { p_game: gameId }); }catch(e){}
+    Wallet.refresh(); gameId = null; waitSince = 0;
+    startPractice(n);
+  }
+  function leaveToLobby(){
+    if(polling) clearInterval(polling); polling = null;
+    try{ if(chan) supabaseClient.removeChannel(chan); }catch(e){} chan = null;
+    gameId = null; G = null; queue = []; waitSince = 0; applied = -1;
+    $('ov-result').hidden = true; $('ov-leave').hidden = true;
+    show('lobby'); renderBets();
+  }
+
+  // ---------------------------------------------------------------- the board
+  // ---------------------------------------------------------------- themes (each person sees the board in the theme he chose; saved on this phone)
+  const THEMES = {
+    classic: { name: 'Classic', colors: ['#e53935', '#2e9e44', '#f2b705', '#1e88e5'] },
+    hawk:    { name: 'Golden Hawk', colors: ['#e8402f', '#2fb344', '#f5b800', '#2e9be8'] }
+  };
+  // for now there is ONE look for everybody: board theme Golden Hawk, Royal dice, Crown token (all free). More designs come later (bought / won),
+  // then each person's chosen dice and token design will be saved on the server and shown to everybody in the game.
+  let theme = 'hawk';
+  const seatColors = () => THEMES[theme].colors;
+  function applyThemeClass(){
+    const p = document.querySelector('.phone');
+    p.classList.toggle('hawk', theme === 'hawk');     // board theme (design + colours)
+    p.classList.add('dice-royal', 'tok-crown');        // dice design and token design are separate from the board theme; token colour = the player's colour
+  }
+  function setTheme(t){ if(!THEMES[t]) return; theme = t; try{ localStorage.setItem('ludo-theme', t); }catch(e){} applyThemeClass(); renderThemes(); }
+  function previewSvg(t){
+    const c = THEMES[t].colors;
+    if(t === 'hawk') return '<svg viewBox="0 0 60 60"><rect width="60" height="60" rx="5" fill="#d9b26f" stroke="#e7c067" stroke-width="3"/>' +
+      [[0,0,0],[36,0,1],[36,36,2],[0,36,3]].map(q => '<rect x="' + q[0] + '" y="' + q[1] + '" width="24" height="24" rx="3" fill="#3a2412" stroke="#e0b050" stroke-width="1.5"/><circle cx="' + (q[0] + 12) + '" cy="' + (q[1] + 12) + '" r="8" fill="' + c[q[2]] + '" stroke="#f3d27a" stroke-width="1.5"/>').join('') + '</svg>';
+    return '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#fff" stroke="#444"/>' +
+      [[0,0,0],[36,0,1],[36,36,2],[0,36,3]].map(q => '<rect x="' + q[0] + '" y="' + q[1] + '" width="24" height="24" fill="' + c[q[2]] + '"/><rect x="' + (q[0] + 4) + '" y="' + (q[1] + 4) + '" width="16" height="16" rx="3" fill="#fff"/>').join('') + '</svg>';
+  }
+  function renderThemes(){
+    $('themes').innerHTML = Object.keys(THEMES).map(t => '<div class="th-tile ' + (t === theme ? 'on' : '') + '" onclick="setTheme(\'' + t + '\')"><div class="th-prev">' + previewSvg(t) + '</div><div class="th-name">' + THEMES[t].name + '</div></div>').join('');
+  }
+
+  // ---------------------------------------------------------------- the board
+  function buildBoard(st){
+    const b = $('board'); b.innerHTML = ''; boardBuilt = true;
+    const COL = seatColors();
+    const pc = v => (v / 15 * 100) + '%';
+    function box(cls, r, c, w, h, bg, extra){ const d = document.createElement('div'); d.className = cls; d.style.cssText = 'left:' + pc(c) + ';top:' + pc(r) + ';width:' + pc(w) + ';height:' + pc(h) + ';background:' + bg + ';' + (extra || ''); b.appendChild(d); return d; }
+    const corner = { 0:[0,0], 1:[0,9], 2:[9,9], 3:[9,0] };
+    const hawk = theme === 'hawk';
+    b.classList.toggle('hawk', hawk);
+    if(!hawk){
+      for(let s = 0; s < 4; s++){
+        const [r, c] = corner[s];
+        box('bk', r, c, 6, 6, COL[s]);
+        box('bk', r + 1, c + 1, 4, 4, '#fff', 'border-radius:12%;');
+        BASE[s].forEach(p => box('bk', p[0] - .5, p[1] - .5, 1, 1, COL[s], 'border-radius:50%;opacity:.35;transform:scale(.85);'));
+      }
+      TRACK.forEach((p, i) => {
+        const d = document.createElement('div'); d.className = 'cell';
+        d.style.left = pc(p[1]); d.style.top = pc(p[0]);
+        const seatStart = [0, 13, 26, 39].indexOf(i);
+        if(seatStart >= 0) d.style.background = COL[seatStart];
+        if(SAFE.has(i) && seatStart < 0) d.textContent = '★';
+        b.appendChild(d);
+      });
+      for(let s = 0; s < 4; s++) HOME_COL[s].forEach(p => { const d = document.createElement('div'); d.className = 'cell'; d.style.left = pc(p[1]); d.style.top = pc(p[0]); d.style.background = COL[s]; b.appendChild(d); });
+      box('bk', 6, 6, 3, 3, 'conic-gradient(' + COL[1] + ' 0 45deg,' + COL[2] + ' 45deg 135deg,' + COL[3] + ' 135deg 225deg,' + COL[0] + ' 225deg 315deg,' + COL[1] + ' 315deg 360deg)');
+    } else {
+      // Golden Hawk: sand tiles, carved dark homes with a glowing coloured medallion, gold edges
+      for(let s = 0; s < 4; s++){
+        const [r, c] = corner[s];
+        box('bk', r, c, 6, 6, 'linear-gradient(145deg,#4d3119,#26160a)', 'border-radius:7%;box-shadow:inset 0 0 0 2px #e0b050, inset 0 0 14px #000;');
+        box('bk', r + .9, c + .9, 4.2, 4.2, 'radial-gradient(circle at 35% 28%, color-mix(in srgb,' + COL[s] + ' 55%, #fff) 0, ' + COL[s] + ' 48%, color-mix(in srgb,' + COL[s] + ' 55%, #000) 100%)', 'border-radius:50%;box-shadow:0 0 0 .13em #f3d27a, 0 0 .5em .15em color-mix(in srgb,' + COL[s] + ' 60%, transparent);');
+        BASE[s].forEach(p => box('bk', p[0] - .55, p[1] - .55, 1.1, 1.1, 'color-mix(in srgb,' + COL[s] + ' 70%, #000)', 'border-radius:50%;box-shadow:0 0 0 .1em #f3d27a, inset 0 .1em .25em rgba(0,0,0,.6);'));
+        box('bk', r + 2.62, c + 2.62, .76, .76, 'radial-gradient(circle at 35% 30%, #fff8d2, #e4b44f 60%, #9a6a1b)', 'border-radius:50%;box-shadow:0 0 0 .08em #6f4710, 0 0 .4em .1em rgba(255,235,160,.6);');
+      }
+      TRACK.forEach((p, i) => {
+        const d = document.createElement('div'); d.className = 'cell';
+        d.style.left = pc(p[1]); d.style.top = pc(p[0]);
+        const seatStart = [0, 13, 26, 39].indexOf(i);
+        if(seatStart >= 0){ d.style.background = 'linear-gradient(145deg, color-mix(in srgb,' + COL[seatStart] + ' 65%, #fff), ' + COL[seatStart] + ')'; d.innerHTML = '<i class="ring"></i>'; }
+        else if(SAFE.has(i)) d.textContent = '★';
+        b.appendChild(d);
+      });
+      for(let s = 0; s < 4; s++) HOME_COL[s].forEach(p => { const d = document.createElement('div'); d.className = 'cell'; d.style.left = pc(p[1]); d.style.top = pc(p[0]); d.style.background = 'linear-gradient(145deg, color-mix(in srgb,' + COL[s] + ' 65%, #fff), ' + COL[s] + ')'; b.appendChild(d); });
+      box('bk', 6, 6, 3, 3, 'conic-gradient(' + COL[1] + ' 0 45deg,' + COL[2] + ' 45deg 135deg,' + COL[3] + ' 135deg 225deg,' + COL[0] + ' 225deg 315deg,' + COL[1] + ' 315deg 360deg)', 'box-shadow:0 0 0 2px #e0b050, inset 0 0 8px rgba(0,0,0,.35);');
+    }
+    // tokens only for seats that play
+    st.players.forEach(p => { for(let i = 0; i < 4; i++){ const t = document.createElement('div'); t.className = 'tok'; t.id = 'tok-' + p.seat + '-' + i; t.style.setProperty('--tc', COL[p.seat]); t.onclick = () => tapToken(p.seat, i); b.appendChild(t); } });
+    // turn the board so that my colour is at the bottom left
+    boardK = (3 - (st.my_seat || 0) + 4) % 4;
+    b.style.transform = 'rotate(' + (boardK * 90) + 'deg)';
+    b.style.setProperty('--unrot', (-boardK * 90) + 'deg');      // the crown on a token always stands upright
+    st.players.forEach(p => { for(let i = 0; i < 4; i++) disp[p.seat + '-' + i] = p.tokens[i]; });
+    drawTokens(st);
+  }
+  function drawTokens(st){
+    const groups = {};
+    st.players.forEach(p => { for(let i = 0; i < 4; i++){ const pos = disp[p.seat + '-' + i]; const c = xy(p.seat, pos, i); const key = c[0].toFixed(2) + ',' + c[1].toFixed(2); (groups[key] = groups[key] || []).push([p.seat, i, c, pos]); } });
+    Object.values(groups).forEach(list => list.forEach((t, n) => {
+      const el = $('tok-' + t[0] + '-' + t[1]); if(!el) return;
+      let y = t[2][0], x = t[2][1];
+      if(list.length > 1 && t[3] !== -1){ x += (n - (list.length - 1) / 2) * .28; y -= (n % 2) * .12; }
+      el.style.left = (x / 15 * 100) + '%'; el.style.top = (y / 15 * 100) + '%';
+      el.style.zIndex = 3 + n;
+    }));
+  }
+  function syncTokens(st){
+    st.players.forEach(p => { for(let i = 0; i < 4; i++) disp[p.seat + '-' + i] = p.tokens[i]; });
+    drawTokens(st);
+    const mineMove = st.status === 'playing' && st.turn_seat === st.my_seat && st.phase === 'move';
+    document.querySelectorAll('.tok').forEach(t => t.classList.remove('legal'));
+    if(mineMove) (st.legal || []).forEach(i => { const el = $('tok-' + st.my_seat + '-' + i); if(el) el.classList.add('legal'); });
+  }
+  async function moveAnim(ev){
+    const key = ev.seat + '-' + ev.token;
+    const stepsTo = ev.to;
+    if(ev.from === -1){ disp[key] = 0; drawTokens(G || { players: [] }); await sleep(260); }
+    else { for(let p = ev.from + 1; p <= stepsTo; p++){ disp[key] = p; drawTokens(G); await sleep(150); } }
+    if((ev.captured || []).length){ say('Captured!'); await sleep(250); }
+  }
+  async function rollAnim(seat, value){
+    const quick = rolling[seat] === true;
+    rolling[seat] = true; renderDie(seat, null, true);
+    await sleep(quick ? 160 : 520);
+    rolling[seat] = false; lastDice[seat] = value; renderDie(seat, value, false);
+    await sleep(260);
+  }
+
+  // ---------------------------------------------------------------- players, timer, dice
+  function slotOf(seat){ return (seat + boardK) % 4; }       // 0 TL, 1 TR, 2 BR, 3 BL (on screen)
+  function renderPlayers(st){
+    const mk = q => {
+      const p = st.players.find(x => slotOf(x.seat) === q);
+      if(!p) return '<div class="pslot empty"></div>';
+      const sc = seatColors()[p.seat], right = (q === 1 || q === 2);
+      const av = p.avatar_url ? 'background-image:url(\'' + esc(p.avatar_url) + '\')' : 'background:' + sc;
+      const isTurn = st.status === 'playing' && st.turn_seat === p.seat;
+      const nm = p.is_bot ? 'Bot' : p.name;
+      const canRoll = isTurn && st.phase === 'roll' && p.seat === st.my_seat;
+      const face = isTurn && st.phase === 'move' ? st.dice : lastDice[p.seat];
+      return '<div class="pslot ' + (right ? 'right ' : '') + (isTurn ? 'on ' : '') + (p.status === 'out' ? 'out' : '') + '" style="--sc:' + sc + '" id="slot-' + p.seat + '">' +
+        '<div class="av" style="' + av + '">' + (p.avatar_url ? '' : esc((nm || '?').charAt(0).toUpperCase())) + '</div>' +
+        '<div class="pinfo"><div class="pname">' + esc(nm) + (p.seat === st.my_seat ? ' (you)' : '') + '</div><div class="ptimer"><i id="tm-' + p.seat + '"></i></div><div class="pwarn">' + (p.status === 'out' ? 'out' : (p.missed ? 'missed ' + p.missed + '/3' : '')) + '</div></div>' +
+        '<div id="die-' + p.seat + '" ' + (canRoll ? 'onclick="rollMine()"' : '') + '>' + dieHtml(face, canRoll ? 'go' : '') + '</div></div>';
+    };
+    $('row-top').innerHTML = mk(0) + mk(1);
+    $('row-bot').innerHTML = mk(3) + mk(2);
+  }
+  function renderDie(seat, value, isRolling){ const el = $('die-' + seat); if(el) el.innerHTML = dieHtml(value, isRolling ? 'rolling' : ''); }
+  function renderPot(st){ $('pot').innerHTML = st.practice ? 'Practice' : (Wallet.coinSvg + ' Pot ' + Wallet.short(st.pot)); }
+  setInterval(() => {
+    const st = G; if(!st || st.status !== 'playing' || !st.deadline) return;
+    const left = (Date.parse(st.deadline) - (Date.now() + offset)) / 1000;
+    const span = (st.auto_mode || (st.players.find(p => p.seat === st.turn_seat) || {}).is_bot) ? 1.2 : 12;
+    document.querySelectorAll('.ptimer i').forEach(i => i.style.width = '0');
+    const bar = $('tm-' + st.turn_seat); if(bar) bar.style.width = Math.max(0, Math.min(100, left / 12 * 100)) + '%';
+    if(left < -0.15 && !ticking && !pumping){ ticking = true; rpc('ludo_tick', { p_game: gameId }).then(ingest).catch(() => {}).finally(() => { ticking = false; }); }
+  }, 250);
+
+  // ---------------------------------------------------------------- my actions
+  let acting = false;
+  async function rollMine(){
+    if(acting || !G || G.turn_seat !== G.my_seat || G.phase !== 'roll') return;
+    acting = true; rolling[G.my_seat] = true; renderDie(G.my_seat, null, true);
+    try{ ingest(await rpc('ludo_roll', { p_game: gameId })); }catch(e){ toast(errText(e)); rolling[G.my_seat] = false; refresh(); }
+    acting = false;
+  }
+  async function tapToken(seat, idx){
+    if(acting || !G || seat !== G.my_seat || G.turn_seat !== seat || G.phase !== 'move' || !(G.legal || []).includes(idx)) return;
+    acting = true;
+    try{ ingest(await rpc('ludo_move', { p_game: gameId, p_token: idx })); }catch(e){ toast(errText(e)); refresh(); }
+    acting = false;
+  }
+  function maybeAuto(st){       // only one token can move: move it for the player
+    if(st.status !== 'playing' || st.turn_seat !== st.my_seat || st.phase !== 'move' || (st.legal || []).length !== 1) return;
+    const key = st.id + ':' + st.version; if(autoKey === key) return; autoKey = key;
+    setTimeout(() => { if(G && G.version === st.version) tapToken(st.my_seat, st.legal[0]); }, 650);
+  }
+  function askLeave(){
+    $('leave-txt').textContent = G && !G.practice && G.bet > 0 ? 'You will lose your bet of ' + Wallet.short(G.bet) + ' coins.' : 'This practice game will end.';
+    $('ov-leave').hidden = false;
+  }
+  async function doLeave(){
+    $('ov-leave').hidden = true;
+    try{ ingest(await rpc('ludo_leave', { p_game: gameId })); }catch(e){ toast(errText(e)); }
+    Wallet.refresh();
+  }
+
+  // ---------------------------------------------------------------- the end
+  let shown = '';
+  function showResult(st){
+    if(shown === st.id + st.status) return; shown = st.id + st.status;
+    Wallet.refresh();
+    const won = st.status === 'finished' && st.winner_seat === st.my_seat;
+    const myXp = (st.last_event && st.last_event.xp_by_seat && st.last_event.xp_by_seat[st.my_seat]) || 0;
+    const w = st.players.find(p => p.seat === st.winner_seat);
+    let h;
+    if(st.status === 'cancelled') h = '<div class="big">🛑</div><h2>Game ended</h2><p>' + (st.bet > 0 ? 'Your bet was returned.' : 'Nobody was left in the game.') + '</p>';
+    else if(won) h = '<div class="big">🏆</div><h2>You won!</h2><p>' + (st.practice ? 'Great game against the bots.' : 'You got ' + Wallet.coinSvg + ' <b>' + Wallet.short(st.payout) + '</b> coins' + (myXp ? ' and <b>+' + myXp + ' XP</b>' : '') + '.') + '</p>';
+    else h = '<div class="big">😔</div><h2>' + esc(w ? (w.is_bot ? 'A bot' : w.name) : 'Someone') + ' won</h2><p>' + (st.practice ? 'Try again!' : 'You lost ' + Wallet.coinSvg + ' <b>' + Wallet.short(st.bet) + '</b> coins.' + (myXp ? ' You earned <b>+' + myXp + ' XP</b>.' : ' Better luck next time.')) + '</p>';
+    $('dlg-result').innerHTML = h + '<div class="row"><button class="btn" onclick="leaveToLobby()">Play again</button><button class="btn alt" onclick="goHome()">Home</button></div>';
+    $('ov-result').hidden = false;
+  }
+
+</script>
+</body>
+</html>
