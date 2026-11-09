@@ -892,11 +892,12 @@ html, body{ overscroll-behavior-y: contain; }
 <body>
 <div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
 <script>
-  // Boot overlay: covers the page's placeholder markup (default theme, "ID: 000000", empty lists, demo seats)
-  // until the page itself calls rkReveal() once it has applied real (cached or live) data. A safety timer reveals
-  // the page anyway after 12 s so a bug elsewhere can never trap the person behind a spinner forever.
+  // Boot overlay: covers the page's placeholder markup until the page has applied REAL (cached or live) data and calls rkReveal().
+  // If the real data cannot be loaded (slow or broken internet, a failed request) the page is NEVER revealed with its placeholder
+  // markup (that is what used to show old demo users and numbers). rkFail() shows a clear message with "Try again" instead.
+  // If the data still arrives later, rkReveal() simply removes the message and the real page appears.
   (function(){
-    var done = false;
+    var done = false, netWatch, safety;
     window.rkReveal = function(){
       if(done) return;
       done = true;
@@ -906,14 +907,28 @@ html, body{ overscroll-behavior-y: contain; }
       clearInterval(netWatch);
       clearTimeout(safety);
     };
-    var netWatch = setInterval(function(){
+    window.rkFail = function(){
+      if(done) return;
+      var o = document.getElementById('rk-boot');
+      if(!o || o.getAttribute('data-failed')) return;
+      o.setAttribute('data-failed', '1');
+      var btn = 'border:none;border-radius:12px;padding:12px 22px;font:700 .95rem Inter,system-ui,sans-serif;cursor:pointer;';
+      var canBack = !/home\.html/.test(location.pathname) && history.length > 1;
+      o.innerHTML = '<div style="font:700 1.1rem Inter,system-ui,sans-serif;color:var(--ink,#16332c)">Could not load</div>' +
+        '<div style="max-width:270px;text-align:center;line-height:1.45;font:500 .92rem Inter,system-ui,sans-serif;color:var(--ink-soft,#5c7770)">Please check your internet connection and try again.</div>' +
+        '<div style="display:flex;gap:10px;margin-top:4px"><button id="rk-retry" style="' + btn + 'background:var(--teal-deep,#05846a);color:#fff">Try again</button>' +
+        (canBack ? '<button id="rk-back" style="' + btn + 'background:var(--teal-soft,#d3f3e8);color:var(--teal-deep,#05846a)">Back</button>' : '') + '</div>';
+      document.getElementById('rk-retry').onclick = function(){ location.reload(); };
+      var b = document.getElementById('rk-back'); if(b) b.onclick = function(){ history.back(); };
+    };
+    netWatch = setInterval(function(){
       if(done) return;
       var t = document.getElementById('rk-boot-text');
       if(!t) return;
       var bad = window.RoomKeeper && RoomKeeper.net && RoomKeeper.net.isBad();
       t.textContent = bad ? 'Please check your network connection' : 'Loading...';
     }, 500);
-    var safety = setTimeout(window.rkReveal, 12000);
+    safety = setTimeout(window.rkFail, window.RK_SAFETY_MS || 12000);
   })();
 </script>
 
@@ -933,17 +948,17 @@ html, body{ overscroll-behavior-y: contain; }
       </div>
       <input type="file" id="room-pic-input" accept="image/*" style="display:none">
       <div class="room-name-id">
-        <span class="room-title copyable" id="room-title-display">Official Room</span>
+        <span class="room-title copyable" id="room-title-display"></span>
         <span class="id-row">
-          <span class="room-id copyable" id="room-id-display">ID: 111</span>
+          <span class="room-id copyable" id="room-id-display"></span>
         </span>
       </div>
     </div>
     <div class="room-members-line">
-      <div class="diamond-badge" title="Coming soon">💎 0</div>
+      <div class="diamond-badge" style="visibility:hidden" aria-hidden="true">💎 0</div>
       <div class="avatars-count-group">
         <div class="members-stack" id="members-stack" title="Scroll to see all members"></div>
-        <button class="member-count-badge" id="member-count-badge" onclick="openMembersModal()" title="See all members">8</button>
+        <button class="member-count-badge" id="member-count-badge" onclick="openMembersModal()" title="See all members">0</button>
       </div>
     </div>
   </div>
@@ -970,7 +985,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   <div class="members-modal" id="members-modal">
     <div class="members-modal-header">
-      <span>Online Users: <strong id="modal-user-count">8</strong></span>
+      <span>Online Users: <strong id="modal-user-count">0</strong></span>
       <button class="modal-close" onclick="closeMembersModal()">✕</button>
     </div>
     <div class="members-modal-list" id="members-modal-list"></div>
@@ -1016,7 +1031,7 @@ html, body{ overscroll-behavior-y: contain; }
         </button>
       </div>
       <span class="id-row" style="justify-content:center;">
-        <div class="profile-modal-id copyable" id="rp-id">ID: 111</div>
+        <div class="profile-modal-id copyable" id="rp-id"></div>
         <span class="copy-icon" onclick="copyText(document.getElementById('rp-id').textContent.replace('ID: ',''), 'Room ID')" title="Copy ID">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </span>
@@ -1034,9 +1049,9 @@ html, body{ overscroll-behavior-y: contain; }
     </div>
     <div class="profile-modal-body">
       <div class="profile-modal-avatar" id="profile-modal-avatar">A</div>
-      <div class="profile-modal-name copyable" id="profile-modal-name">Ayesha</div>
+      <div class="profile-modal-name copyable" id="profile-modal-name"></div>
       <span class="id-row" style="justify-content:center;">
-        <div class="profile-modal-id copyable" id="profile-modal-id">ID: 208813</div>
+        <div class="profile-modal-id copyable" id="profile-modal-id"></div>
         <span class="copy-icon" onclick="copyText(document.getElementById('profile-modal-id').textContent.replace('ID: ',''), 'ID')" title="Copy ID">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </span>
@@ -3402,8 +3417,7 @@ html, body{ overscroll-behavior-y: contain; }
       // show whatever the room already has rather than trap them on a spinner forever.
       console.error('Room init failed:', err);
       showToast('Something went wrong loading the room.');
-    }finally{
-      rkReveal();
+      rkFail();      // never show the page's placeholder markup: ask the person to try again (does nothing if the room is already on screen)
     }
   })();
 
