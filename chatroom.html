@@ -3178,12 +3178,23 @@ html, body{ overscroll-behavior-y: contain; }
   let messages = [];
   let currentReply = null; // { name, text }
 
+  // ROOM CHAT IS ONLY FOR PEOPLE WHO ARE IN THE ROOM. Each visit has its own start point (the newest message that already existed when
+  // you came in) and you only ever see messages after it, so a newcomer never sees the old chat. The start point is forgotten the moment you
+  // really leave (exit, cancel on the Kept Room card, starting a game, internet lost for too long, app closed); Keep + coming back does not
+  // count as leaving. Nothing of the chat is saved on the phone.
+  const CHAT_START_KEY = 'room-chat-start-' + ROOM_ID;
+  async function ensureChatStart(){
+    try{ const s = sessionStorage.getItem(CHAT_START_KEY); if(s) return s; }catch(err){}
+    const { data, error } = await supabaseClient.from('room_messages').select('created_at').eq('room_id', ROOM_ID).order('created_at', { ascending: false }).limit(1);
+    if(error) return null;                                      // not known yet: show nothing rather than the old chat; tried again later
+    const start = (data && data[0] && data[0].created_at) || '1970-01-01T00:00:00Z';
+    try{ sessionStorage.setItem(CHAT_START_KEY, start); }catch(err){}
+    return start;
+  }
+
   async function loadMessages(){
-    // Show cached messages instantly while the real fetch happens
-    try{
-      const cached = JSON.parse(localStorage.getItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id) || 'null');
-      if(cached){ messages = cached; renderMessages(); }
-    }catch(err){}
+    const start = await ensureChatStart();
+    if(!start){ messages = []; renderMessages(); setTimeout(loadMessages, 4000); return; }
 
     const { data: clearRow } = await supabaseClient
       .from('room_chat_clears')
@@ -3191,17 +3202,16 @@ html, body{ overscroll-behavior-y: contain; }
       .eq('user_id', currentUser.id)
       .eq('room_id', ROOM_ID)
       .maybeSingle();
+    const since = (clearRow?.cleared_at && clearRow.cleared_at > start) ? clearRow.cleared_at : start;
 
-    let query = supabaseClient
+    const { data } = await supabaseClient
       .from('room_messages')
       .select('id, sender_id, content, reply_to_name, reply_to_text, created_at, profiles:sender_id(name, avatar_url, id_number)')
       .eq('room_id', ROOM_ID)
+      .gt('created_at', since)
       .order('created_at', { ascending: true })
       .limit(150);
 
-    if(clearRow?.cleared_at) query = query.gt('created_at', clearRow.cleared_at);
-
-    const { data } = await query;
     messages = (data || []).map(m => {
       const senderName = m.profiles?.name || 'Unknown';
       const initial = TextPolicy.initial(senderName);
@@ -3218,7 +3228,6 @@ html, body{ overscroll-behavior-y: contain; }
       };
     });
     renderMessages();
-    try{ localStorage.setItem(('room-messages-cache-' + ROOM_ID + '-') + currentUser.id, JSON.stringify(messages)); }catch(err){}
   }
 
   function subscribeMessages(){
@@ -3412,6 +3421,8 @@ html, body{ overscroll-behavior-y: contain; }
       setupEvents();
       await loadMessages();
       subscribeMessages();
+      // old chats of rooms nobody is in are deleted from the server (now, and every 5 minutes while this room is open)
+      try{ RoomKeeper.purgeEmptyRoomChats(); setInterval(function(){ RoomKeeper.purgeEmptyRoomChats(); }, 300000); }catch(err){}
     }catch(err){
       // Something above failed unexpectedly — never leave the person stuck behind "Loading...";
       // show whatever the room already has rather than trap them on a spinner forever.

@@ -53,7 +53,7 @@
     -webkit-user-select:text !important; -moz-user-select:text !important; -ms-user-select:text !important; user-select:text !important;
     -webkit-touch-callout:default !important;
   }
-html, body{ overscroll-behavior-y: contain; }
+/* (no overscroll-behavior / overflow-x:hidden on html or body: together they stop one-finger scrolling on phones) */
   body{
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -64,7 +64,6 @@ html, body{ overscroll-behavior-y: contain; }
     justify-content:center;
     padding: 24px;
     position: relative;
-    overflow-x: hidden;
   }
 
   /* Terms / Privacy / Contact links */
@@ -426,12 +425,12 @@ html, body{ overscroll-behavior-y: contain; }
   #rk-boot{ background:#1d0e75 !important; color:#fff !important; }
   #rk-boot .rk-boot-spin{ border-color:rgba(255,255,255,.25) !important; border-top-color:#ffd84d !important; }
   /* the gradient sits on <html> so it covers the whole screen (never a card on a different coloured page) */
-  html{ background: #1d0e75 linear-gradient(165deg, #6a12d8 0%, #3b13b4 28%, #14208f 62%, #0d0a4f 100%) no-repeat !important; background-size:100% 100% !important; min-height:100%; overflow-x:hidden; }
+  html{ background: #1d0e75 linear-gradient(165deg, #6a12d8 0%, #3b13b4 28%, #14208f 62%, #0d0a4f 100%) no-repeat !important; background-size:100% 100% !important; min-height:100%; }
   body{
     background: transparent !important;
-    color:#fff; padding:28px 22px 36px; align-items:center; overflow-x:hidden; max-width:100%;
+    color:#fff; padding:28px 22px 36px; align-items:center; max-width:100%;
   }
-  .blob{ filter: blur(8px); pointer-events:none; }
+  .blob{ position:fixed; filter: blur(8px); pointer-events:none; }      /* fixed: they can never widen the page or make it scroll sideways */
   .blob1{ width:420px; height:420px; background: radial-gradient(circle at 40% 40%, rgba(255,64,170,.55), rgba(255,64,170,0) 68%); opacity:1; top:-120px; left:-120px; }
   .blob2{ width:460px; height:460px; background: radial-gradient(circle at 50% 50%, rgba(34,208,255,.5), rgba(34,208,255,0) 68%); opacity:1; bottom:-150px; right:-140px; }
   .wrap{ background:transparent; box-shadow:none; border-radius:0; overflow:visible; max-width:980px; gap:30px; }
@@ -440,7 +439,7 @@ html, body{ overscroll-behavior-y: contain; }
   .side h1{ color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.35); }
   .bubble{ background: rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2); color:#fff; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .bubble.right{ background: linear-gradient(180deg,#ffd84d,#f5a300); border-color:transparent; color:#3a2000; font-weight:600; }
-  .side .tagline{ color:rgba(255,255,255,.85); opacity:1; }
+  .motto{ font-family:'Fraunces', serif; font-weight:600; font-size:2.1rem; line-height:1.22; max-width:560px; margin-top:4px; color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.35); }
   .form-side{
     background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.24); border-radius:28px; padding:38px 32px;
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow:0 24px 50px -24px rgba(0,0,40,.6);
@@ -473,7 +472,7 @@ html, body{ overscroll-behavior-y: contain; }
     .side{ padding:6px 8px; }
     .brand-logo{ width:112px; height:112px; margin-bottom:16px; }
     .bubbles{ display:none; }          /* on a phone the login form should be visible without scrolling far */
-    .side .tagline{ margin-top:12px; }
+    .motto{ font-size:1.65rem; margin-top:2px; }
     .form-side{ padding:30px 22px; }
   }
 </style>
@@ -514,9 +513,8 @@ html, body{ overscroll-behavior-y: contain; }
   <div class="side">
     <div>
       <img class="brand-logo" src="icon-192.png" alt="Fesgo Fun">
-      <h1>Where the group actually talks.</h1>
+      <p class="motto">If you want to be Strong,💪 learn to fight alone. 🐺🔥</p>
     </div>
-    <p class="tagline">One room for everyone, private inboxes for the real talk, and a members-only space for the inner circle.</p>
   </div>
 
   <div class="form-side">
@@ -525,14 +523,8 @@ html, body{ overscroll-behavior-y: contain; }
       <button class="tab" id="tab-signup" onclick="showForm('signup')">Sign up</button>
     </div>
 
-    <div id="login-heading">
-      <h2>Welcome back</h2>
-      <p class="sub">Log in to pick up the conversation.</p>
-    </div>
-    <div id="signup-heading" style="display:none;">
-      <h2>Create your account</h2>
-      <p class="sub">Takes less than a minute.</p>
-    </div>
+    <div id="login-heading" style="display:none;"></div>
+    <div id="signup-heading" style="display:none;"></div>
 
     <div class="status" id="status-box"></div>
 

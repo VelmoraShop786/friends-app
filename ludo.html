@@ -121,6 +121,7 @@
   .board .cell{ position:absolute; width:6.6667%; height:6.6667%; background:#fff; border:1px solid #c9c9c9; display:flex; align-items:center; justify-content:center; font-size:.62rem; color:#777; line-height:1; }
   .tok{ position:absolute; width:5.4%; height:5.4%; transform:translate(-50%,-50%); border-radius:50%; background:var(--tc); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.2); transition:left .14s linear, top .14s linear; z-index:3; }
   .tok::after{ content:''; position:absolute; inset:28%; border-radius:50%; background:rgba(255,255,255,.55); }
+  .tok.done{ width:4.4%; height:4.4%; }
   .tok.legal{ z-index:6; animation:tp .7s ease-in-out infinite; cursor:pointer; box-shadow:0 0 0 3px rgba(255,255,255,.95), 0 0 0 5px var(--tc); }
   @keyframes tp{ 50%{ transform:translate(-50%,-50%) scale(1.28); } }
 
@@ -308,8 +309,12 @@
     if(pos === -1) return BASE[seat][idx];
     if(pos <= 50){ const c = TRACK[(pos + seat * 13) % 52]; return [c[0] + .5, c[1] + .5]; }
     if(pos <= 55){ const c = HOME_COL[seat][pos - 51]; return [c[0] + .5, c[1] + .5]; }
-    const h = HOME_CTR[seat], o = (idx - 1.5) * .34;
-    return (seat % 2 === 0) ? [h[0] + o, h[1]] : [h[0], h[1] + o];
+    // pos 56 = home: the four finished tokens sit inside the small coloured triangle of their own colour.
+    // Spots are worked out for the left triangle (seat 0) and turned 90 degrees for each next seat (top, right, bottom).
+    const spots = [[6.8, 6.4], [7.5, 6.4], [8.2, 6.4], [7.5, 6.95]];      // [y, x] in board units
+    let dy = spots[idx % 4][0] - 7.5, dx = spots[idx % 4][1] - 7.5;
+    for(let r = 0; r < seat; r++){ const ndy = dx, ndx = -dy; dy = ndy; dx = ndx; }
+    return [7.5 + dy, 7.5 + dx];
   }
   function dieHtml(n, cls){ return '<div class="die ' + (cls || '') + '">' + Array.from({ length: 9 }, (_, i) => '<i class="' + (n && PIPS[n].includes(i) ? 'on' : '') + '"></i>').join('') + '</div>'; }
   function toast(t){ const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
@@ -582,6 +587,7 @@
       let y = t[2][0], x = t[2][1];
       if(list.length > 1 && t[3] !== -1){ x += (n - (list.length - 1) / 2) * .28; y -= (n % 2) * .12; }
       el.style.left = (x / 15 * 100) + '%'; el.style.top = (y / 15 * 100) + '%';
+      el.classList.toggle('done', t[3] === 56);
       el.style.zIndex = 3 + n;
     }));
   }

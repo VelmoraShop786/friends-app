@@ -219,10 +219,27 @@
   }
 
   // ---------- entering / leaving rooms ----------
-  function serverLeave(roomId){
+  // The room chat belongs to the visit: when you really leave, its start point (and any old local copy) is forgotten, and the server
+  // is asked to delete chats of rooms that nobody is in any more. (Keep does NOT call this: you are still in the room.)
+  function forgetRoomChat(){
+    try{
+      for(var i = sessionStorage.length - 1; i >= 0; i--){
+        var k = sessionStorage.key(i);
+        if(k && k.indexOf('room-chat-start-') === 0) sessionStorage.removeItem(k);
+      }
+    }catch(e){}
+    clearLocalChatCaches();
+  }
+  function purgeEmptyRoomChats(){
     var c = client();
     if(!c) return Promise.resolve();
-    return Promise.resolve(c.rpc('room_leave', { p_room: String(roomId) })).catch(function(){});
+    return Promise.resolve(c.rpc('purge_room_messages')).catch(function(){});
+  }
+  function serverLeave(roomId){
+    forgetRoomChat();
+    var c = client();
+    if(!c) return Promise.resolve();
+    return Promise.resolve(c.rpc('room_leave', { p_room: String(roomId) })).catch(function(){}).then(purgeEmptyRoomChats);
   }
 
   function openRoom(roomId){
@@ -270,6 +287,7 @@
   function exitAndLeave(url){
     ssDel(K_ENTRY);
     ssDel(K_KEPT);
+    forgetRoomChat();
     var sh = shell();
     if(EMBEDDED && sh){ sh.closeRoom(url || 'home.html'); return; }
     navigateAwayFromRoom(url || 'home.html');
@@ -282,6 +300,7 @@
   }
   function endKept(){
     ssDel(K_KEPT);
+    forgetRoomChat();
     removeCard();
     var sh = shell();
     if(sh && !EMBEDDED) sh.closeRoom();      // the room is over: its voice must stop too
@@ -443,8 +462,8 @@
       if(!session) return;                            // not logged in yet — try again on the next page
       ssSet(K_INIT, '1');
       if(getKept() || ssGet(K_ENTRY)) return;
-      clearLocalChatCaches();
-      return c.rpc('room_leave_all');
+      forgetRoomChat();
+      return Promise.resolve(c.rpc('room_leave_all')).then(purgeEmptyRoomChats);
     }).catch(function(){});
   }
 
@@ -662,6 +681,7 @@
     startRoomBackGuard: startRoomBackGuard,
     keepAndLeave: keepAndLeave,
     exitAndLeave: exitAndLeave,
+    purgeEmptyRoomChats: purgeEmptyRoomChats,
     leaveKeptForGame: leaveKeptForGame,
     getKept: getKept,
     syncCard: renderCard,
