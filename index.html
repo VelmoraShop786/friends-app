@@ -466,11 +466,39 @@
   .status.error{ background:#ffe3e3; color:#a5271f; }
   .status.success{ background:#dcfbe9; color:#066a50; }
   .otp-row input{ background:#fff; }
+
+  /* ===== animated "Fesgo Fun": a burning wordmark with sparks rising and butterflies flying around it ===== */
+  .brand-fx{ position:relative; width:100%; max-width:520px; padding:22px 4px 14px; }
+  .bf-title{ position:relative; z-index:2; font-family:'Fraunces', Georgia, serif; font-weight:800; font-size:clamp(3rem, 15vw, 5rem); line-height:1; letter-spacing:-1px; white-space:nowrap;
+    animation: bfFlame 1.6s ease-in-out infinite; }
+  .bf-word{ display:inline-block; background:linear-gradient(180deg,#fff6c4 0%,#ffd84d 32%,#ff9a1f 64%,#ff3d1a 100%); background-size:100% 160%; background-position:0 0;
+    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; animation: bfFire 2.2s ease-in-out infinite alternate; }
+  .bf-fun{ animation-delay:.35s; }
+  @keyframes bfFire{ 0%{ background-position:0 0; transform:translateY(0) } 100%{ background-position:0 100%; transform:translateY(-3px) } }
+  @keyframes bfFlame{
+    0%,100%{ filter: drop-shadow(0 0 6px rgba(255,150,30,.75)) drop-shadow(0 -4px 14px rgba(255,90,0,.6)); }
+    50%{ filter: drop-shadow(0 0 12px rgba(255,200,70,.9)) drop-shadow(0 -8px 26px rgba(255,60,0,.8)); } }
+  .bf-embers{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:3; pointer-events:none; }
+  .bf-embers i{ position:absolute; bottom:30%; left:var(--x); width:6px; height:6px; border-radius:50%; background:radial-gradient(circle,#fff2b0 0%,#ffb01f 45%,#ff5a00 100%); opacity:0; animation: bfEmber var(--d) ease-out infinite; animation-delay:var(--dl); }
+  @keyframes bfEmber{ 0%{ transform:translate(0,0) scale(1); opacity:0 } 15%{ opacity:1 } 100%{ transform:translate(var(--dx),-70px) scale(.2); opacity:0 } }
+  .bf-fly{ position:absolute; z-index:4; top:0; left:0; font-size:1.55rem; pointer-events:none; }
+  .bf-fly b{ display:inline-block; font-weight:400; animation: bfFlap .28s ease-in-out infinite alternate; }
+  @keyframes bfFlap{ from{ transform:scaleX(1) } to{ transform:scaleX(.3) } }
+  .bf-fly.f1{ animation: bfFlyA 9s ease-in-out infinite; }
+  .bf-fly.f2{ animation: bfFlyB 11s ease-in-out infinite; animation-delay:-3s; font-size:1.25rem; }
+  .bf-fly.f3{ animation: bfFlyC 13s ease-in-out infinite; animation-delay:-6s; font-size:1.4rem; }
+  @keyframes bfFlyA{ 0%{ left:2%; top:55% } 25%{ left:30%; top:-6% } 50%{ left:62%; top:48% } 75%{ left:88%; top:-4% } 100%{ left:2%; top:55% } }
+  @keyframes bfFlyB{ 0%{ left:90%; top:10% } 30%{ left:55%; top:62% } 60%{ left:20%; top:6% } 100%{ left:90%; top:10% } }
+  @keyframes bfFlyC{ 0%{ left:40%; top:70% } 35%{ left:78%; top:20% } 70%{ left:8%; top:30% } 100%{ left:40%; top:70% } }
+  @media (prefers-reduced-motion: reduce){ .bf-title, .bf-word, .bf-embers i, .bf-fly, .bf-fly b{ animation:none !important } .bf-embers i{ display:none } }
+  .side{ padding-top:6px; padding-bottom:4px; }
+  .motto{ margin-top:6px; }
   @media (max-width: 720px){
     body{ padding:22px 16px 30px; align-items:flex-start; }
     .wrap{ gap:16px; }
     .side{ padding:6px 8px; }
-    .brand-logo{ width:112px; height:112px; margin-bottom:16px; }
+    .brand-fx{ padding:18px 2px 10px; }
+    .side{ padding:0 8px; }
     .bubbles{ display:none; }          /* on a phone the login form should be visible without scrolling far */
     .motto{ font-size:1.65rem; margin-top:2px; }
     .form-side{ padding:30px 22px; }
@@ -512,7 +540,11 @@
 <div class="wrap">
   <div class="side">
     <div>
-      <img class="brand-logo" src="icon-192.png" alt="Fesgo Fun">
+      <div class="brand-fx" role="img" aria-label="Fesgo Fun">
+        <span class="bf-fly f1"><b>🦋</b></span><span class="bf-fly f2"><b>🦋</b></span><span class="bf-fly f3"><b>🦋</b></span>
+        <div class="bf-title"><span class="bf-word">Fesgo</span> <span class="bf-word bf-fun">Fun</span></div>
+        <div class="bf-embers" aria-hidden="true"><i style="--x:8%;--dx:-6px;--d:2.6s;--dl:0.0s"></i><i style="--x:17%;--dx:8px;--d:3.1s;--dl:0.7s"></i><i style="--x:27%;--dx:-10px;--d:2.4s;--dl:1.4s"></i><i style="--x:36%;--dx:6px;--d:3.3s;--dl:0.3s"></i><i style="--x:46%;--dx:-5px;--d:2.8s;--dl:1.1s"></i><i style="--x:55%;--dx:9px;--d:2.5s;--dl:1.9s"></i><i style="--x:64%;--dx:-8px;--d:3.0s;--dl:0.5s"></i><i style="--x:73%;--dx:5px;--d:2.7s;--dl:1.6s"></i><i style="--x:82%;--dx:-7px;--d:3.2s;--dl:0.9s"></i><i style="--x:91%;--dx:7px;--d:2.5s;--dl:2.2s"></i></div>
+      </div>
       <p class="motto">If you want to be Strong,💪 learn to fight alone. 🐺🔥</p>
     </div>
   </div>
