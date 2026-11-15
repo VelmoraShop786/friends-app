@@ -69,7 +69,7 @@
     overflow:hidden;
   }
 
-  .screen{ display:none; flex:1; flex-direction:column; padding-bottom: 78px; overflow-y:auto; }
+  .screen{ display:none; flex:1; flex-direction:column; padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px)); overflow-y:auto; }
   .screen.active{ display:flex; }
 
   /* ---------- You tab ---------- */
@@ -359,55 +359,98 @@
   .status.error{ background:#fde8e8; color:#b1362f; }
   .status.success{ background: var(--teal-soft); color: var(--teal-deep); }
 
-  /* ---------- Bottom nav ---------- */
+  /* ---------- Bottom nav: curved glossy bar, coloured icons, the open tab pops up in a glowing circle ---------- */
   .bottom-nav{
-    position:absolute;
-    bottom:0; left:0; right:0;
-    display:flex;
-    background: var(--card);
-    border-top: 1px solid var(--line);
-    padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+    position:absolute; bottom:0; left:0; right:0; z-index:30;
+    display:flex; align-items:flex-end;
+    height: calc(88px + env(safe-area-inset-bottom, 0px));
+    padding: 0 6px env(safe-area-inset-bottom, 0px);
+    pointer-events:none;
+  }
+  .bottom-nav::before{
+    content:''; position:absolute; left:0; right:0; bottom:0;
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    border-radius: 26px 26px 0 0;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.28), rgba(255,255,255,0) 60%),
+      linear-gradient(180deg, color-mix(in srgb, var(--teal-deep) 86%, #fff), color-mix(in srgb, var(--teal-deep) 68%, #000));
+    box-shadow: 0 -8px 24px rgba(0,0,0,.20), inset 0 1.5px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.12);
   }
   .nav-btn{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:4px;
-    background:none;
-    border:none;
-    padding: 6px 2px;
-    cursor:pointer;
-    color: var(--ink-soft);
+    position:relative; z-index:1; pointer-events:auto;
+    flex:1; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px;
+    background:none; border:none; padding: 0 2px 7px; cursor:pointer;
+    color: rgba(255,255,255,.80);
+    -webkit-tap-highlight-color: transparent;
   }
-  .nav-btn.active{ color: var(--teal-deep); }
-  .nav-btn.disabled{ color: #c3cdc9; cursor:default; }
-  .nav-icon{
-    width:26px; height:26px;
-    border-radius:50%;
-    background: var(--teal-soft);
-    color: var(--teal-deep);
+  .nav-btn.disabled{ opacity:.5; cursor:default; }
+  .nav-ico{
+    width:36px; height:36px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    padding:5px;
-    box-sizing:border-box;
+    transition: width .28s ease, height .28s ease, background .28s ease, box-shadow .28s ease;
   }
-  .nav-icon svg{ width:100%; height:100%; }
-  .nav-btn.active .nav-icon{ background: var(--teal-deep); color:white; }
+  .nav-ico svg{ width:31px; height:31px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); transition: width .28s ease, height .28s ease; }
+  .nav-btn:active .nav-ico{ transform: scale(.9); }
+  .nav-btn.active{ color:#fff; }
+  .nav-btn.active .nav-ico{
+    width:54px; height:54px; margin-bottom:9px;
+    background: radial-gradient(circle at 32% 24%, #ffffff, #f2fff9 52%, color-mix(in srgb, var(--teal) 40%, #fff));
+    box-shadow: 0 0 0 3px #fff, 0 0 0 6px color-mix(in srgb, var(--teal) 70%, transparent), 0 10px 20px rgba(0,0,0,.35);
+    animation: navpop .5s cubic-bezier(.3,1.6,.5,1), navglow 2.4s ease-in-out .5s infinite;
+  }
+  .nav-btn.active .nav-ico svg{ width:40px; height:40px; }
+  @keyframes navpop{ 0%{ transform: translateY(14px) scale(.6); } 100%{ transform: translateY(0) scale(1); } }
+  @keyframes navglow{ 0%,100%{ box-shadow: 0 0 0 3px #fff, 0 0 0 6px color-mix(in srgb, var(--teal) 70%, transparent), 0 10px 20px rgba(0,0,0,.35); } 50%{ box-shadow: 0 0 0 3px #fff, 0 0 0 9px color-mix(in srgb, var(--teal) 35%, transparent), 0 10px 24px rgba(0,0,0,.4); } }
   .nav-avatar{
-    width:26px; height:26px;
-    border-radius:50%;
-    background: var(--teal-soft);
-    color: var(--teal-deep);
-    font-size:0.7rem;
-    font-weight:700;
-    display:flex; align-items:center; justify-content:center;
+    width:31px; height:31px; border-radius:50%;
+    background: linear-gradient(135deg, var(--teal), var(--teal-deep)); color:#fff;
+    border: 2px solid #ffd54a; box-shadow: 0 2px 4px rgba(0,0,0,.35);
+    font-size:0.72rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center; box-sizing:border-box;
+    transition: width .28s ease, height .28s ease;
   }
-  .nav-btn.active .nav-avatar{ background: var(--teal-deep); color:white; }
-  .nav-label{ font-size:0.68rem; font-weight:600; }
+  .nav-btn.active .nav-avatar{ width:42px; height:42px; font-size:.9rem; }
+  .nav-label{ font-size:0.68rem; font-weight:600; letter-spacing:.01em; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  .nav-btn.active .nav-label{ font-weight:800; }
+  @media (prefers-reduced-motion: reduce){ .nav-btn.active .nav-ico{ animation:none; } }
+
+
+  /* ---- wallet card on the You tab: short numbers, tap a tile for the full number ---- */
+  .wl-card .wl-card-row{ gap:12px; }
+  .wl-card .wl-tile{ position:relative; cursor:pointer; padding:12px 12px 11px; border-radius:16px; gap:10px; border:1px solid rgba(0,0,0,.05); transition: transform .12s ease, box-shadow .12s ease; -webkit-tap-highlight-color:transparent; }
+  .wl-card .wl-tile:active{ transform:scale(.97); }
+  .wl-tile.coin{ background: linear-gradient(145deg,#fff6d6,#ffe49c); box-shadow: inset 0 1px 0 #fff, 0 4px 10px rgba(245,181,10,.28); }
+  .wl-tile.gem{ background: linear-gradient(145deg,#e6f6ff,#bde5ff); box-shadow: inset 0 1px 0 #fff, 0 4px 10px rgba(53,184,255,.28); }
+  .wl-card .wl-tile{ display:grid; grid-template-columns:auto 1fr; grid-template-areas:'ico lab' 'num num'; align-items:center; column-gap:8px; row-gap:6px; }
+  .wl-tile > div{ display:contents; }
+  .wl-tile .wl-ico{ grid-area:ico; width:30px; height:30px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+  .wl-tile span{ grid-area:lab; font-size:.78rem; }
+  .wl-tile b{ grid-area:num; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:1.3rem; letter-spacing:-.01em; }
+  .wl-tile .wl-more{ position:absolute; top:7px; right:8px; width:14px; height:14px; opacity:.45; }
+  .wlf-back{ position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center; padding:20px; background: rgba(8,20,16,.55); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+  .wlf-back.show{ display:flex; }
+  .wlf-card{ position:relative; width:100%; max-width:340px; border-radius:26px; padding:26px 20px 20px; text-align:center; box-shadow: 0 18px 50px rgba(0,0,0,.4), inset 0 1.5px 0 rgba(255,255,255,.9); animation: wlfpop .35s cubic-bezier(.3,1.5,.5,1); overflow:hidden; }
+  .wlf-card.coin{ background: linear-gradient(160deg,#fffaf0,#ffe9a8 70%,#ffd563); }
+  .wlf-card.gem{ background: linear-gradient(160deg,#f3fbff,#c6e9ff 70%,#8fd2ff); }
+  .wlf-card::before{ content:''; position:absolute; left:-30%; right:-30%; top:-60%; height:100%; background: radial-gradient(closest-side, rgba(255,255,255,.75), rgba(255,255,255,0)); pointer-events:none; }
+  .wlf-ico{ position:relative; width:78px; height:78px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; }
+  .wlf-ico::before{ content:''; position:absolute; inset:-14px; border-radius:50%; background: repeating-conic-gradient(rgba(255,255,255,.55) 0 10deg, rgba(255,255,255,0) 10deg 20deg); -webkit-mask: radial-gradient(circle, #000 35%, transparent 68%); mask: radial-gradient(circle, #000 35%, transparent 68%); animation: wlfspin 8s linear infinite; }
+  .wlf-ico svg{ position:relative; width:72px; height:72px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
+  .wlf-title{ position:relative; font-size:.8rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#6b5200; }
+  .wlf-card.gem .wlf-title{ color:#0b5a8a; }
+  .wlf-num{ position:relative; margin:10px 0 4px; padding:14px 10px; border-radius:16px; background: rgba(255,255,255,.72); box-shadow: inset 0 2px 5px rgba(0,0,0,.12); font-weight:800; color: var(--ink); font-variant-numeric: tabular-nums; white-space:nowrap; overflow:hidden; line-height:1.2; }
+  .wlf-short{ position:relative; font-size:.82rem; font-weight:700; color:rgba(0,0,0,.5); margin-bottom:16px; }
+  .wlf-btns{ position:relative; display:flex; gap:10px; }
+  .wlf-btns button{ flex:1; border:none; border-radius:14px; padding:12px 10px; font-weight:800; font-size:.92rem; cursor:pointer; font-family:inherit; }
+  .wlf-copy{ background: linear-gradient(160deg,#37f0b8,#06a07a); color:#fff; box-shadow: 0 4px 10px rgba(6,160,122,.45), inset 0 2px 2px rgba(255,255,255,.55); }
+  .wlf-close{ background: rgba(255,255,255,.8); color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  @keyframes wlfpop{ from{ transform: scale(.7) translateY(20px); opacity:0; } to{ transform:none; opacity:1; } }
+  @keyframes wlfspin{ to{ transform: rotate(360deg); } }
 
   .toast{
     position:fixed;
-    bottom: 90px;
+    bottom: 112px;
     left:50%;
     transform: translateX(-50%);
     background: var(--ink);
@@ -476,10 +519,11 @@
   /* ---------- red numbers (unread) ---------- */
   .nav-btn{ position:relative; }
   .nav-badge{
-    position:absolute; top:0; left:calc(50% + 4px); min-width:18px; height:18px; padding:0 5px; border-radius:9px;
-    background:#e53935; color:#fff; font-size:0.66rem; font-weight:700; line-height:1;
-    display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 2px var(--card);
+    position:absolute; top:12px; left:calc(50% + 8px); min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+    background:#ff3b30; color:#fff; font-size:0.66rem; font-weight:700; line-height:1;
+    display:flex; align-items:center; justify-content:center; box-shadow: 0 0 0 2px #fff, 0 2px 4px rgba(0,0,0,.3); z-index:2;
   }
+  .nav-btn.active .nav-badge{ top:0; left:calc(50% + 14px); }
   .social-tab-btn{ position:relative; }
   .tab-dot{ position:absolute; top:5px; right:10px; width:9px; height:9px; border-radius:50%; background:#e53935; box-shadow: 0 0 0 2px var(--card); }
   .avatar-wrap{ position:relative; flex-shrink:0; }
@@ -614,6 +658,7 @@
     padding: 9px 16px; border-radius:10px; cursor:pointer;
   }
 </style>
+<link rel="stylesheet" href="pro.css">
 </head>
 <body>
 <div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
@@ -807,22 +852,32 @@
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <button class="nav-btn" id="nav-you" onclick="showScreen('you')">
-      <span class="nav-avatar">Me</span>
+      <span class="nav-ico"><span class="nav-avatar">Me</span></span>
       <span class="nav-label">You</span>
     </button>
     <button class="nav-btn active" id="nav-game" onclick="showScreen('game')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7.5h11a4 4 0 0 1 4 4v1a4 4 0 0 1-4 4c-1.2 0-1.9-.5-2.6-1.3-.4-.5-.9-.7-1.5-.7h-2.8c-.6 0-1.1.2-1.5.7-.7.8-1.4 1.3-2.6 1.3a4 4 0 0 1-4-4v-1a4 4 0 0 1 4-4z"/><path d="M8 10v3M6.5 11.5h3"/><circle cx="15.5" cy="10.8" r=".5"/><circle cx="17.5" cy="12.6" r=".5"/></svg></span>
+      <span class="nav-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ng1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a98bff"/><stop offset="1" stop-color="#4527d4"/></linearGradient><linearGradient id="ngh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="M14 13h20c5.2 0 8.7 4 9.6 9.4l1.4 8.6c.7 4.2-2.2 7.6-6.1 7.6-2.5 0-4.2-1.3-5.6-3.1-1-1.2-2-1.8-3.7-1.8h-8.6c-1.7 0-2.7.6-3.7 1.8-1.4 1.8-3.1 3.1-5.6 3.1-3.9 0-6.8-3.4-6.1-7.6l1.4-8.6C5.3 17 8.8 13 14 13z" fill="url(#ng1)"/><path d="M14 14.5h20c3.4 0 6 2 7.3 5-1.6-1-3.5-1.5-5.5-1.5H12.2c-2 0-3.900.5-5.500 1.500C8 16.500 10.600 14.500 14 14.500z" fill="url(#ngh)"/><path d="M15.5 21.500v8.500M11.300 25.800h8.400" stroke="#fff" stroke-width="3.400" stroke-linecap="round"/><circle cx="32.500" cy="22.500" r="2.300" fill="#ffd23f"/><circle cx="37.500" cy="26.500" r="2.300" fill="#ff5d8f"/><circle cx="32.500" cy="30.500" r="2.300" fill="#34e0b0"/><circle cx="27.500" cy="26.500" r="2.300" fill="#4db8ff"/></svg></span>
       <span class="nav-label">Game</span>
     </button>
     <button class="nav-btn" id="nav-chat" onclick="showScreen('chat')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+      <span class="nav-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ng2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8fc5"/><stop offset="1" stop-color="#ff7a1f"/></linearGradient></defs><path d="M24 6C13 6 5 13.200 5 22.200c0 4.600 2.200 8.700 5.700 11.500L9 41.500l8.100-3.900c2.200.6 4.500.9 6.900.9 11 0 19-7.200 19-16.200S35 6 24 6z" fill="url(#ng2)"/><path d="M24 7.500c-9.500 0-16.500 6-17.300 13.500C9 14.500 15.500 10.500 24 10.500s15 4 17.300 10.500C40.500 13.500 33.500 7.500 24 7.500z" fill="#fff" opacity=".45"/><circle cx="15.500" cy="22.500" r="2.800" fill="#fff"/><circle cx="24" cy="22.500" r="2.800" fill="#fff"/><circle cx="32.500" cy="22.500" r="2.800" fill="#fff"/></svg></span>
       <span class="nav-label">Chat</span>
     </button>
     <button class="nav-btn" id="nav-social" onclick="showScreen('social')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c2.6.4 4.5 2.6 4.5 5.3"/></svg></span>
+      <span class="nav-ico"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ng3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fd0ff"/><stop offset="1" stop-color="#1f6fe0"/></linearGradient><linearGradient id="ng4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient></defs><circle cx="34" cy="15" r="6.500" fill="url(#ng4)"/><path d="M22.500 41c0-6.800 5.100-12.200 11.500-12.200S45.500 34.200 45.500 41z" fill="url(#ng4)"/><circle cx="17.500" cy="17" r="7.800" fill="url(#ng3)"/><path d="M3.500 42c0-8.200 6.300-14.800 14-14.800S31.500 33.800 31.500 42z" fill="url(#ng3)"/><ellipse cx="15" cy="14" rx="3.600" ry="2.200" fill="#fff" opacity=".5"/></svg></span>
       <span class="nav-label">Social</span>
       <span class="nav-badge" id="nav-social-badge" style="display:none;"></span>
     </button>
+  </div>
+
+  <div class="wlf-back" id="wlf-back" onclick="if(event.target === this) closeWalletFull()">
+    <div class="wlf-card coin" id="wlf-card">
+      <div class="wlf-ico" id="wlf-ico"></div>
+      <div class="wlf-title" id="wlf-title">Coins</div>
+      <div class="wlf-num copyable" id="wlf-num"></div>
+      <div class="wlf-short" id="wlf-short"></div>
+      <div class="wlf-btns"><button class="wlf-copy" onclick="copyWalletFull()">Copy</button><button class="wlf-close" onclick="closeWalletFull()">Close</button></div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1316,14 +1371,43 @@
     if(y){
       y.style.display = '';
       y.innerHTML = '<div class="wl-card-title">My wallet</div><div class="wl-card-row">'
-        + '<div class="wl-tile">' + Wallet.coinSvg + '<div><b>' + Wallet.fmt(w.coins) + '</b><span>Coins</span></div></div>'
-        + '<div class="wl-tile">' + Wallet.gemSvg + '<div><b>' + Wallet.fmt(w.diamonds) + '</b><span>Diamonds</span></div></div></div>';
+        + '<div class="wl-tile coin" onclick="openWalletFull(\'coins\')"><svg class="wl-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>' + Wallet.coinSvg + '<div><b>' + Wallet.short(w.coins) + '</b><span>Coins</span></div></div>'
+        + '<div class="wl-tile gem" onclick="openWalletFull(\'diamonds\')"><svg class="wl-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>' + Wallet.gemSvg + '<div><b>' + Wallet.short(w.diamonds) + '</b><span>Diamonds</span></div></div></div>';
     }
   }
   if(window.Wallet) Wallet.onChange(paintWallet);
 
+  // tap a wallet tile: the full number in a clean card, with a Copy button
+  let wlfDigits = '';
+  function openWalletFull(kind){
+    const w = (window.Wallet && Wallet.get && Wallet.get()) || {};
+    const isGem = kind === 'diamonds';
+    const val = isGem ? w.diamonds : w.coins;
+    const full = Wallet.fmt(val);
+    wlfDigits = full.replace(/,/g, '');
+    const card = document.getElementById('wlf-card');
+    card.className = 'wlf-card ' + (isGem ? 'gem' : 'coin');
+    document.getElementById('wlf-ico').innerHTML = isGem ? Wallet.gemSvg : Wallet.coinSvg;
+    document.getElementById('wlf-title').textContent = isGem ? 'Diamonds' : 'Coins';
+    const num = document.getElementById('wlf-num');
+    num.textContent = full;
+    document.getElementById('wlf-short').textContent = '= ' + Wallet.short(val);
+    document.getElementById('wlf-back').classList.add('show');
+    let fs = 32; num.style.fontSize = fs + 'px';                                  // one line: a long number gets smaller until it fits
+    while(num.scrollWidth > num.clientWidth && fs > 11){ fs -= 1; num.style.fontSize = fs + 'px'; }
+  }
+  function closeWalletFull(){ document.getElementById('wlf-back').classList.remove('show'); }
+  async function copyWalletFull(){
+    try{ await navigator.clipboard.writeText(wlfDigits); showToast('Copied'); }
+    catch(e){ showToast('Press and hold the number to copy it'); }
+  }
+
   // Track Friend: a green "Track" button on a friend's card while that friend is in a room; tapping it takes you into that room
   function trackBtnHtml(id){
+    const g = window.Track && Track.getGame && Track.getGame(id);          // playing Ludo right now: watch the game
+    if(g && /^[A-Za-z0-9-]+$/.test(g.game_id) && /^[A-Za-z0-9-]+$/.test(String(id))){
+      return `<button type="button" class="track-btn" onclick="event.stopPropagation(); Track.watch('${g.game_id}', '${id}')">\u{1F441} Spectate</button>`;
+    }
     const t = window.Track && Track.get(id);
     if(!t || !/^[A-Za-z0-9_-]+$/.test(t.room_id)) return '';
     return `<button type="button" class="track-btn" onclick="event.stopPropagation(); Track.go('${t.room_id}')">📍 Track</button>`;
@@ -2160,8 +2244,17 @@
       showToast('Could not create room: ' + error.message);
       return;
     }
-    const seatRows = Array.from({length:10}, (_, i) => ({ room_id: roomId, seat_number: i+1 }));
-    await supabaseClient.from('room_seats').insert(seatRows);
+    // all 10 seats must exist, otherwise people cannot sit in the room. The function adds only the missing ones.
+    let seatsOk = false;
+    try{ const r = await supabaseClient.rpc('room_ensure_seats', { p_room: roomId }); seatsOk = !!(r && !r.error); }catch(err){}
+    if(!seatsOk){                                   // the database may already have made them by itself: count before making any
+      try{ const c = await supabaseClient.from('room_seats').select('seat_number', { count: 'exact', head: true }).eq('room_id', roomId); seatsOk = !!(c && !c.error && c.count >= 10); }catch(err){}
+    }
+    if(!seatsOk){
+      const seatRows = Array.from({length:10}, (_, i) => ({ room_id: roomId, seat_number: i+1 }));
+      const ins = await supabaseClient.from('room_seats').insert(seatRows);
+      if(ins.error){ showToast('Room created, but its seats could not be made. Open the room again in a moment.'); goRoom(roomId); return; }
+    }
     showToast('Room created!');
     goRoom(roomId);
   }

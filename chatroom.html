@@ -788,6 +788,41 @@ html, body{ overscroll-behavior-y: contain; }
   .icon-btn-light.deafened .ic-on, .icon-btn-light.mic-off .ic-on{ display:none; }
   .icon-btn-light.deafened .ic-off, .icon-btn-light.mic-off .ic-off{ display:block; }
 
+  /* ---- the bottom bar of the room: glass bar, round glossy colour buttons ---- */
+  .composer{
+    gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top:1px solid rgba(255,255,255,.22);
+    background: linear-gradient(180deg, rgba(28,38,58,.55), rgba(10,14,26,.82));
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    box-shadow: 0 -6px 20px rgba(0,0,0,.25);
+  }
+  .composer .icon-btn-light, .composer .send-btn{
+    position:relative; width:38px; height:38px; border:none; border-radius:50%; color:#fff; flex-shrink:0;
+    box-shadow: 0 4px 10px rgba(0,0,0,.40), inset 0 2px 2px rgba(255,255,255,.60), inset 0 -3px 5px rgba(0,0,0,.22);
+    transition: transform .12s ease, filter .12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .composer .icon-btn-light::after, .composer .send-btn::after{
+    content:''; position:absolute; left:18%; right:18%; top:7%; height:34%; border-radius:50%;
+    background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)); pointer-events:none;
+  }
+  .composer .icon-btn-light:active, .composer .send-btn:active{ transform: translateY(1px) scale(.92); filter:brightness(.95); }
+  .composer .icon-btn-light svg, .composer .send-btn svg{ filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); position:relative; z-index:1; }
+  #deafen-btn{ background: linear-gradient(160deg,#6fd6ff,#2b6cff); }
+  #deafen-btn.deafened{ background: linear-gradient(160deg,#9aa6b8,#5b6578); }
+  #mic-btn{ background: linear-gradient(160deg,#5cf0a0,#0ea867); }
+  #mic-btn.mic-off{ background: linear-gradient(160deg,#ff8585,#d62839); }
+  #emoji-btn{ background: linear-gradient(160deg,#ffe36e,#ff9a1f); color:#6b3200; }
+  #emoji-btn svg{ filter:none; }
+  .composer .send-btn{ background: linear-gradient(160deg,#37f0b8,#06a07a); box-shadow: 0 4px 12px rgba(6,214,160,.55), inset 0 2px 2px rgba(255,255,255,.60), inset 0 -3px 5px rgba(0,0,0,.22); }
+  #gift-btn{ background: linear-gradient(160deg,#ff8fc5,#e8244f); }
+  .composer input[type=text]{
+    background: linear-gradient(180deg,#ffffff,#eef3f6); border-radius:22px; padding:11px 15px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.18), 0 0 0 1px rgba(255,255,255,.35);
+    transition: box-shadow .2s ease;
+  }
+  .composer input[type=text]:focus{ box-shadow: inset 0 2px 4px rgba(0,0,0,.14), 0 0 0 2px #37f0b8, 0 0 12px rgba(55,240,184,.65); }
+
   .toast{
     position:fixed;
     bottom: 78px;
@@ -888,6 +923,7 @@ html, body{ overscroll-behavior-y: contain; }
   .dialog-actions.three button{ padding:12px 6px; }
   .profile-modal-name{ max-width:90%; text-align:center; overflow-wrap:anywhere; }
 </style>
+<link rel="stylesheet" href="pro.css">
 </head>
 <body>
 <div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
@@ -1013,7 +1049,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   <div class="profile-modal" id="room-profile-modal">
     <div class="profile-modal-header">
-      <button class="icon-btn" onclick="closeRoomProfile()" title="Back">
+      <button class="icon-btn pro-keep" onclick="closeRoomProfile()" title="Back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
     </div>
@@ -1043,7 +1079,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   <div class="profile-modal" id="profile-modal">
     <div class="profile-modal-header">
-      <button class="icon-btn" onclick="closeProfileModal()" title="Back">
+      <button class="icon-btn pro-keep" onclick="closeProfileModal()" title="Back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
     </div>
@@ -2454,7 +2490,7 @@ html, body{ overscroll-behavior-y: contain; }
     const micOn = new Map();
     people.forEach(p => {
       if(!p) return;
-      micOn.set(p.identity, !!p.isMicrophoneEnabled);
+      micOn.set(p.identity, !!p.isMicrophoneEnabled || (!!currentUser && p.identity === currentUser.id && micBooting()));
       if(p.isSpeaking && p.isMicrophoneEnabled) speaking.add(p.identity);
     });
     seats.forEach(s => { if(s.taken && s.userId && !micOn.get(s.userId)) muted.add(s.userId); });
@@ -2538,6 +2574,7 @@ html, body{ overscroll-behavior-y: contain; }
     reconcileTimer = setTimeout(() => { syncVoice(); }, 800);
   }
 
+  let seatHealTried = false;
   async function loadSeats(){
     // Show cached seats instantly while the real fetch happens
     try{
@@ -2545,11 +2582,23 @@ html, body{ overscroll-behavior-y: contain; }
       if(cached){ seats = cached; renderSeats(); }
     }catch(err){}
 
-    const { data: rows } = await supabaseClient
+    let { data: rows } = await supabaseClient
       .from('room_seats')
       .select('seat_number, occupied_by, locked, profiles:occupied_by(name, avatar_url, id_number)')
       .eq('room_id', ROOM_ID)
       .order('seat_number');
+    if((rows || []).length < 10 && !seatHealTried){          // a room that was created without all its seats: add them (once)
+      seatHealTried = true;
+      try{
+        const r = await supabaseClient.rpc('room_ensure_seats', { p_room: String(ROOM_ID) });
+        if(r && !r.error){
+          const again = await supabaseClient.from('room_seats')
+            .select('seat_number, occupied_by, locked, profiles:occupied_by(name, avatar_url, id_number)')
+            .eq('room_id', ROOM_ID).order('seat_number');
+          if(again && again.data) rows = again.data;
+        }
+      }catch(err){}
+    }
     seats = buildSeatsFromRows(rows);
     renderSeats();
     try{ localStorage.setItem(('room-seats-cache-' + ROOM_ID), JSON.stringify(seats)); }catch(err){}
@@ -2656,13 +2705,25 @@ html, body{ overscroll-behavior-y: contain; }
     // A user can only occupy one seat at a time — clear any seat they currently hold
     await supabaseClient.from('room_seats').update({ occupied_by: null })
       .eq('room_id',ROOM_ID).eq('occupied_by', currentUser.id);
-    const { error } = await supabaseClient.from('room_seats')
+    const trySeat = () => supabaseClient.from('room_seats')
       .update({ occupied_by: currentUser.id })
       .eq('room_id',ROOM_ID).eq('seat_number', seatNumber).eq('locked', false)
-      .is('occupied_by', null);
+      .is('occupied_by', null)
+      .select('seat_number');                     // gives back the row that really changed
+    let { data: got, error } = await trySeat();
+    if(!error && (!got || !got.length)){
+      // nothing changed: this old room may be missing its seat rows. Add them and try once more.
+      try{ await supabaseClient.rpc('room_ensure_seats', { p_room: String(ROOM_ID) }); }catch(err){}
+      ({ data: got, error } = await trySeat());
+    }
     if(error){
       if(roomMembers[currentUser.id]?.banned) showToast('You are banned from chat by ' + (bannedByName || 'the owner') + '.');
       else showToast(/right now/.test(error.message || '') ? error.message : 'Could not take that seat.');
+      return;
+    }
+    if(!got || !got.length){                      // still nothing: do NOT say "joined"
+      showToast('That seat is not available right now.');
+      await loadSeats();
       return;
     }
     showToast('You joined seat ' + seatNumber + ' — mic on');
@@ -2715,6 +2776,15 @@ html, body{ overscroll-behavior-y: contain; }
   let lkClosing = false;          // true while WE are closing the connection on purpose
   let leavingRoom = false;        // set once the person taps Exit / the page is closing
   let micEnabled = false;
+  // While I am sitting down and my mic is still being switched on (the connection is changing from listener to speaker),
+  // my seat and my mic button must keep showing "mic on" instead of flashing "muted" for a moment.
+  let micSettled = false;         // true once the speaker connection has finished switching the mic on (or refused)
+  let speakRefusals = 0;          // how many times the server refused to let me speak in a row
+  function micBooting(){
+    if(!currentUser || voiceFailures >= 3 || speakRefusals >= 2) return false;
+    if(!seats.some(s => s && s.taken && s.userId === currentUser.id)) return false;
+    return !(lkRoom && lkMode === 'speak' && micSettled);
+  }
   let deafened = false;
   // Silences every remote voice when the room is muted for me (and people I blocked). Done in three ways because
   // LiveKit may play a voice through the <audio> element or through WebAudio, where el.muted alone does nothing.
@@ -2789,6 +2859,7 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   async function openLk(want){
+    micSettled = false;
     try{
       const { token, url, canPublish } = await getLiveKitToken();
       const { Room, RoomEvent } = LivekitClient;
@@ -2834,6 +2905,8 @@ html, body{ overscroll-behavior-y: contain; }
       } else {
         micEnabled = false;
       }
+      speakRefusals = (want === 'speak' && !canPublish) ? speakRefusals + 1 : 0;
+      micSettled = true;
       voiceFailures = 0;
       syncSeatVoiceUi();
       try{ await room.startAudio(); }catch(err){}
@@ -3158,8 +3231,9 @@ html, body{ overscroll-behavior-y: contain; }
     const eb = document.getElementById('emoji-btn');
     if(eb) eb.style.display = seated ? 'flex' : 'none';
     if(!seated) closeEmojiSheet();
-    btn.classList.toggle('mic-off', !micEnabled);
-    btn.title = micEnabled ? 'Mute mic' : 'Unmute mic';
+    const micShownOn = micEnabled || micBooting();
+    btn.classList.toggle('mic-off', !micShownOn);
+    btn.title = micShownOn ? 'Mute mic' : 'Unmute mic';
   }
 
   async function toggleMic(){

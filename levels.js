@@ -3,7 +3,8 @@
 
    The DATABASE decides XP and level (sql-11 / sql-12). This file only SHOWS what it returns:
      get_xp / xp_checkin -> { total_xp, level, level_xp, next_xp }   (next_xp is null at level 20)
-     xp_today            -> { login, sms, seat, ...caps }            (today's progress)
+     xp_today            -> { login, sms, seat, game, ...caps }      (today's progress)
+     ludo_xp_table       -> [{ bet, kill, home, win }]               (Ludo Exp per bet)
      xp_levels           -> [{ level, xp }, ...]                     (the approved level table)
 
    Bar text:  (level) totalXP/nextLevelXP      e.g.  (5) 623/750      level 20:  (20) 25300
@@ -77,6 +78,10 @@
       '.lvab-table td{ text-align:center; padding:9px 6px; background:#eaf6f2; color:#6b6f6e; font-weight:700; border-top:2px solid #cfe3dc; }' +
       '.lvab-table tr:nth-child(even) td{ background:#d6eae3; }' +
       '.lvab-table tr.me td{ background:#bfe6ff; color:#1d5d8f; }' +
+      '.lvab-today{ display:flex; justify-content:space-between; font-weight:700; font-size:.95rem; color:#2f7a63; margin:2px 0 8px; }' +
+      '.lvab-today span:last-child{ color:#1d8f5f; }' +
+      '.lvab-table.g td:first-child{ color:#2f7a63; }' +
+      '.lvab-rules{ margin:8px 0 2px; padding-left:18px; font-size:.85rem; color:#6a9c8b; line-height:1.5; }' +
       '.lvab-foot{ margin-top:12px; font-size:.82rem; color:#7aa797; text-align:center; }';
     document.head.appendChild(st);
   }
@@ -122,6 +127,23 @@
     return '<div class="lvab-item"><div class="lvab-line"><span>' + esc(title) + '</span><span>' + got + '/' + cap + '</span></div>' +
            '<div class="lvab-track"><i style="width:' + pc + '%"></i></div><div class="lvab-note">' + esc(note) + '</div></div>';
   }
+  function betLabel(n){ n = Number(n); return n >= 1000000 ? (n / 1000000) + 'M' : (n >= 1000 ? (n / 1000) + 'K' : String(n)); }
+  function gameSection(t, rows){
+    var cap = (t && t.game_cap) || 500;
+    var h = '<div class="lvab-sec">Games \u00b7 Ludo <em>(Daily Upper Limit: </em><b>' + cap + '</b><em> Exp)</em></div>';
+    h += bar('Game Exp', (t && t.game) || 0, cap, 'Kills, tokens home and wins / ' + cap + ' Exp a day');
+    if(rows && rows.length){
+      h += '<table class="lvab-table g"><tr><th>Bet</th><th>Kill</th><th>Token home</th><th>Win</th></tr>' +
+        rows.map(function(r){ return '<tr><td>' + betLabel(r.bet) + '</td><td>' + r.kill + '</td><td>' + r.home + '</td><td>' + r.win + '</td></tr>'; }).join('') + '</table>';
+    }
+    h += '<ul class="lvab-rules">' +
+      '<li>Exp for every kill, every token that reaches home and for winning a game, by the bet you play.</li>' +
+      '<li>The winner gets all of it. A player who stays to the end gets half of the kill + home Exp.</li>' +
+      '<li>Leaving a game or running out of time gives nothing. Practice games with bots give no Exp.</li>' +
+      '<li>After ' + cap + ' Game Exp in a day the games give no more Exp until 00:00 (GMT+5).</li>' +
+      '<li>Game Exp only adds to your Level, never to a Room level.</li></ul>';
+    return h;
+  }
   function renderAbout(data){
     var t = data.today || {}, lv = data.levels || [], me = data.info ? Number(data.info.level) : -1;
     var html =
@@ -131,12 +153,13 @@
       bar('Send messages to friends', t.sms || 0, t.sms_cap || 40, '1 message / 2 Exp') +
       bar('Sit on a seat in a room', t.seat || 0, t.seat_cap || 30, '1 minute / 3 Exp') +
       '<div class="lvab-note">Account creation bonus: 100 Exp (one time only)</div>' +
+      gameSection(t, data.ludo) +
       '<div class="lvab-sec">Levels</div>';
     if(lv.length){
       html += '<table class="lvab-table"><tr><th>Level</th><th>Total Exp needed</th></tr>' +
         lv.map(function(r){ return '<tr' + (r.level === me ? ' class="me"' : '') + '><td>' + r.level + '</td><td>' + r.xp + '</td></tr>'; }).join('') + '</table>';
     }
-    html += '<div class="lvab-foot">More ways to level up (games, gifts) will be added soon.</div>';
+    html += '<div class="lvab-foot">More ways to level up (gifts and more) will be added soon.</div>';
     about.body.innerHTML = html;
   }
   // the green popup shell: title, X, tap outside closes. Returns { back, body }.
@@ -161,18 +184,20 @@
 
   function openAbout(){
     buildPage('About Level');
-    var data = { info: (mine.ctls[0] && mine.ctls[0].info) || null, today: null, levels: [] };
+    var data = { info: (mine.ctls[0] && mine.ctls[0].info) || null, today: null, levels: [], ludo: [] };
     renderAbout(data);
     var c = sb(); if(!c) return;
     Promise.all([
       Promise.resolve(c.rpc('xp_today')).then(function(r){ return r && r.data; }, function(){ return null; }),
       Promise.resolve(c.rpc('xp_levels')).then(function(r){ return r && r.data; }, function(){ return null; }),
-      Promise.resolve(c.rpc('get_xp')).then(function(r){ return r && r.data; }, function(){ return null; })
+      Promise.resolve(c.rpc('get_xp')).then(function(r){ return r && r.data; }, function(){ return null; }),
+      Promise.resolve(c.rpc('ludo_xp_table')).then(function(r){ return r && r.data; }, function(){ return null; })
     ]).then(function(res){
       if(!about) return;
       if(res[0]) data.today = res[0];
       if(res[1]) data.levels = res[1];
       if(res[2]) data.info = res[2];
+      if(res[3]) data.ludo = res[3];
       renderAbout(data);
     });
   }

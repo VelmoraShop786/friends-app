@@ -116,7 +116,7 @@
   @keyframes shake{ 0%{ transform:rotate(-8deg); } 50%{ transform:rotate(8deg) scale(1.05); } 100%{ transform:rotate(-8deg); } }
 
   .bwrap{ padding:0 6px; display:flex; justify-content:center; }
-  .board{ position:relative; width:min(100%, calc(100vh - 290px)); aspect-ratio:1/1; background:#fff; border:2px solid #444; border-radius:6px; transition:transform .3s; flex-shrink:0; }
+  .board{ position:relative; width:min(100%, calc(100vh - 345px)); aspect-ratio:1/1; background:#fff; border:2px solid #444; border-radius:6px; transition:transform .3s; flex-shrink:0; }
   .board .bk{ position:absolute; }
   .board .cell{ position:absolute; width:6.6667%; height:6.6667%; background:#fff; border:1px solid #c9c9c9; display:flex; align-items:center; justify-content:center; font-size:.62rem; color:#777; line-height:1; }
   .tok{ position:absolute; width:5.4%; height:5.4%; transform:translate(-50%,-50%); border-radius:50%; background:var(--tc); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.55), inset 0 -3px 0 rgba(0,0,0,.2); transition:left .14s linear, top .14s linear; z-index:3; }
@@ -124,6 +124,135 @@
   .tok.done{ width:4.4%; height:4.4%; }
   .tok.legal{ z-index:6; animation:tp .7s ease-in-out infinite; cursor:pointer; box-shadow:0 0 0 3px rgba(255,255,255,.95), 0 0 0 5px var(--tc); }
   @keyframes tp{ 50%{ transform:translate(-50%,-50%) scale(1.28); } }
+
+
+  /* ---- 3D dice (a real cube that tumbles, then lands on the number) ---- */
+  .dbox{ --ds:42px; width:var(--ds); height:var(--ds); flex-shrink:0; position:relative; }
+  .dbox.mine{ --ds:52px; }
+  .dbox.ghost{ visibility:hidden; }
+  .dbox.go{ cursor:pointer; animation:pl 1s ease-in-out infinite; filter:drop-shadow(0 0 7px rgba(255,214,120,.95)); }
+  .dice3d{ width:100%; height:100%; perspective:280px; }
+  .dwob{ width:100%; height:100%; }
+  .cube3d{ width:100%; height:100%; position:relative; transform-style:preserve-3d; }
+  .cface{ position:absolute; inset:0; border-radius:20%; background:#fff; border:2px solid #cfd8d5; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:13%; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+  .cface i{ border-radius:50%; margin:7%; }
+  .cface i.on{ background:#222; }
+  .cface.f6{ transform:translateZ(calc(var(--ds) / 2)); }
+  .cface.f1{ transform:rotateY(180deg) translateZ(calc(var(--ds) / 2)); }
+  .cface.f3{ transform:rotateY(90deg) translateZ(calc(var(--ds) / 2)); }
+  .cface.f4{ transform:rotateY(-90deg) translateZ(calc(var(--ds) / 2)); }
+  .cface.f5{ transform:rotateX(90deg) translateZ(calc(var(--ds) / 2)); }
+  .cface.f2{ transform:rotateX(-90deg) translateZ(calc(var(--ds) / 2)); }
+  .dice-royal .cface{ background:linear-gradient(145deg,#3a3a42,#0c0c10); border:2px solid #e0b050; box-shadow:inset 0 0 8px rgba(255,255,255,.14); }
+  .dice-royal .cface i.on{ background:radial-gradient(circle at 35% 30%,#fff3b8,#e0b050 60%,#8a5a14); }
+  .tumble .cube3d{ animation:spin3d .75s linear infinite; }
+  .tumble .dwob{ animation:wob .38s ease-in-out infinite; }
+  @keyframes spin3d{ from{ transform:rotate3d(1,.7,.3,0deg); } to{ transform:rotate3d(1,.7,.3,360deg); } }
+  @keyframes wob{ 0%{ transform:translate(0,0) rotate(0deg); } 25%{ transform:translate(8px,-7px) rotate(9deg); } 50%{ transform:translate(-7px,3px) rotate(-7deg); } 75%{ transform:translate(6px,6px) rotate(6deg); } 100%{ transform:translate(0,0) rotate(0deg); } }
+
+  /* ---- stored numbers ---- */
+  .bankrow{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px; padding:2px 10px 0; }
+  .bankrow:empty{ display:none; }
+  .bl{ font-size:.72rem; font-weight:700; opacity:.85; margin-right:2px; }
+  .bchip{ width:34px; height:34px; border-radius:10px; border:2px solid #e0b050; background:linear-gradient(145deg,#3a3a42,#0c0c10); color:#ffe08a; font:800 1.1rem 'Inter',sans-serif; cursor:pointer; animation:chipin .25s ease-out; }
+  .bchip.sel{ transform:translateY(-3px); box-shadow:0 0 0 3px rgba(255,214,120,.85), 0 0 12px rgba(255,200,80,.8); }
+  .bchip.dim{ opacity:.35; cursor:default; }
+  .bchip.ro{ cursor:default; width:28px; height:28px; font-size:.95rem; }
+  .rl{ font-size:.72rem; font-weight:700; margin-left:4px; padding:3px 8px; border-radius:999px; background:rgba(255,214,120,.25); }
+  @keyframes chipin{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+  /* ---- the "6" celebration (Fesgo Fun advert) ---- */
+  .sixpop{ position:fixed; z-index:70; pointer-events:none; --u:calc(var(--sz) * 1px / 100); animation:splife 2s ease both; }
+  .sixpop .sp-rays{ position:absolute; inset:-22%; border-radius:50%; background:repeating-conic-gradient(rgba(255,214,102,.7) 0 9deg, rgba(255,214,102,0) 9deg 18deg); -webkit-mask:radial-gradient(circle, #000 32%, transparent 68%); mask:radial-gradient(circle, #000 32%, transparent 68%); animation:spspin 3.2s linear infinite; }
+  .sixpop .sp-card{ position:absolute; inset:calc(var(--u) * 7); border-radius:calc(var(--u) * 24); background:linear-gradient(155deg,#8a45ff 0%,#4a22b8 55%,#241166 100%); box-shadow:0 0 0 calc(var(--u) * 3) #ffd24a, 0 0 0 calc(var(--u) * 5) #b5760f, 0 0 calc(var(--u) * 22) rgba(255,200,60,.9); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:.95; text-align:center; font-family:'Inter',system-ui,sans-serif; font-weight:900; }
+  .sixpop .sp-t1{ font-size:calc(var(--u) * 19); color:#fff; text-shadow:0 calc(var(--u) * 2) 0 #2b0f7a, 0 0 calc(var(--u) * 8) rgba(255,255,255,.6); letter-spacing:-.02em; }
+  .sixpop .sp-t2{ font-size:calc(var(--u) * 27); color:#ffcf3a; text-shadow:0 calc(var(--u) * 2.4) 0 #a55a00, 0 0 calc(var(--u) * 9) rgba(255,207,58,.8); letter-spacing:-.02em; margin-top:calc(var(--u) * -1); animation:spbeat .5s ease-in-out infinite alternate; }
+  .sixpop .sp-crown{ position:absolute; left:50%; top:calc(var(--u) * -3); width:calc(var(--u) * 36); height:calc(var(--u) * 30); margin-left:calc(var(--u) * -18); filter:drop-shadow(0 calc(var(--u) * 2) calc(var(--u) * 2) rgba(0,0,0,.45)); animation:spbob .6s ease-in-out infinite alternate; }
+  .sixpop .sp-six{ position:absolute; right:calc(var(--u) * -4); bottom:calc(var(--u) * -4); width:calc(var(--u) * 34); height:calc(var(--u) * 34); border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff3b8,#ffc21f 60%,#c27a06); color:#5a2c00; font-size:calc(var(--u) * 24); display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 calc(var(--u) * 2.5) #fff, 0 calc(var(--u) * 3) calc(var(--u) * 6) rgba(0,0,0,.5); animation:spbeat .45s ease-in-out infinite alternate; }
+  .sixpop .sp-h{ position:absolute; font-size:calc(var(--u) * 15); color:#ff5fa8; text-shadow:0 0 calc(var(--u) * 6) rgba(255,95,168,.9); animation:spheart 1.6s ease-in-out infinite; }
+  .sixpop .sp-h.a{ left:calc(var(--u) * -3); top:calc(var(--u) * 22); } .sixpop .sp-h.b{ right:calc(var(--u) * -1); top:calc(var(--u) * 6); animation-delay:.5s; }
+  .sixpop .sp-c{ position:absolute; left:50%; top:50%; width:calc(var(--u) * 7); height:calc(var(--u) * 11); border-radius:calc(var(--u) * 2); background:var(--c); opacity:0; animation:spconf 1.5s ease-out var(--d) both; }
+  @keyframes splife{ 0%{ opacity:0; transform:scale(.2) translateY(24px) rotate(-12deg); } 13%{ opacity:1; transform:scale(1.2) translateY(-8px) rotate(5deg); } 24%{ transform:scale(.95) rotate(-3deg); } 34%{ transform:scale(1.05) rotate(2deg); } 46%,80%{ opacity:1; transform:scale(1) rotate(0deg); } 100%{ opacity:0; transform:scale(.9) translateY(-16px); } }
+  @keyframes spspin{ to{ transform:rotate(360deg); } }
+  @keyframes spbeat{ to{ transform:scale(1.1); } }
+  @keyframes spbob{ to{ transform:translateY(calc(var(--u) * -2)) rotate(4deg); } }
+  @keyframes spheart{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(calc(var(--u) * -5)) scale(1.2); } }
+  @keyframes spconf{ 0%{ opacity:0; transform:translate(-50%,-50%) scale(.3); } 12%{ opacity:1; } 100%{ opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(1); } }
+  @media (prefers-reduced-motion:reduce){ .sixpop .sp-rays{ animation:none; } .tumble .cube3d, .tumble .dwob{ animation-duration:1.6s; } }
+
+  /* ---- live voice ---- */
+  .pslot{ position:relative; }
+  .vmic{ width:42px; height:42px; border-radius:50%; border:2px solid #e0b050; background:linear-gradient(145deg,#3a3a42,#0c0c10); color:#ffe08a; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .vmic[hidden]{ display:none; }
+  .vmic .moff{ display:none; }
+  .vmic.off{ color:#ff8a7a; border-color:#ff8a7a; }
+  .vmic.off .mon{ display:none; } .vmic.off .moff{ display:block; }
+  .vmic.talk{ box-shadow:0 0 0 3px rgba(61,240,138,.8), 0 0 12px rgba(61,240,138,.9); }
+  .pspk{ display:none; position:absolute; bottom:-5px; left:34px; width:24px; height:24px; border-radius:50%; border:2px solid #e0b050; background:#1c1c20; color:#ffe08a; padding:0; align-items:center; justify-content:center; cursor:pointer; z-index:3; }
+  .pslot.right .pspk{ left:auto; right:34px; }
+  .vlive .pspk{ display:flex; }
+  .pspk .soff{ display:none; }
+  .pslot.peermuted .pspk{ background:#7a1d16; color:#fff; border-color:#ff8a7a; }
+  .pslot.peermuted .pspk .son{ display:none; } .pslot.peermuted .pspk .soff{ display:block; }
+  .pslot.speaking .av{ box-shadow:0 0 0 3px #3df08a, 0 0 14px #3df08a; animation:vtalk .8s ease-in-out infinite alternate; }
+  @keyframes vtalk{ to{ box-shadow:0 0 0 4px #3df08a, 0 0 22px #3df08a; } }
+  .pslot.micoff .av::after{ content:''; position:absolute; inset:0; background:rgba(0,0,0,.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M19 11h-2a5 5 0 0 1-.6 2.4l1.5 1.5A7 7 0 0 0 19 11zM3.3 2.3 2 3.6l6.9 6.9V12a3 3 0 0 0 4.4 2.6l1.5 1.5a5 5 0 0 1-7.8-4.1H5a7 7 0 0 0 6 6.9V21h2v-2.1a7 7 0 0 0 2.6-.9l4.8 4.8 1.3-1.3zM15 6v4.2l-6-6A3 3 0 0 1 15 6z'/></svg>") center/60% no-repeat; }
+  .av{ position:relative; }
+
+  /* ---- tap a coin / diamond chip: the full number in a clean card ---- */
+  .wl-chips .wl-chip{ cursor:pointer; -webkit-tap-highlight-color:transparent; transition: transform .12s ease; }
+  .wl-chips .wl-chip:active{ transform:scale(.94); }
+  .wlf-back{ position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center; padding:20px; background: rgba(8,20,16,.55); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+  .wlf-back.show{ display:flex; }
+  .wlf-card{ position:relative; width:100%; max-width:340px; border-radius:26px; padding:26px 20px 20px; text-align:center; box-shadow: 0 18px 50px rgba(0,0,0,.4), inset 0 1.5px 0 rgba(255,255,255,.9); animation: wlfpop .35s cubic-bezier(.3,1.5,.5,1); overflow:hidden; }
+  .wlf-card.coin{ background: linear-gradient(160deg,#fffaf0,#ffe9a8 70%,#ffd563); }
+  .wlf-card.gem{ background: linear-gradient(160deg,#f3fbff,#c6e9ff 70%,#8fd2ff); }
+  .wlf-card::before{ content:''; position:absolute; left:-30%; right:-30%; top:-60%; height:100%; background: radial-gradient(closest-side, rgba(255,255,255,.75), rgba(255,255,255,0)); pointer-events:none; }
+  .wlf-ico{ position:relative; width:78px; height:78px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; }
+  .wlf-ico::before{ content:''; position:absolute; inset:-14px; border-radius:50%; background: repeating-conic-gradient(rgba(255,255,255,.55) 0 10deg, rgba(255,255,255,0) 10deg 20deg); -webkit-mask: radial-gradient(circle, #000 35%, transparent 68%); mask: radial-gradient(circle, #000 35%, transparent 68%); animation: wlfspin 8s linear infinite; }
+  .wlf-ico svg{ position:relative; width:72px; height:72px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
+  .wlf-title{ position:relative; font-size:.8rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#6b5200; }
+  .wlf-card.gem .wlf-title{ color:#0b5a8a; }
+  .wlf-num{ position:relative; margin:10px 0 4px; padding:14px 10px; border-radius:16px; background: rgba(255,255,255,.72); box-shadow: inset 0 2px 5px rgba(0,0,0,.12); font-weight:800; color: var(--ink); font-variant-numeric: tabular-nums; white-space:nowrap; overflow:hidden; line-height:1.2; }
+  .wlf-short{ position:relative; font-size:.82rem; font-weight:700; color:rgba(0,0,0,.5); margin-bottom:16px; }
+  .wlf-btns{ position:relative; display:flex; gap:10px; }
+  .wlf-btns button{ flex:1; border:none; border-radius:14px; padding:12px 10px; font-weight:800; font-size:.92rem; cursor:pointer; font-family:inherit; }
+  .wlf-copy{ background: linear-gradient(160deg,#37f0b8,#06a07a); color:#fff; box-shadow: 0 4px 10px rgba(6,160,122,.45), inset 0 2px 2px rgba(255,255,255,.55); }
+  .wlf-close{ background: rgba(255,255,255,.8); color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  @keyframes wlfpop{ from{ transform: scale(.7) translateY(20px); opacity:0; } to{ transform:none; opacity:1; } }
+  @keyframes wlfspin{ to{ transform: rotate(360deg); } }
+
+  /* ---- spectators: the eye, the sheet on top, the two chats ---- */
+  .gleft{ display:flex; align-items:center; gap:6px; min-width:0; flex-wrap:wrap; }
+  .eyechip{ position:relative; display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.4); background:linear-gradient(180deg,#7a63ff,#3b27c9); color:#fff; font:800 .8rem 'Inter',sans-serif; cursor:pointer; box-shadow:0 3px 8px rgba(59,39,201,.45), inset 0 1.5px 0 rgba(255,255,255,.45); }
+  .eyechip[hidden], .watchpill[hidden], .eyechip .rdot[hidden], .gchat[hidden], .gc-row[hidden]{ display:none; }
+  .eyechip .rdot{ position:absolute; top:-4px; right:-4px; width:12px; height:12px; border-radius:50%; background:#ff3b30; box-shadow:0 0 0 2px #fff; }
+  .watchpill{ padding:5px 9px; border-radius:999px; background:#ff3b30; color:#fff; font-size:.66rem; font-weight:800; letter-spacing:.06em; }
+  .specsheet{ position:fixed; z-index:60; left:8px; right:8px; top:60px; max-width:404px; margin:0 auto; max-height:46vh; display:none; flex-direction:column; border-radius:18px; background:rgba(20,16,44,.95); border:1px solid rgba(255,255,255,.22); box-shadow:0 14px 34px rgba(0,0,0,.55); color:#fff; overflow:hidden; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+  .specsheet.show{ display:flex; }
+  .ss-head{ display:flex; align-items:center; justify-content:space-between; padding:9px 12px 4px; font-weight:800; font-size:.9rem; }
+  .ss-x{ border:none; background:rgba(255,255,255,.16); color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:.9rem; }
+  .ss-list{ display:flex; gap:8px; overflow-x:auto; padding:2px 12px 8px; min-height:48px; flex-shrink:0; }
+  .ss-pp{ flex-shrink:0; display:flex; flex-direction:column; align-items:center; width:48px; font-size:.6rem; gap:2px; }
+  .ss-pp i{ width:34px; height:34px; border-radius:50%; background:#6a52ff center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-style:normal; font-weight:800; font-size:.9rem; border:2px solid rgba(255,255,255,.5); }
+  .ss-pp span{ max-width:48px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ss-none{ opacity:.7; font-size:.8rem; padding:6px 2px; }
+  .ss-msgs{ flex:1; min-height:60px; overflow-y:auto; padding:6px 12px; display:flex; flex-direction:column; gap:4px; border-top:1px solid rgba(255,255,255,.14); }
+  .cm{ font-size:.8rem; line-height:1.3; word-break:break-word; }
+  .cm b{ color:#ffd76b; margin-right:5px; }
+  .cm.me b{ color:#a9bcff; }
+  .cm .ptag{ font-size:.55rem; background:#2fbf8a; color:#04301f; border-radius:6px; padding:1px 4px; margin-right:4px; font-weight:800; }
+  .ss-in, .gc-row{ display:flex; gap:6px; align-items:center; }
+  .ss-in{ padding:8px 10px; border-top:1px solid rgba(255,255,255,.14); }
+  .ss-in input, .gc-row input{ flex:1; min-width:0; border:none; border-radius:18px; padding:9px 13px; font:500 .85rem 'Inter',sans-serif; background:#fff; color:#18322b; }
+  .ss-in button, .gc-row button{ border:none; border-radius:50%; width:36px; height:36px; flex-shrink:0; background:linear-gradient(160deg,#37f0b8,#06a07a); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(6,214,160,.45), inset 0 1.5px 0 rgba(255,255,255,.55); }
+  .gchat{ padding:2px 12px 4px; }
+  .gc-msgs{ max-height:76px; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; gap:2px; padding:0 4px 3px; }
+  .gc-msgs:empty{ display:none; }
+  .gchat .cm{ color:#fff6dc; text-shadow:0 1px 2px rgba(0,0,0,.7); }
+  .gc-note{ text-align:center; font-size:.7rem; opacity:.75; padding:2px 0 0; }
+  #scr-game.has-chat .board{ width:min(100%, calc(100vh - 420px)); }
+  @supports (height:100dvh){ #scr-game.has-chat .board{ width:min(100%, calc(100dvh - 420px)); } }
 
   /* Golden Hawk theme */
   .board.hawk{ background:#8d6529; border:none; border-radius:6px; margin:10px; box-shadow:0 0 0 4px #f0cd6e, 0 0 0 8px #7a4f14, 0 10px 26px rgba(0,0,0,.65); }
@@ -137,7 +266,7 @@
   .dice-royal .die i.on{ background:radial-gradient(circle at 35% 30%,#fff3b8,#e0b050 60%,#8a5a14); }
   .dice-royal .die.go{ border-color:#ffe08a; box-shadow:0 0 0 3px rgba(255,214,120,.75), 0 0 16px rgba(255,200,80,.8), 0 2px 0 #7a4f14; }
   .phone.hawk #scr-game{ background:linear-gradient(#1b110a 0%, #43280f 50%, #a8692a 100%); }
-  .hawk .gtop, .hawk .pname, .hawk .msg{ color:#fff1cc; }
+  .hawk .gtop, .hawk .pname, .hawk .msg, .hawk .bl, .hawk .rl{ color:#fff1cc; }
   .hawk .pot{ background:rgba(0,0,0,.35); border-color:#e0b050; }
   .hawk #scr-game .wl-chip{ background:rgba(0,0,0,.35); border-color:#e0b050; color:#fff1cc; }
   .hawk .pslot{ background:rgba(0,0,0,.35); border-color:rgba(224,176,80,.45); }
@@ -145,7 +274,8 @@
   .hawk .ptimer{ background:rgba(255,255,255,.2); }
   .hawk .leave{ color:#ffb0a0; }
   .msg{ text-align:center; font-size:.85rem; font-weight:700; min-height:22px; padding:8px 12px 2px; color:var(--teal-deep); }
-  .gbot{ display:flex; justify-content:flex-end; padding:2px 12px 8px; margin-top:auto; }
+  .gbot{ display:flex; justify-content:space-between; align-items:center; padding:2px 12px 8px; }
+  .gmid{ flex:1; display:flex; flex-direction:column; justify-content:center; min-width:0; }
   .leave{ border:none; background:transparent; color:#b1362f; font:700 .82rem 'Inter',sans-serif; padding:8px 10px; cursor:pointer; }
 
   /* overlays */
@@ -157,6 +287,7 @@
   .big{ font-size:2.4rem; }
   .toast{ position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:rgba(20,30,28,.92); color:#fff; padding:10px 16px; border-radius:12px; font-size:.86rem; font-weight:600; z-index:80; max-width:88%; text-align:center; }
 </style>
+<link rel="stylesheet" href="pro.css">
 </head>
 <body>
 <div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
@@ -210,7 +341,7 @@
         <div class="hint">Play against computer players to learn the game. No coins are won or lost.</div>
         <div class="row"><button class="btn alt" onclick="startPractice(2)">1 vs 1 bot</button><button class="btn alt" onclick="startPractice(4)">With 3 bots</button></div>
       </div>
-      <div class="hint" style="margin-top:14px">Rules: you need a 6 to bring a token out. A 6, a capture or reaching home gives another throw. Three 6s in a row cancel the throw. Stars and start squares are safe. You have 12 seconds for each move.</div>
+      <div class="hint" style="margin-top:14px">Rules: you need a 6 to bring a token out. A 6, a capture or reaching home gives another throw. Every number you throw is kept: use the numbers in any order, on any token, or throw again while you still have a throw. Three 6s in a row cancel the numbers you have not used. Stars and start squares are safe. You have 12 seconds for each action.</div>
     </div>
   </div>
 
@@ -229,12 +360,19 @@
 
   <!-- GAME -->
   <div class="scr" id="scr-game" hidden>
-    <div class="gtop"><div class="pot" id="pot"></div><div class="wl-chips" id="game-wallet"></div></div>
-    <div class="prow" id="row-top"></div>
-    <div class="bwrap"><div class="board" id="board"></div></div>
-    <div class="prow bot" id="row-bot"></div>
-    <div class="msg" id="msg"></div>
-    <div class="gbot"><button class="leave" onclick="askLeave()">Leave game</button></div>
+    <div class="gtop"><div class="gleft"><div class="pot" id="pot"></div><span class="watchpill" id="watchpill" hidden>WATCHING</span><button class="eyechip" id="eyechip" onclick="toggleSpec()" hidden aria-label="Spectators"><span id="eyeico"></span><b id="eyecount">0</b><i class="rdot" id="eyedot" hidden></i></button></div><div class="wl-chips" id="game-wallet"></div></div>
+    <div class="gmid">
+      <div class="prow" id="row-top"></div>
+      <div class="bwrap"><div class="board" id="board"></div></div>
+      <div class="prow bot" id="row-bot"></div>
+      <div class="bankrow" id="bankrow"></div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="gchat" id="gchat" hidden>
+      <div class="gc-msgs" id="gc-msgs"></div>
+      <div class="gc-row" id="gc-row"><input type="text" id="gc-input" placeholder="Message the players..." maxlength="200" autocomplete="off"><button type="button" onclick="sendChat('game')" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21.5 12 3.4 3.6l-.1 6.5 12.9 1.9-12.9 1.9z"/></svg></button></div>
+    </div>
+    <div class="gbot"><button class="vmic" id="vmic" onclick="toggleMyMic()" hidden aria-label="Mic on or off"><svg class="mon" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12z"/></svg><svg class="moff" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19 11h-2a5 5 0 0 1-.6 2.4l1.5 1.5A7 7 0 0 0 19 11zM3.3 2.3 2 3.6l6.9 6.9V12a3 3 0 0 0 4.4 2.6l1.5 1.5a5 5 0 0 1-7.8-4.1H5a7 7 0 0 0 6 6.9V21h2v-2.1a7 7 0 0 0 2.6-.9l4.8 4.8 1.3-1.3zM15 6v4.2l-6-6A3 3 0 0 1 15 6z"/></svg></button><button class="leave" id="leavebtn" onclick="askLeave()">Leave game</button></div>
   </div>
 
   <div class="ov" id="ov-result" hidden><div class="dlg" id="dlg-result"></div></div>
@@ -244,11 +382,19 @@
   </div>
 </div>
 
+<div class="specsheet" id="specsheet">
+  <div class="ss-head"><span id="ss-title">Spectators</span><button class="ss-x" onclick="toggleSpec()" aria-label="Close">&#10005;</button></div>
+  <div class="ss-list" id="ss-list"></div>
+  <div class="ss-msgs" id="ss-msgs"></div>
+  <div class="ss-in" id="ss-in"><input type="text" id="ss-input" placeholder="Message everybody here..." maxlength="200" autocomplete="off"><button type="button" onclick="sendChat('spec')" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21.5 12 3.4 3.6l-.1 6.5 12.9 1.9-12.9 1.9z"/></svg></button></div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="session-guard.js"></script>
 <script src="room-keeper.js"></script>
 <script src="wallet.js"></script>
+<script src="text-policy.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 <script>
   // Common App Theme — applies site-wide colors/background set by the owner (separate from room themes/avatars)
   (async function loadAppTheme(){
@@ -316,7 +462,6 @@
     for(let r = 0; r < seat; r++){ const ndy = dx, ndx = -dy; dy = ndy; dx = ndx; }
     return [7.5 + dy, 7.5 + dx];
   }
-  function dieHtml(n, cls){ return '<div class="die ' + (cls || '') + '">' + Array.from({ length: 9 }, (_, i) => '<i class="' + (n && PIPS[n].includes(i) ? 'on' : '') + '"></i>').join('') + '</div>'; }
   function toast(t){ const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
   function say(t){ $('msg').textContent = t || ''; }
   function goHome(){ location.href = 'home.html'; }
@@ -329,13 +474,14 @@
 
   let me = null, G = null, gameId = null, offset = 0, applied = -1, queue = [], pumping = false, ticking = false, polling = null, chan = null;
   let disp = {};            // what is drawn: 'seat-idx' -> position
-  let lastDice = {}, rolling = {}, waitSince = 0, boardBuilt = false, boardK = 0, autoKey = '';
+  let lastDice = {}, rolling = {}, rollStart = {}, selNum = null, selUser = false, waitSince = 0, boardBuilt = false, boardK = 0, autoKey = '';
 
   // ---------------------------------------------------------------- start
   (async function init(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session){ location.replace('index.html'); return; }
-    me = session.user;
+    me = session.user; selfId = me.id;
+    try{ $('eyeico').innerHTML = EYE; }catch(e){}
     try{ Wallet.onChange(w => { const h = Wallet.chips(); ['lobby-wallet', 'game-wallet'].forEach(id => { if($(id)) $(id).innerHTML = h; }); renderBets(); }); Wallet.start(me.id); }catch(e){}
     applyThemeClass();
     buildLobby();
@@ -343,7 +489,9 @@
     try{ if(window.RoomKeeper && RoomKeeper.leaveKeptForGame) await RoomKeeper.leaveKeptForGame(); }catch(e){}
     try{
       const a = await rpc('ludo_active');
+      const qs = new URLSearchParams(location.search);
       if(a && a.game_id){ await openGame(a.game_id); }
+      else if(qs.get('watch')){ await spectate(qs.get('watch'), qs.get('follow')); }
     }catch(e){ console.error(e); }
     rkReveal();
   })();
@@ -402,11 +550,11 @@
 
   // ---------------------------------------------------------------- opening a game
   function show(which){ ['lobby', 'wait', 'game'].forEach(x => $('scr-' + x).hidden = (x !== which)); }
-  async function openGame(id){
-    gameId = id; G = null; applied = -1; queue = []; disp = {}; lastDice = {}; rolling = {}; boardBuilt = false; autoKey = '';
-    const st = await rpc('ludo_state', { p_game: id });
+  async function openGame(id, first){
+    gameId = id; G = null; applied = -1; queue = []; disp = {}; lastDice = {}; rolling = {}; rollStart = {}; selNum = null; selUser = false; boardBuilt = false; autoKey = '';
+    const st = first || await rpc('ludo_state', { p_game: id });
     offset = Date.parse(st.now) - Date.now();
-    subscribe(id);
+    subscribe(id); startChat();
     ingest(st);
     if(polling) clearInterval(polling);
     polling = setInterval(refresh, 1500);
@@ -457,18 +605,30 @@
     if(!boardBuilt) buildBoard(st);
     const ev = st.last_event || {};
     const fresh = prev && st.version > prev.version;
-    if(fresh && ev.type === 'roll'){ await rollAnim(ev.seat, ev.dice); if(ev.forfeit) say('Three 6s in a row: throw cancelled'); else if(ev.nomove) say('No token can move'); }
+    if(fresh && ev.type === 'roll'){
+      await rollAnim(ev.seat, ev.dice, !!ev.forfeit);
+      if(ev.forfeit){ say('Three 6s in a row: the unused numbers are lost'); await sleep(750); }
+      else if(ev.nomove){ say('No token can move'); await sleep(550); }
+    }
     if(fresh && ev.type === 'move'){ await moveAnim(ev); }
     if(fresh && ev.type === 'out'){ say((st.players.find(p => p.seat === ev.seat) || {}).name + ' is out of the game'); }
+    computeSel(st);
     syncTokens(st);
     renderPlayers(st);
+    renderBank(st);
     renderPot(st);
+    renderEye(st);
     if(st.status === 'playing' && !(fresh && ev.type === 'roll' && (ev.forfeit || ev.nomove))) { if(!fresh || ev.type !== 'move' || !(ev.captured || []).length) say(statusLine(st)); }
     if(st.status === 'finished' || st.status === 'cancelled') showResult(st);
     maybeAuto(st);
+    syncGameVoice(st);
   }
   function statusLine(st){
-    if(st.turn_seat === st.my_seat) return st.phase === 'roll' ? 'Your turn: tap the dice' : (st.legal.length > 1 ? 'Tap a glowing token' : '');
+    if(st.turn_seat === st.my_seat){
+      const usable = Object.keys(st.legal_map || {}).length;
+      if(st.phase === 'roll') return usable ? 'Throw again, or move a glowing token' : 'Your turn: tap the dice';
+      return usable > 1 && !selNum ? 'Pick a number, then a glowing token' : 'Tap a glowing token';
+    }
     const p = st.players.find(x => x.seat === st.turn_seat);
     return p ? (p.is_bot ? 'Computer' : p.name) + ' is playing...' : '';
   }
@@ -490,12 +650,285 @@
     startPractice(n);
   }
   function leaveToLobby(){
+    closeGameVoice(); stopChat();
     if(polling) clearInterval(polling); polling = null;
     try{ if(chan) supabaseClient.removeChannel(chan); }catch(e){} chan = null;
     gameId = null; G = null; queue = []; waitSince = 0; applied = -1;
     $('ov-result').hidden = true; $('ov-leave').hidden = true;
     show('lobby'); renderBets();
   }
+
+
+  // ---------------------------------------------------------------- the full number of coins / diamonds
+  let wlfDigits = '';
+  function openWalletFull(kind){
+    const w = (window.Wallet && Wallet.get && Wallet.get()) || {};
+    const isGem = kind === 'diamonds';
+    const val = isGem ? w.diamonds : w.coins;
+    const full = Wallet.fmt(val);
+    wlfDigits = full.replace(/,/g, '');
+    $('wlf-card').className = 'wlf-card ' + (isGem ? 'gem' : 'coin');
+    $('wlf-ico').innerHTML = isGem ? Wallet.gemSvg : Wallet.coinSvg;
+    $('wlf-title').textContent = isGem ? 'Diamonds' : 'Coins';
+    const num = $('wlf-num'); num.textContent = full;
+    $('wlf-short').textContent = '= ' + Wallet.short(val);
+    $('wlf-back').classList.add('show');
+    let fs = 32; num.style.fontSize = fs + 'px';                                  // one line: a long number gets smaller until it fits
+    while(num.scrollWidth > num.clientWidth && fs > 11){ fs -= 1; num.style.fontSize = fs + 'px'; }
+  }
+  function closeWalletFull(){ $('wlf-back').classList.remove('show'); }
+  async function copyWalletFull(){
+    try{ await navigator.clipboard.writeText(wlfDigits); toast('Copied'); }
+    catch(e){ toast('Press and hold the number to copy it'); }
+  }
+  document.addEventListener('click', e => {
+    const chip = e.target.closest && e.target.closest('.wl-chips .wl-chip'); if(!chip || !(window.Wallet && Wallet.get())) return;
+    openWalletFull(Array.from(chip.parentElement.children).indexOf(chip) === 1 ? 'diamonds' : 'coins');   // first chip = coins, second = diamonds
+  });
+
+  // ---------------------------------------------------------------- spectators and the two chats
+  // 'game' chat = the players talk (spectators can only read). 'spec' chat = spectators and players talk (opened with the eye).
+  // Both chats are shown only from the moment this person came in, and they are wiped when the game ends.
+  let selfId = null, chatT = null, chatBusy = false, gcLast = 0, spLast = 0, specOpen = false, lastSpecCount = -1;
+  let gcMsgs = [], spMsgs = [];
+  const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>';
+  const cleanText = t => { try{ if(window.TextPolicy) return TextPolicy.check(t, 'line').value; }catch(e){} return String(t || '').replace(/\s+/g, ' ').trim(); };
+  function cmHtml(m, spec){
+    return '<div class="cm' + (m.user_id === selfId ? ' me' : '') + '">' + (spec && m.is_player ? '<span class="ptag">Player</span>' : '') + '<b>' + esc(m.name) + '</b>' + esc(m.body) + '</div>';
+  }
+  function startChat(){
+    stopChat(); gcLast = 0; spLast = 0; gcMsgs = []; spMsgs = []; lastSpecCount = -1;
+    chatT = setInterval(chatPoll, 2000);
+  }
+  function stopChat(){
+    if(chatT) clearInterval(chatT); chatT = null; chatBusy = false;
+    specOpen = false; const sh = $('specsheet'); if(sh) sh.classList.remove('show');
+    const d = $('eyedot'); if(d) d.hidden = true;
+    const gm = $('gc-msgs'); if(gm) gm.innerHTML = ''; const sm = $('ss-msgs'); if(sm) sm.innerHTML = '';
+  }
+  async function chatPoll(){
+    if(chatBusy || !G || !gameId || G.status !== 'playing') return;
+    chatBusy = true;
+    try{
+      const r = await rpc('ludo_chat_poll', { p_game: gameId, p_game_after: gcLast, p_spec_after: spLast });
+      if(r && gameId){
+        (r.game || []).forEach(m => { gcMsgs.push(m); gcLast = Math.max(gcLast, m.id); });
+        (r.spec || []).forEach(m => { spMsgs.push(m); spLast = Math.max(spLast, m.id); if(!specOpen && m.user_id !== selfId) $('eyedot').hidden = false; });
+        if(r.game && r.game.length) paintGameMsgs();
+        if(r.spec && r.spec.length) paintSpecMsgs();
+      }
+    }catch(e){}
+    chatBusy = false;
+  }
+  function paintGameMsgs(){ const el = $('gc-msgs'); if(el) el.innerHTML = gcMsgs.slice(-4).map(m => cmHtml(m, false)).join(''); }
+  function paintSpecMsgs(){
+    const el = $('ss-msgs'); if(!el) return;
+    const atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
+    el.innerHTML = spMsgs.slice(-80).map(m => cmHtml(m, true)).join('') || '<div class="ss-none">No messages yet. Say hello!</div>';
+    if(atEnd || specOpen) el.scrollTop = el.scrollHeight;
+  }
+  function paintSpecList(list){
+    $('ss-title').textContent = 'Spectators (' + list.length + ')';
+    $('ss-list').innerHTML = list.length ? list.map(p => {
+      const av = p.avatar_url ? 'background-image:url(\'' + esc(p.avatar_url) + '\')' : '';
+      return '<div class="ss-pp"><i style="' + av + '">' + (p.avatar_url ? '' : esc((p.name || '?').charAt(0).toUpperCase())) + '</i><span>' + esc(p.name) + '</span></div>';
+    }).join('') : '<div class="ss-none">Nobody is watching yet.</div>';
+  }
+  async function loadSpecList(){ try{ paintSpecList(await rpc('ludo_spectators_list', { p_game: gameId }) || []); }catch(e){} }
+  function toggleSpec(){
+    specOpen = !specOpen;
+    $('specsheet').classList.toggle('show', specOpen);
+    if(specOpen){ $('eyedot').hidden = true; loadSpecList(); paintSpecMsgs(); }
+  }
+  async function sendChat(kind){
+    const inp = $(kind === 'game' ? 'gc-input' : 'ss-input');
+    const text = cleanText(inp.value).slice(0, 200); if(!text) return;
+    inp.value = '';
+    try{ await rpc('ludo_chat_send', { p_game: gameId, p_kind: kind, p_text: text }); chatPoll(); }
+    catch(e){ toast(errText(e)); inp.value = text; }
+  }
+  function renderEye(st){             // the eye with the live number of spectators; the game chat bar (players write, spectators read)
+    const b = $('eyechip'); if(!b) return;
+    b.hidden = st.status !== 'playing';
+    $('eyecount').textContent = st.spec_count || 0;
+    if(st.spec_count !== lastSpecCount){ lastSpecCount = st.spec_count; if(specOpen) loadSpecList(); }
+    $('watchpill').hidden = !st.watching;
+    $('leavebtn').textContent = st.watching ? 'Stop watching' : 'Leave game';
+    const real = st.players.filter(p => !p.is_bot).length;
+    const show = st.status === 'playing' && !st.practice && real >= 2;           // the game chat is for 2 or more real players
+    $('gchat').hidden = !show; $('scr-game').classList.toggle('has-chat', show);
+    $('gc-row').hidden = !!st.watching;
+    $('ss-in').hidden = false;
+  }
+  async function leaveWatch(){
+    try{ await rpc('ludo_spectate_leave', { p_game: gameId }); }catch(e){}
+    closeGameVoice(); stopChat();
+    if(polling) clearInterval(polling); polling = null;
+    try{ if(chan) supabaseClient.removeChannel(chan); }catch(e){} chan = null;
+    if(history.length > 1) history.back(); else goHome();
+  }
+  async function spectate(id, follow){
+    let st;
+    try{ st = await rpc('ludo_spectate_join', { p_game: id, p_follow: follow || null }); }
+    catch(e){ toast(errText(e)); return false; }
+    await openGame(id, st);
+    return true;
+  }
+  document.addEventListener('keydown', e => {
+    if(e.key !== 'Enter') return;
+    if(e.target && e.target.id === 'gc-input') sendChat('game');
+    if(e.target && e.target.id === 'ss-input') sendChat('spec');
+  });
+
+  // ---------------------------------------------------------------- live voice (LiveKit), real players only
+  // The mic is ON when the game starts. Each player can mute his own mic and can mute any other player for himself only.
+  let lkRoom = null, lkGame = null, lkBusy = false, lkClosing = false, lkFails = 0, micWanted = true, myUid = null, voiceTimer = null, wakeLock = null;
+  const peerMute = new Set(), blockedIds = new Set(), offSince = {};
+
+  function voiceWanted(st){
+    if(st && st.watching) return st.status === 'playing' && !st.practice;       // a watcher only listens
+    const me = st && st.players.find(p => p.seat === st.my_seat);
+    return !!(st && st.status === 'playing' && !st.practice && me && me.status === 'active' && st.players.filter(p => !p.is_bot).length >= 2);
+  }
+  async function loadBlocked(){
+    try{
+      const { data } = await supabaseClient.from('user_blocks').select('blocked_id').eq('blocker_id', myUid);
+      blockedIds.clear(); (data || []).forEach(r => blockedIds.add(String(r.blocked_id)));
+    }catch(e){}
+  }
+  async function keepAwake(on){
+    try{
+      if(on && !wakeLock && navigator.wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+      if(!on && wakeLock){ await wakeLock.release(); wakeLock = null; }
+    }catch(e){}
+  }
+  async function syncGameVoice(st){
+    const me = st.players.find(p => p.seat === st.my_seat); myUid = me ? me.user_id : (selfId || myUid);
+    const want = voiceWanted(st);
+    if(want && !lkRoom && !lkBusy) await openGameVoice(st.id);
+    else if(!want && lkRoom) await closeGameVoice();
+    keepAwake(want);
+    paintVoice();
+  }
+  async function openGameVoice(id){
+    if(lkBusy || lkFails >= 3) return;
+    lkBusy = true; lkGame = id; lkClosing = false;
+    try{
+      if(typeof LivekitClient === 'undefined') throw new Error('Voice library did not load');
+      await loadBlocked();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/livekit-token', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ game: id })
+      });
+      if(!resp.ok) throw new Error('Token request failed: ' + (await resp.text()));
+      const { token, url } = await resp.json();
+      if(!G || G.id !== id || !voiceWanted(G)) return;                  // the game ended while we were asking
+      const { Room, RoomEvent } = LivekitClient;
+      const room = new Room();
+      lkRoom = room;
+      room.on(RoomEvent.TrackSubscribed, (track, pub, part) => {
+        if(track.kind !== 'audio') return;
+        const el = track.attach(); el.dataset.uid = part ? part.identity : ''; el.autoplay = true; document.body.appendChild(el);
+        applyVoiceMute(); setTimeout(applyVoiceMute, 400);
+      });
+      room.on(RoomEvent.TrackUnsubscribed, track => { try{ track.detach().forEach(el => el.remove()); }catch(e){} });
+      [RoomEvent.ActiveSpeakersChanged, RoomEvent.TrackMuted, RoomEvent.TrackUnmuted, RoomEvent.ParticipantConnected, RoomEvent.ParticipantDisconnected, RoomEvent.LocalTrackPublished, RoomEvent.LocalTrackUnpublished, RoomEvent.Connected]
+        .forEach(ev => { if(ev) room.on(ev, () => { if(lkRoom === room) paintVoice(); }); });
+      room.on(RoomEvent.AudioPlaybackStatusChanged, () => { if(lkRoom === room && !room.canPlaybackAudio) toast('Tap anywhere to turn the voices on'); });
+      room.on(RoomEvent.Disconnected, () => {
+        if(lkRoom !== room) return;
+        lkRoom = null; paintVoice();
+        if(!lkClosing) setTimeout(() => { if(G) syncGameVoice(G); }, 2000);        // dropped: come back with a fresh token
+      });
+      await room.connect(url, token);
+      if(!(G && G.watching)){
+        try{ await room.localParticipant.setMicrophoneEnabled(micWanted); }
+        catch(e){ micWanted = false; toast('The mic is not allowed. Allow the microphone for this site.'); }
+      }
+      try{ await room.startAudio(); }catch(e){}
+      lkFails = 0; paintVoice();
+    }catch(e){
+      console.error('Game voice failed', e);
+      try{ if(lkRoom) lkRoom.disconnect(); }catch(x){}
+      lkRoom = null; lkFails++;
+      if(lkFails === 1) toast('Voice could not connect, trying again...');
+      if(lkFails < 3) setTimeout(() => { if(G) syncGameVoice(G); }, 3000 * lkFails);
+      else toast('Voice is not available right now.');
+      paintVoice();
+    }finally{ lkBusy = false; }
+  }
+  async function closeGameVoice(){
+    lkClosing = true; lkFails = 0;
+    const room = lkRoom; lkRoom = null;
+    try{ if(room) await room.disconnect(); }catch(e){}
+    document.querySelectorAll('audio[data-uid]').forEach(el => el.remove());
+    keepAwake(false); paintVoice();
+  }
+  function applyVoiceMute(){          // a player I muted (or blocked) is silent for me only
+    try{
+      if(!lkRoom) return;
+      const remote = lkRoom.remoteParticipants || lkRoom.participants; if(!remote) return;
+      remote.forEach(part => {
+        const silent = peerMute.has(part.identity) || blockedIds.has(part.identity);
+        (part.audioTrackPublications || part.audioTracks || new Map()).forEach(pub => {
+          const t = pub.track; if(!t) return;
+          if(typeof t.setVolume === 'function'){ try{ t.setVolume(silent ? 0 : 1); }catch(e){} }
+          (t.attachedElements || []).forEach(el => { el.muted = silent; });
+        });
+      });
+    }catch(e){}
+  }
+  async function toggleMyMic(){
+    micWanted = !micWanted; paintVoice();
+    if(!lkRoom) return;
+    try{ await lkRoom.localParticipant.setMicrophoneEnabled(micWanted); }
+    catch(e){ micWanted = false; toast('The mic is not allowed. Allow the microphone for this site.'); }
+    paintVoice();
+  }
+  function togglePeer(uid){
+    if(peerMute.has(uid)) peerMute.delete(uid); else peerMute.add(uid);
+    const p = G && G.players.find(x => x.user_id === uid);
+    toast((p ? p.name : 'Player') + (peerMute.has(uid) ? ' is muted for you' : ' is unmuted'));
+    applyVoiceMute(); paintVoice();
+  }
+  function paintVoice(){              // rings, mute marks and buttons follow the voice state
+    const phone = document.querySelector('.phone'); if(!phone) return;
+    const live = !!(lkRoom && lkRoom.state === 'connected');
+    const speaking = new Set(), micOn = new Map(), now = Date.now();
+    if(live){
+      const remote = lkRoom.remoteParticipants || lkRoom.participants;
+      const people = [lkRoom.localParticipant].concat(remote ? Array.from(remote.values()) : []);
+      people.forEach(pt => {
+        if(!pt) return;
+        const mine = pt.identity === myUid;
+        const on = mine ? micWanted : !!pt.isMicrophoneEnabled;
+        micOn.set(pt.identity, on);
+        if(on && pt.isSpeaking && !(peerMute.has(pt.identity) || blockedIds.has(pt.identity))) speaking.add(pt.identity);
+        if(on) delete offSince[pt.identity]; else if(!offSince[pt.identity]) offSince[pt.identity] = now;
+      });
+    }
+    phone.classList.toggle('vlive', live);
+    let pending = false;
+    document.querySelectorAll('.pslot[data-uid]').forEach(el => {
+      const uid = el.dataset.uid, mine = uid === myUid;
+      const off = live && micOn.has(uid) && micOn.get(uid) === false && (mine || now - offSince[uid] > 2500);   // a player who has only just joined is not shown muted
+      if(live && micOn.get(uid) === false && !mine && now - offSince[uid] <= 2500) pending = true;
+      el.classList.toggle('speaking', speaking.has(uid));
+      el.classList.toggle('micoff', !!off);
+      el.classList.toggle('peermuted', peerMute.has(uid) || blockedIds.has(uid));
+    });
+    const btn = $('vmic');
+    if(btn){
+      btn.hidden = !(G && voiceWanted(G)) || !!(G && G.watching);
+      btn.classList.toggle('off', !micWanted);
+      btn.classList.toggle('talk', micWanted && speaking.has(myUid));
+    }
+    clearTimeout(voiceTimer); if(pending) voiceTimer = setTimeout(paintVoice, 1300);
+  }
+  document.addEventListener('click', () => { try{ if(lkRoom) lkRoom.startAudio(); }catch(e){} });
+  window.addEventListener('pagehide', () => { try{ if(lkRoom) lkRoom.disconnect(); }catch(e){} });
 
   // ---------------------------------------------------------------- the board
   // ---------------------------------------------------------------- themes (each person sees the board in the theme he chose; saved on this phone)
@@ -573,7 +1006,7 @@
     // tokens only for seats that play
     st.players.forEach(p => { for(let i = 0; i < 4; i++){ const t = document.createElement('div'); t.className = 'tok'; t.id = 'tok-' + p.seat + '-' + i; t.style.setProperty('--tc', COL[p.seat]); t.onclick = () => tapToken(p.seat, i); b.appendChild(t); } });
     // turn the board so that my colour is at the bottom left
-    boardK = (3 - (st.my_seat || 0) + 4) % 4;
+    boardK = (3 - (st.my_seat != null ? st.my_seat : (st.follow_seat || 0)) + 4) % 4;
     b.style.transform = 'rotate(' + (boardK * 90) + 'deg)';
     b.style.setProperty('--unrot', (-boardK * 90) + 'deg');      // the crown on a token always stands upright
     st.players.forEach(p => { for(let i = 0; i < 4; i++) disp[p.seat + '-' + i] = p.tokens[i]; });
@@ -594,9 +1027,9 @@
   function syncTokens(st){
     st.players.forEach(p => { for(let i = 0; i < 4; i++) disp[p.seat + '-' + i] = p.tokens[i]; });
     drawTokens(st);
-    const mineMove = st.status === 'playing' && st.turn_seat === st.my_seat && st.phase === 'move';
+    const mineTurn = st.status === 'playing' && st.turn_seat === st.my_seat;
     document.querySelectorAll('.tok').forEach(t => t.classList.remove('legal'));
-    if(mineMove) (st.legal || []).forEach(i => { const el = $('tok-' + st.my_seat + '-' + i); if(el) el.classList.add('legal'); });
+    if(mineTurn) legalTokens(st).forEach(i => { const el = $('tok-' + st.my_seat + '-' + i); if(el) el.classList.add('legal'); });
   }
   async function moveAnim(ev){
     const key = ev.seat + '-' + ev.token;
@@ -605,12 +1038,85 @@
     else { for(let p = ev.from + 1; p <= stepsTo; p++){ disp[key] = p; drawTokens(G); await sleep(150); } }
     if((ev.captured || []).length){ say('Captured!'); await sleep(250); }
   }
-  async function rollAnim(seat, value){
-    const quick = rolling[seat] === true;
-    rolling[seat] = true; renderDie(seat, null, true);
-    await sleep(quick ? 160 : 520);
-    rolling[seat] = false; lastDice[seat] = value; renderDie(seat, value, false);
-    await sleep(260);
+  // ---------------------------------------------------------------- 3D dice
+  // front face is the 6 when idle; each number has a turn that brings its face to the front
+  const FACE_ROT = { 6:'rotateX(0deg) rotateY(0deg)', 1:'rotateX(0deg) rotateY(180deg)', 3:'rotateX(0deg) rotateY(-90deg)', 4:'rotateX(0deg) rotateY(90deg)', 5:'rotateX(-90deg) rotateY(0deg)', 2:'rotateX(90deg) rotateY(0deg)' };
+  function cubeHtml(face, tumble){
+    const faces = [6, 1, 3, 4, 5, 2].map(n => '<div class="cface f' + n + '">' + Array.from({ length: 9 }, (_, i) => '<i class="' + (PIPS[n].includes(i) ? 'on' : '') + '"></i>').join('') + '</div>').join('');
+    return '<div class="dice3d' + (tumble ? ' tumble' : '') + '"><div class="dwob"><div class="cube3d" style="transform:' + FACE_ROT[face || 6] + '">' + faces + '</div></div></div>';
+  }
+  function paintDie(seat, face, tumble){ const el = $('die-' + seat); if(el){ el.innerHTML = cubeHtml(face, tumble); el.classList.remove('go'); } }
+  function dieSettle(seat, value){          // from wherever it is spinning, turn smoothly to the real number and bounce once
+    const box = $('die-' + seat); if(!box) return;
+    const root = box.querySelector('.dice3d'), cube = box.querySelector('.cube3d'), wob = box.querySelector('.dwob');
+    if(!cube) return;
+    const from = getComputedStyle(cube).transform, to = FACE_ROT[value] || FACE_ROT[6];
+    root.classList.remove('tumble');
+    cube.style.transform = to;
+    try{ cube.animate([{ transform: (from && from !== 'none') ? from : to }, { transform: to }], { duration: 480, easing: 'cubic-bezier(.2,.8,.3,1)' }); }catch(e){}
+    try{ wob.animate([{ transform: 'translateY(-12px) scale(1.12)' }, { transform: 'translateY(0) scale(1)' }], { duration: 400, easing: 'cubic-bezier(.3,1.6,.5,1)' }); }catch(e){}
+  }
+  async function rollAnim(seat, value, forfeit){
+    if(rolling[seat] !== true){ rolling[seat] = true; rollStart[seat] = Date.now(); paintDie(seat, 6, true); }      // somebody else's throw: start tumbling now
+    const spent = Date.now() - (rollStart[seat] || Date.now());
+    await sleep(Math.max(150, 750 - spent));                                                                         // always tumble a little, even if the answer came fast
+    dieSettle(seat, value);
+    rolling[seat] = false; lastDice[seat] = value;
+    await sleep(480);
+    const six = value === 6 && !forfeit;
+    if(six) sixPop(seat);
+    await sleep(six ? 650 : 160);
+  }
+  function sixPop(seat){          // advert-style celebration above the dice of whoever threw the 6, seen by everybody
+    const box = $('die-' + seat); if(!box) return;
+    const r = box.getBoundingClientRect(); if(!r.width) return;
+    const size = Math.round(Math.max(96, r.width * 2));
+    const ph = document.querySelector('.phone').getBoundingClientRect();
+    const left = Math.max(ph.left + 4, Math.min(r.left + r.width / 2 - size / 2, ph.right - size - 4));
+    const top = Math.max(4, r.top - size - 4);
+    const cols = ['#ff5fa8', '#ffd24a', '#4fd1ff', '#7dff9b', '#ffffff', '#ff8a3d'];
+    let conf = '';
+    for(let i = 0; i < 16; i++){
+      const a = Math.random() * Math.PI * 2, d = size * (.55 + Math.random() * .5);
+      conf += '<i class="sp-c" style="--c:' + cols[i % cols.length] + ';--dx:' + Math.round(Math.cos(a) * d) + 'px;--dy:' + Math.round(Math.sin(a) * d) + 'px;--rot:' + Math.round(Math.random() * 720 - 360) + 'deg;--d:' + (i * 0.03).toFixed(2) + 's"></i>';
+    }
+    const el = document.createElement('div');
+    el.className = 'sixpop';
+    el.style.cssText = 'left:' + left + 'px;top:' + top + 'px;width:' + size + 'px;height:' + size + 'px;--sz:' + size + ';';
+    el.innerHTML = '<div class="sp-rays"></div>' + conf +
+      '<div class="sp-card"><svg class="sp-crown" viewBox="0 0 36 30"><path d="M3 10l8 7 7-13 7 13 8-7-3 18H6z" fill="#ffd24a" stroke="#b5760f" stroke-width="1.6" stroke-linejoin="round"/><circle cx="18" cy="21" r="2.4" fill="#ff5fa8"/><circle cx="10" cy="22" r="1.7" fill="#4fd1ff"/><circle cx="26" cy="22" r="1.7" fill="#7dff9b"/></svg>' +
+      '<div class="sp-t1">FESGO</div><div class="sp-t2">FUN</div><div class="sp-six">6</div></div>' +
+      '<div class="sp-h a">&#9829;</div><div class="sp-h b">&#9829;</div>';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2100);
+  }
+
+  // ---------------------------------------------------------------- stored numbers (bank)
+  function legalTokens(st){       // tokens that glow: the ones the chosen number can move, or all that any stored number can move
+    const m = st.legal_map || {};
+    if(selNum) return m[selNum] || [];
+    const set = new Set(); Object.values(m).forEach(a => a.forEach(i => set.add(i))); return [...set];
+  }
+  function computeSel(st){
+    const m = st.legal_map || {}, keys = Object.keys(m);
+    if(!(st.status === 'playing' && st.turn_seat === st.my_seat) || !keys.length){ selNum = null; selUser = false; return; }
+    if(selNum && (!m[selNum] || !selUser)) selNum = null;       // a number I did not pick myself is chosen again every time
+    if(!selNum && keys.length === 1) selNum = +keys[0];
+  }
+  function renderBank(st){
+    const el = $('bankrow'); if(!el) return;
+    const bank = st.bank || [];
+    if(st.status !== 'playing' || (!bank.length && !(st.rolls_left > 1))){ el.innerHTML = ''; return; }
+    const mine = st.turn_seat === st.my_seat, m = st.legal_map || {};
+    const who = st.players.find(p => p.seat === st.turn_seat);
+    const lab = mine ? 'Your numbers' : esc(who ? (who.is_bot ? 'Computer' : who.name) : '') + ': ';
+    const chips = bank.map(n => '<button class="bchip ' + (mine ? '' : 'ro ') + (mine && selNum === n ? 'sel ' : '') + (m[n] ? '' : 'dim') + '"' + (mine && m[n] ? ' onclick="pickNum(' + n + ')"' : '') + '>' + n + '</button>').join('');
+    const rl = st.rolls_left > 0 ? '<span class="rl">Throws left: <b>' + st.rolls_left + '</b></span>' : '';
+    el.innerHTML = (bank.length ? '<span class="bl">' + lab + '</span>' + chips : '') + rl;
+  }
+  function pickNum(n){
+    if(!G || G.status !== 'playing' || G.turn_seat !== G.my_seat || !((G.legal_map || {})[n])) return;
+    selNum = n; selUser = true; renderBank(G); syncTokens(G); say(statusLine(G));
   }
 
   // ---------------------------------------------------------------- players, timer, dice
@@ -623,17 +1129,20 @@
       const av = p.avatar_url ? 'background-image:url(\'' + esc(p.avatar_url) + '\')' : 'background:' + sc;
       const isTurn = st.status === 'playing' && st.turn_seat === p.seat;
       const nm = p.is_bot ? 'Bot' : p.name;
-      const canRoll = isTurn && st.phase === 'roll' && p.seat === st.my_seat;
-      const face = isTurn && st.phase === 'move' ? st.dice : lastDice[p.seat];
-      return '<div class="pslot ' + (right ? 'right ' : '') + (isTurn ? 'on ' : '') + (p.status === 'out' ? 'out' : '') + '" style="--sc:' + sc + '" id="slot-' + p.seat + '">' +
+      const mineSeat = p.seat === st.my_seat;
+      const canRoll = isTurn && st.phase === 'roll' && mineSeat;
+      const showDie = mineSeat || isTurn;                  // my own dice is always there, the others' only while they play
+      const face = isTurn && st.dice ? st.dice : 6;        // the front shows 6 until a number is thrown
+      return '<div class="pslot ' + (right ? 'right ' : '') + (isTurn ? 'on ' : '') + (p.status === 'out' ? 'out' : '') + '" style="--sc:' + sc + '"' + (p.user_id ? ' data-uid="' + p.user_id + '"' : '') + ' id="slot-' + p.seat + '">' +
         '<div class="av" style="' + av + '">' + (p.avatar_url ? '' : esc((nm || '?').charAt(0).toUpperCase())) + '</div>' +
         '<div class="pinfo"><div class="pname">' + esc(nm) + (p.seat === st.my_seat ? ' (you)' : '') + '</div><div class="ptimer"><i id="tm-' + p.seat + '"></i></div><div class="pwarn">' + (p.status === 'out' ? 'out' : (p.missed ? 'missed ' + p.missed + '/3' : '')) + '</div></div>' +
-        '<div id="die-' + p.seat + '" ' + (canRoll ? 'onclick="rollMine()"' : '') + '>' + dieHtml(face, canRoll ? 'go' : '') + '</div></div>';
+        ((!mineSeat && !p.is_bot && p.user_id) ? '<button class="pspk" onclick="togglePeer(\'' + p.user_id + '\')" aria-label="Mute this player"><svg class="son" viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg><svg class="soff" viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16.5 12A4.5 4.5 0 0 0 14 8v2.2l2.5 2.5V12zM19 12a7 7 0 0 1-.9 3.4l1.5 1.5A9 9 0 0 0 21 12a9 9 0 0 0-7-8.8v2.1A7 7 0 0 1 19 12zM4.3 3 3 4.3 7.7 9H3v6h4l5 5v-6.7l4.2 4.2c-.7.5-1.4.9-2.2 1.1v2.1a9 9 0 0 0 3.6-1.7l2.1 2.1 1.3-1.3L4.3 3zM12 4 9.9 6.1 12 8.2V4z"/></svg></button>' : '') +
+        '<div id="die-' + p.seat + '" class="dbox ' + (mineSeat ? 'mine ' : '') + (showDie ? '' : 'ghost ') + (canRoll ? 'go' : '') + '" ' + (canRoll ? 'onclick="rollMine()"' : '') + '>' + cubeHtml(face, !!rolling[p.seat]) + '</div></div>';
     };
     $('row-top').innerHTML = mk(0) + mk(1);
     $('row-bot').innerHTML = mk(3) + mk(2);
+    paintVoice();
   }
-  function renderDie(seat, value, isRolling){ const el = $('die-' + seat); if(el) el.innerHTML = dieHtml(value, isRolling ? 'rolling' : ''); }
   function renderPot(st){ $('pot').innerHTML = st.practice ? 'Practice' : (Wallet.coinSvg + ' Pot ' + Wallet.short(st.pot)); }
   setInterval(() => {
     const st = G; if(!st || st.status !== 'playing' || !st.deadline) return;
@@ -648,22 +1157,34 @@
   let acting = false;
   async function rollMine(){
     if(acting || !G || G.turn_seat !== G.my_seat || G.phase !== 'roll') return;
-    acting = true; rolling[G.my_seat] = true; renderDie(G.my_seat, null, true);
-    try{ ingest(await rpc('ludo_roll', { p_game: gameId })); }catch(e){ toast(errText(e)); rolling[G.my_seat] = false; refresh(); }
+    acting = true; selNum = null; selUser = false;
+    const seat = G.my_seat; rolling[seat] = true; rollStart[seat] = Date.now(); paintDie(seat, G.dice || 6, true);
+    try{ ingest(await rpc('ludo_roll', { p_game: gameId })); }
+    catch(e){ toast(errText(e)); rolling[seat] = false; if(G) renderPlayers(G); refresh(); }
     acting = false;
   }
   async function tapToken(seat, idx){
-    if(acting || !G || seat !== G.my_seat || G.turn_seat !== seat || G.phase !== 'move' || !(G.legal || []).includes(idx)) return;
+    if(acting || !G || seat !== G.my_seat || G.turn_seat !== seat) return;
+    const m = G.legal_map || {};
+    let n = selNum;
+    if(!n){
+      const c = Object.keys(m).filter(k => m[k].includes(idx));
+      if(c.length === 1) n = +c[0];
+      else if(c.length > 1){ toast('Pick a number first'); return; }
+    }
+    if(!n || !(m[n] || []).includes(idx)) return;
     acting = true;
-    try{ ingest(await rpc('ludo_move', { p_game: gameId, p_token: idx })); }catch(e){ toast(errText(e)); refresh(); }
+    try{ ingest(await rpc('ludo_move', { p_game: gameId, p_token: idx, p_num: n })); selNum = null; selUser = false; }catch(e){ toast(errText(e)); refresh(); }
     acting = false;
   }
-  function maybeAuto(st){       // only one token can move: move it for the player
-    if(st.status !== 'playing' || st.turn_seat !== st.my_seat || st.phase !== 'move' || (st.legal || []).length !== 1) return;
+  function maybeAuto(st){       // no throws left, only one number and only one token can move: move it for the player
+    const m = st.legal_map || {}, keys = Object.keys(m);
+    if(st.status !== 'playing' || st.turn_seat !== st.my_seat || st.phase !== 'move' || keys.length !== 1 || m[keys[0]].length !== 1) return;
     const key = st.id + ':' + st.version; if(autoKey === key) return; autoKey = key;
-    setTimeout(() => { if(G && G.version === st.version) tapToken(st.my_seat, st.legal[0]); }, 650);
+    setTimeout(() => { if(G && G.version === st.version) tapToken(st.my_seat, m[keys[0]][0]); }, 650);
   }
   function askLeave(){
+    if(G && G.watching){ leaveWatch(); return; }
     $('leave-txt').textContent = G && !G.practice && G.bet > 0 ? 'You will lose your bet of ' + Wallet.short(G.bet) + ' coins.' : 'This practice game will end.';
     $('ov-leave').hidden = false;
   }
@@ -678,6 +1199,13 @@
   function showResult(st){
     if(shown === st.id + st.status) return; shown = st.id + st.status;
     Wallet.refresh();
+    stopChat();
+    if(st.watching){
+      const ww = st.players.find(p => p.seat === st.winner_seat);
+      $('dlg-result').innerHTML = (st.status === 'cancelled' ? '<div class="big">&#128721;</div><h2>Game ended</h2><p>The game was stopped.</p>' : '<div class="big">&#127942;</div><h2>' + esc(ww ? (ww.is_bot ? 'A bot' : ww.name) : 'Someone') + ' won</h2><p>The game is over.</p>') +
+        '<div class="row"><button class="btn" onclick="leaveWatch()">Back</button></div>';
+      $('ov-result').hidden = false; return;
+    }
     const won = st.status === 'finished' && st.winner_seat === st.my_seat;
     const myXp = (st.last_event && st.last_event.xp_by_seat && st.last_event.xp_by_seat[st.my_seat]) || 0;
     const w = st.players.find(p => p.seat === st.winner_seat);
@@ -687,8 +1215,27 @@
     else h = '<div class="big">😔</div><h2>' + esc(w ? (w.is_bot ? 'A bot' : w.name) : 'Someone') + ' won</h2><p>' + (st.practice ? 'Try again!' : 'You lost ' + Wallet.coinSvg + ' <b>' + Wallet.short(st.bet) + '</b> coins.' + (myXp ? ' You earned <b>+' + myXp + ' XP</b>.' : ' Better luck next time.')) + '</p>';
     $('dlg-result').innerHTML = h + '<div class="row"><button class="btn" onclick="leaveToLobby()">Play again</button><button class="btn alt" onclick="goHome()">Home</button></div>';
     $('ov-result').hidden = false;
+    if(!st.practice && st.status === 'finished' && !myXp){          // no Exp: was it because the daily game limit was reached?
+      Promise.resolve(supabaseClient.rpc('xp_today')).then(r => {
+        const t = r && r.data;
+        if(t && t.game_cap && t.game >= t.game_cap){
+          const p = document.querySelector('#dlg-result p');
+          if(p) p.insertAdjacentHTML('beforeend', '<br><span style="opacity:.8;font-size:.85rem">Daily game Exp limit reached (' + t.game_cap + '). It starts again at 00:00.</span>');
+        }
+      }, () => {});
+    }
   }
 
 </script>
+
+<div class="wlf-back" id="wlf-back" onclick="if(event.target === this) closeWalletFull()">
+  <div class="wlf-card coin" id="wlf-card">
+    <div class="wlf-ico" id="wlf-ico"></div>
+    <div class="wlf-title" id="wlf-title">Coins</div>
+    <div class="wlf-num copyable" id="wlf-num"></div>
+    <div class="wlf-short" id="wlf-short"></div>
+    <div class="wlf-btns"><button class="wlf-copy" onclick="copyWalletFull()">Copy</button><button class="wlf-close" onclick="closeWalletFull()">Close</button></div>
+  </div>
+</div>
 </body>
 </html>
