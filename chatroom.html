@@ -3007,7 +3007,7 @@ html, body{ overscroll-behavior-y: contain; }
     { k:'kiss_right',    n:'Kiss Right',   t:1, m:'kissR',  g:'#ffd34d', fx:{ c:['❤️','💗','💕'], n:6, mode:'up' } },
     { k:'kiss_left',     n:'Kiss Left',    t:1, m:'kissL',  g:'#ffd34d', fx:{ c:['❤️','💗','💕'], n:6, mode:'up' } },
     { k:'heart_eyes',    n:'Heart Eyes',   t:1, m:'heartbeat', g:'#ff6b8b', fx:{ c:['❤️','💗'], n:6, mode:'burst' } },
-    { k:'laugh',         n:'Laugh',        t:1, m:'laugh',  g:'#ffd34d', fx:{ c:['💧'], n:4, mode:'burst' } },
+    { k:'laugh',         n:'Laugh',        t:1, m:'bounce', g:'#ffd34d', fx:{ c:['💧'], n:4, mode:'burst' }, a:{ f:'emoji-anim-laugh.webp', n:9, fps:12 } },
     { k:'laugh_tilt',    n:'Laugh Tilt',   t:1, m:'laugh',  g:'#ffd34d', fx:{ c:['💧','✨'], n:4, mode:'burst' } },
     { k:'cool',          n:'Cool',         t:1, m:'bounce', g:'#7fd8ff', fx:{ c:['✨','⭐'], n:5, mode:'burst' } },
     { k:'thumbs_up',     n:'Thumbs Up',    t:1, m:'pop',    g:'#ffd34d', fx:{ c:['✨','⭐'], n:5, mode:'burst' } },
@@ -3089,6 +3089,7 @@ html, body{ overscroll-behavior-y: contain; }
   function preloadEmoji(){            // fetch the pictures quietly once, so they are ready when somebody plays one
     if(emojiPreloaded) return; emojiPreloaded = true;
     const im = new Image(); im.src = 'emoji-atlas.webp';
+    EMOJI_LIST.forEach(e => { if(e.a){ const am = new Image(); am.src = e.a.f; } });
   }
   function openEmojiSheet(){
     if(!iAmSeated()) return;
@@ -3192,7 +3193,7 @@ html, body{ overscroll-behavior-y: contain; }
       box.style.left = (circle.offsetLeft + circle.offsetWidth / 2 - W / 2) + 'px';
       box.style.top  = (circle.offsetTop + circle.offsetHeight / 2 - W / 2) + 'px';
       box.innerHTML = '<div class="em-glow" style="background:radial-gradient(circle,' + e.g + ' 0%,rgba(255,255,255,0) 70%)"></div>' +
-                      '<span class="em-img em-sp" style="' + emPos(e.k) + '"></span>';
+                      '<span class="em-img em-sp" style="' + (e.a ? "background-image:url('" + e.a.f + "');background-size:" + (e.a.n * 100) + '% 100%;background-position:0% 0%' : emPos(e.k)) + '"></span>';
       seatEl.appendChild(box); circle.classList.add('has-emoji');
       if(!box.animate) return;                                                                // very old browser: the picture simply shows
       const img = box.querySelector('.em-img'), glow = box.querySelector('.em-glow');
@@ -3208,6 +3209,13 @@ html, body{ overscroll-behavior-y: contain; }
         { transform: 'scale(.4) rotate(10deg)',   opacity: 0, offset: 1 }
       ], { duration: EMOJI_MS, easing: 'ease-out', fill: 'both' }));
       if(!calm){
+        // 1b) a real animated emoji: the strip of pictures plays forward and back (frame by frame), on top of the bounce below
+        if(e.a){
+          const n = e.a.n, seq = []; for(let i = 0; i < n; i++) seq.push(i); for(let i = n - 2; i >= 1; i--) seq.push(i);      // 0..n-1 then back to 1
+          const kf = seq.map((fr, i) => ({ backgroundPositionX: (n > 1 ? fr / (n - 1) * 100 : 0) + '%', offset: i / seq.length, easing: 'step-end' }));
+          kf.push({ backgroundPositionX: '0%', offset: 1 });
+          anims.push(img.animate(kf, { duration: seq.length / e.a.fps * 1000, iterations: Infinity }));
+        }
         // 2) the motion of the picture (loops)
         const mo = EM_MOTION[e.m] || EM_MOTION.bounce;
         anims.push(img.animate(mo.f, { duration: mo.d, iterations: Infinity, easing: 'ease-in-out' }));

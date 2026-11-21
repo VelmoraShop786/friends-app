@@ -18,7 +18,8 @@
    ========================================================================== */
 (function(root){
   'use strict';
-  var KEYS = ['classic', 'gold', 'aurora', 'royal', 'flame', 'legend'];
+  var KEYS = ['classic', 'gold', 'aurora', 'royal', 'flame', 'legend', 'gold_wings', 'crown_wings'];
+  var IMG = { gold_wings: 1, crown_wings: 1 };     // frames that are a picture (frames/<key>_256.webp and _512.webp) instead of a code ring
   var STALE_MS = 5 * 60 * 1000;
 
   function sb(){ return (typeof supabaseClient !== 'undefined') ? supabaseClient : null; }   // top-level const in supabase-config.js
@@ -77,6 +78,19 @@
         'box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.75),inset 0 0 11px rgba(255,255,255,.4)}' +
       '.fr-live.fr-legend::after{animation:frspin 3s linear infinite}' +
       '.fr-live.fr-legend::before{animation:frtwinkle 1.6s ease-in-out infinite}' +
+
+      /* ---- picture frames (gold_wings, crown_wings): a painted frame that reaches outside the photo, with a shine that sweeps over it ---- */
+      '@keyframes frsweep{0%{background-position:160% 0}55%,100%{background-position:-70% 0}}' +
+      '@keyframes frglow{from{filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)) drop-shadow(0 0 3px rgba(255,214,90,.35))}to{filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)) drop-shadow(0 0 9px rgba(255,214,90,.85))}}' +
+      '.fr.fr-i::after{inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);border-radius:0;-webkit-mask:none;mask:none;background:var(--fr-img) center/100% 100% no-repeat;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}' +
+      '.fr.fr-i::before{inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);border-radius:0;box-shadow:none;background:none;-webkit-mask:var(--fr-img) center/100% 100% no-repeat;mask:var(--fr-img) center/100% 100% no-repeat}' +
+      '.fr.fr-i.fr-live::before{background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.9) 50%,transparent 60%) 160% 0/260% 100% no-repeat;animation:frsweep 3.8s ease-in-out infinite}' +
+      '.fr.fr-i.fr-live::after{animation:frglow 2.4s ease-in-out infinite alternate}' +
+      '.fr-gold_wings{--fr-img:url(frames/gold_wings_256.webp)}.fr-gold_wings.fr-live{--fr-img:url(frames/gold_wings_512.webp)}' +
+      '.fr-crown_wings{--fr-img:url(frames/crown_wings_256.webp)}.fr-crown_wings.fr-live{--fr-img:url(frames/crown_wings_512.webp)}' +
+      '.you-avatar.fr-i{margin:34px 0 36px}' +
+      '.frp-big.fr-i{margin:30px 14px 30px 30px}.frp-photo .frp-big.fr-i{margin:58px 0 40px}' +
+      '.frp-grid{padding-top:8px}.frp-tile:has(.fr-i){margin-bottom:26px}.frp-tile:has(.fr-i) .frp-t-av{margin-top:22px}' +
       '@media (prefers-reduced-motion:reduce){.fr-live::before,.fr-live::after{animation:none!important}}' +
 
       /* ---- the picker popup ---- */
@@ -119,18 +133,23 @@
   var channel = null;
 
   function entry(uid){ return cache[uid]; }
-  function keyOf(uid){ var e = cache[uid]; return e ? e.k : null; }
+  function eff(e){ if(!e) return null; if(e.k && e.x && Date.parse(e.x) <= Date.now()) return 'classic'; return e.k; }
+  function keyOf(uid){ return eff(cache[uid]); }
 
   function apply(el){
     var key = el.getAttribute('data-fr-key');
     if(!key){
       var uid = el.getAttribute('data-fr');
       var e = uid ? cache[uid] : null;
-      key = e ? e.k : null;
+      key = e ? eff(e) : null;
     }
     var ok = key && KEYS.indexOf(key) >= 0;
     for(var i = 0; i < KEYS.length; i++) el.classList.remove('fr-' + KEYS[i]);
-    if(!ok){ el.classList.remove('fr', 'fr-live'); return; }
+    if(!ok){
+      el.classList.remove('fr', 'fr-live', 'fr-i');
+      if(el.hasAttribute('data-fr-ov')){ var ov0 = el.getAttribute('data-fr-ov'); el.style.overflow = (ov0 === '-') ? '' : ov0; el.removeAttribute('data-fr-ov'); el.style.removeProperty('--fr-s'); }
+      return;
+    }
     if(!el.hasAttribute('data-fr-pos')){
       el.setAttribute('data-fr-pos', '1');
       try{ if(getComputedStyle(el).position === 'static') el.style.position = 'relative'; }catch(e){}
@@ -138,6 +157,17 @@
     el.classList.add('fr', 'fr-' + key);
     var big = el.hasAttribute('data-fr-live') || el.offsetWidth >= 96;
     el.classList.toggle('fr-live', !!big);
+    // a picture frame reaches outside the photo: the avatar must not clip it, and the frame is a little smaller on small avatars
+    var isImg = !!IMG[key];
+    el.classList.toggle('fr-i', isImg);
+    if(isImg){
+      var w = el.offsetWidth || 44;
+      el.style.setProperty('--fr-s', w >= 96 ? '1.9' : (w >= 56 ? '1.7' : '1.5'));
+      if(!el.hasAttribute('data-fr-ov')){ el.setAttribute('data-fr-ov', el.style.overflow || '-'); }
+      el.style.overflow = 'visible';
+    } else if(el.hasAttribute('data-fr-ov')){
+      var ov = el.getAttribute('data-fr-ov'); el.style.overflow = (ov === '-') ? '' : ov; el.removeAttribute('data-fr-ov'); el.style.removeProperty('--fr-s');
+    }
   }
 
   function scan(){
@@ -156,11 +186,17 @@
     var stale = document.querySelectorAll('.fr:not([data-fr]):not([data-fr-key])');
     for(var j = 0; j < stale.length; j++){
       for(var q = 0; q < KEYS.length; q++) stale[j].classList.remove('fr-' + KEYS[q]);
-      stale[j].classList.remove('fr', 'fr-live');
+      stale[j].classList.remove('fr', 'fr-live', 'fr-i');
     }
     if(need.length) load(need);
   }
   function schedule(){ if(timer) return; timer = setTimeout(scan, 30); }
+  function daysLeft(ts, short){
+    var d = Math.ceil((Date.parse(ts) - Date.now()) / 86400000);
+    if(d <= 0) return short ? 'ended' : 'ended';
+    if(d === 1) return short ? '1 day' : 'ends today or tomorrow';
+    return short ? d + ' days' : d + ' days left';
+  }
 
   function load(uids){
     var c = sb(); if(!c || !c.from) return;
@@ -172,17 +208,17 @@
       var chunks = [];
       for(var i = 0; i < uids.length; i += 80) chunks.push(uids.slice(i, i + 80));
       return Promise.all(chunks.map(function(ch){
-        return Promise.resolve(c.from('user_equipped_frame').select('user_id, frame_key').in('user_id', ch)).then(function(res){
+        return Promise.resolve(c.from('user_equipped_frame').select('user_id, frame_key, expires_at').in('user_id', ch)).then(function(res){
           if(res && res.error){ ch.forEach(function(u){ delete inflight[u]; }); return; }
-          var got = {};
-          ((res && res.data) || []).forEach(function(row){ got[row.user_id] = row.frame_key; });
-          ch.forEach(function(u){ cache[u] = { k: got[u] || null, t: Date.now() }; delete inflight[u]; });
+          var got = {}, gotX = {};
+          ((res && res.data) || []).forEach(function(row){ got[row.user_id] = row.frame_key; gotX[row.user_id] = row.expires_at || null; });
+          ch.forEach(function(u){ cache[u] = { k: got[u] || null, x: gotX[u] || null, t: Date.now() }; delete inflight[u]; });
         }, function(){ ch.forEach(function(u){ delete inflight[u]; }); });
       })).then(function(){ schedule(); });
     }, function(){ uids.forEach(function(u){ delete inflight[u]; }); });
   }
 
-  function set(uid, key){ cache[uid] = { k: key || null, t: Date.now() }; schedule(); }
+  function set(uid, key, exp){ cache[uid] = { k: key || null, x: exp || null, t: Date.now() }; schedule(); }
 
   function start(){
     injectCss();
@@ -196,7 +232,7 @@
         channel = c.channel('frames-live')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'user_equipped_frame' }, function(p){
             var row = (p && (p.new && p.new.user_id ? p.new : p.old)) || null;
-            if(row && row.user_id) set(row.user_id, p.eventType === 'DELETE' ? null : row.frame_key);
+            if(row && row.user_id) set(row.user_id, p.eventType === 'DELETE' ? null : row.frame_key, row.expires_at);
           }).subscribe();
       }catch(e){}
     }
@@ -265,6 +301,7 @@
       var f = frames.filter(function(x){ return x.key === picker.sel; })[0] || frames[0];
       var isOwned = f && f.owned, isOn = f && f.key === equipped;
       var how = f ? (f.owned ? f.how : (f.unlock_level != null ? 'Reach level ' + f.unlock_level + ' to get this frame.' : f.how)) : '';
+      if(f && f.owned && f.expires_at){ how += ' (' + daysLeft(f.expires_at, false) + ')'; }
       var html = '<div class="frp-top"><div class="frp-big" data-fr-key="' + esc(f ? f.key : '') + '" data-fr-live' + avatarAttrs(src) + '>' + esc(src.txt) + '</div>' +
         '<div class="frp-info"><div class="frp-title">' + esc(f ? f.name : '') + '</div><div class="frp-how">' + esc(how) + '</div></div>' +
         '<button type="button" class="frp-act" id="frp-use"' + ((isOn || !isOwned) ? ' disabled' : '') + '>' + (isOn ? 'Active' : (isOwned ? 'Use' : 'Locked')) + '</button></div>' +
@@ -272,7 +309,7 @@
           return '<button type="button" class="frp-tile' + (x.key === picker.sel ? ' sel' : '') + (x.owned ? '' : ' locked') + '" data-k="' + esc(x.key) + '">' +
             (x.key === equipped ? '<span class="frp-tick">✓</span>' : (x.owned ? '' : '<span class="frp-lock">🔒</span>')) +
             '<div class="frp-t-av" data-fr-key="' + esc(x.key) + '"' + avatarAttrs(src) + '>' + esc(src.txt) + '</div>' +
-            '<div class="frp-name">' + esc(x.name) + (x.owned ? '' : (x.unlock_level != null ? ' · Lv ' + x.unlock_level : '')) + '</div></button>';
+            '<div class="frp-name">' + esc(x.name) + (x.owned ? (x.expires_at ? ' · ' + daysLeft(x.expires_at, true) : '') : (x.unlock_level != null ? ' · Lv ' + x.unlock_level : '')) + '</div></button>';
         }).join('') + '</div>';
       pane.innerHTML = html;
       pane.querySelectorAll('.frp-tile').forEach(function(t){ t.addEventListener('click', function(){ picker.sel = t.getAttribute('data-k'); render(); }); });
