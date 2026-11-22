@@ -1769,9 +1769,11 @@
       catch(err){ showToast('Image upload failed: ' + (err.message || 'try again')); return; }
     }
 
-    const { error } = await supabaseClient.from('app_theme').update(update).eq('id','global');
+    const { data: savedRows, error } = await supabaseClient.from('app_theme').update(update).eq('id','global').select();
     if(error){ showToast('Could not save theme: ' + error.message); return; }
+    if(!savedRows || !savedRows.length){ showToast('Theme was NOT saved: the database did not accept it (app_theme row / permission).'); return; }
     pendingBgBlob = null;
+    try{ localStorage.setItem('app-theme-cache', JSON.stringify(savedRows[0])); }catch(err){}   // every page (Play page too) starts from the saved theme
     showToast('App theme updated for everyone');
     loadAppTheme();
   }

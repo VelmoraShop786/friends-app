@@ -19,7 +19,7 @@
 (function(root){
   'use strict';
   var KEYS = ['classic', 'gold', 'aurora', 'royal', 'flame', 'legend', 'gold_wings', 'crown_wings'];
-  var IMG = { gold_wings: 1, crown_wings: 1 };     // frames that are a picture (frames/<key>_256.webp and _512.webp) instead of a code ring
+  var IMG = { gold_wings: 1, crown_wings: 1 };     // frames that are a picture (<key>_256.webp and _512.webp in the repo root) instead of a code ring
   var STALE_MS = 5 * 60 * 1000;
 
   function sb(){ return (typeof supabaseClient !== 'undefined') ? supabaseClient : null; }   // top-level const in supabase-config.js
@@ -86,8 +86,8 @@
       '.fr.fr-i::before{inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);border-radius:0;box-shadow:none;background:none;-webkit-mask:var(--fr-img) center/100% 100% no-repeat;mask:var(--fr-img) center/100% 100% no-repeat}' +
       '.fr.fr-i.fr-live::before{background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.9) 50%,transparent 60%) 160% 0/260% 100% no-repeat;animation:frsweep 3.8s ease-in-out infinite}' +
       '.fr.fr-i.fr-live::after{animation:frglow 2.4s ease-in-out infinite alternate}' +
-      '.fr-gold_wings{--fr-img:url(frames/gold_wings_256.webp)}.fr-gold_wings.fr-live{--fr-img:url(frames/gold_wings_512.webp)}' +
-      '.fr-crown_wings{--fr-img:url(frames/crown_wings_256.webp)}.fr-crown_wings.fr-live{--fr-img:url(frames/crown_wings_512.webp)}' +
+      '.fr-gold_wings{--fr-img:url(/gold_wings_256.webp)}.fr-gold_wings.fr-live{--fr-img:url(/gold_wings_512.webp)}' +
+      '.fr-crown_wings{--fr-img:url(/crown_wings_256.webp)}.fr-crown_wings.fr-live{--fr-img:url(/crown_wings_512.webp)}' +
       '.you-avatar.fr-i{margin:34px 0 36px}' +
       '.frp-big.fr-i{margin:30px 14px 30px 30px}.frp-photo .frp-big.fr-i{margin:58px 0 40px}' +
       '.frp-grid{padding-top:8px}.frp-tile:has(.fr-i){margin-bottom:26px}.frp-tile:has(.fr-i) .frp-t-av{margin-top:22px}' +

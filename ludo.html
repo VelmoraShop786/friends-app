@@ -31,7 +31,7 @@
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body{ min-height:100%; }
   body{ font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); display:flex; justify-content:center; user-select:none; -webkit-user-select:none; }
-  .phone{ width:100%; max-width:420px; min-height:100vh; background:var(--card); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  .phone{ width:100%; max-width:420px; min-height:100vh; background:var(--bg); position:relative; overflow:hidden; display:flex; flex-direction:column; }
   [hidden]{ display:none !important; }
   .scr{ flex:1; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
 
@@ -145,10 +145,9 @@
   .cface.f2{ transform:rotateX(-90deg) translateZ(calc(var(--ds) / 2)); }
   .dice-royal .cface{ background:linear-gradient(145deg,#3a3a42,#0c0c10); border:2px solid #e0b050; box-shadow:inset 0 0 8px rgba(255,255,255,.14); }
   .dice-royal .cface i.on{ background:radial-gradient(circle at 35% 30%,#fff3b8,#e0b050 60%,#8a5a14); }
-  .tumble .cube3d{ animation:spin3d .42s linear infinite; }
-  .tumble .dwob{ animation:wob .2s ease-in-out infinite; }
-  .dice3d.tumble{ filter:blur(1.8px) brightness(1.05); }
-  @keyframes spin3d{ from{ transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg); } to{ transform:rotateX(1080deg) rotateY(720deg) rotateZ(540deg); } }
+  .tumble .cube3d{ animation:spin3d .75s linear infinite; }
+  .tumble .dwob{ animation:wob .38s ease-in-out infinite; }
+  @keyframes spin3d{ from{ transform:rotate3d(1,.7,.3,0deg); } to{ transform:rotate3d(1,.7,.3,360deg); } }
   @keyframes wob{ 0%{ transform:translate(0,0) rotate(0deg); } 25%{ transform:translate(8px,-7px) rotate(9deg); } 50%{ transform:translate(-7px,3px) rotate(-7deg); } 75%{ transform:translate(6px,6px) rotate(6deg); } 100%{ transform:translate(0,0) rotate(0deg); } }
 
   /* ---- stored numbers ---- */
@@ -481,8 +480,7 @@
   (async function init(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session){ location.replace('index.html'); return; }
-    me = session.user; selfId = me.id; spToken = session.access_token;
-    setInterval(() => { try{ supabaseClient.auth.getSession().then(r => { if(r && r.data && r.data.session) spToken = r.data.session.access_token; }); }catch(e){} }, 240000);
+    me = session.user; selfId = me.id;
     try{ $('eyeico').innerHTML = EYE; }catch(e){}
     try{ Wallet.onChange(w => { const h = Wallet.chips(); ['lobby-wallet', 'game-wallet'].forEach(id => { if($(id)) $(id).innerHTML = h; }); renderBets(); }); Wallet.start(me.id); }catch(e){}
     applyThemeClass();
@@ -691,7 +689,6 @@
   // ---------------------------------------------------------------- spectators and the two chats
   // 'game' chat = the players talk (spectators can only read). 'spec' chat = spectators and players talk (opened with the eye).
   // Both chats are shown only from the moment this person came in, and they are wiped when the game ends.
-  let spToken = null;
   let selfId = null, chatT = null, chatBusy = false, gcLast = 0, spLast = 0, specOpen = false, lastSpecCount = -1;
   let gcMsgs = [], spMsgs = [];
   const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>';
@@ -931,16 +928,7 @@
     clearTimeout(voiceTimer); if(pending) voiceTimer = setTimeout(paintVoice, 1300);
   }
   document.addEventListener('click', () => { try{ if(lkRoom) lkRoom.startAudio(); }catch(e){} });
-  window.addEventListener('pagehide', () => {
-    try{ if(lkRoom) lkRoom.disconnect(); }catch(e){}
-    // a spectator who closes the page must stop counting as "watching" at once (the request is allowed to finish after the page is gone)
-    try{
-      if(G && G.watching && gameId && spToken){
-        fetch(SUPABASE_URL + '/rest/v1/rpc/ludo_spectate_leave', { method: 'POST', keepalive: true,
-          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + spToken }, body: JSON.stringify({ p_game: gameId }) });
-      }
-    }catch(e){}
-  });
+  window.addEventListener('pagehide', () => { try{ if(lkRoom) lkRoom.disconnect(); }catch(e){} });
 
   // ---------------------------------------------------------------- the board
   // ---------------------------------------------------------------- themes (each person sees the board in the theme he chose; saved on this phone)
@@ -1065,16 +1053,16 @@
     const from = getComputedStyle(cube).transform, to = FACE_ROT[value] || FACE_ROT[6];
     root.classList.remove('tumble');
     cube.style.transform = to;
-    try{ cube.animate([{ transform: (from && from !== 'none') ? from : to }, { transform: to }], { duration: 520, easing: 'cubic-bezier(.2,.8,.3,1)' }); }catch(e){}
+    try{ cube.animate([{ transform: (from && from !== 'none') ? from : to }, { transform: to }], { duration: 480, easing: 'cubic-bezier(.2,.8,.3,1)' }); }catch(e){}
     try{ wob.animate([{ transform: 'translateY(-12px) scale(1.12)' }, { transform: 'translateY(0) scale(1)' }], { duration: 400, easing: 'cubic-bezier(.3,1.6,.5,1)' }); }catch(e){}
   }
   async function rollAnim(seat, value, forfeit){
     if(rolling[seat] !== true){ rolling[seat] = true; rollStart[seat] = Date.now(); paintDie(seat, 6, true); }      // somebody else's throw: start tumbling now
     const spent = Date.now() - (rollStart[seat] || Date.now());
-    await sleep(Math.max(250, 1400 - spent));                                                                         // always tumble a little, even if the answer came fast
+    await sleep(Math.max(150, 750 - spent));                                                                         // always tumble a little, even if the answer came fast
     dieSettle(seat, value);
     rolling[seat] = false; lastDice[seat] = value;
-    await sleep(520);
+    await sleep(480);
     const six = value === 6 && !forfeit;
     if(six) sixPop(seat);
     await sleep(six ? 650 : 160);
