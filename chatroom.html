@@ -2850,11 +2850,51 @@ html, body{ overscroll-behavior-y: contain; }
         voiceRerun = false;
         const want = wantedVoiceMode();
         if(lkRoom && lkMode === want) continue;
+        // Sitting down while already connected as a listener: ask the server to let this SAME connection speak
+        // (no disconnect, no new connection). If that is not possible the old way below still works.
+        if(lkRoom && lkMode === 'listen' && want === 'speak' && speakRefusals < 2){
+          if(await promoteVoice()) continue;
+        }
         if(lkRoom) await closeLk();
         await openLk(want);
       } while(voiceRerun && !leavingRoom);
     }finally{
       voiceBusy = false;
+    }
+  }
+
+  // Upgrade the CURRENT connection from listener to speaker without reconnecting (this is what removes the silent moment
+  // after taking a seat). Returns true when the mic is on. Any problem returns false and the normal reconnect takes over.
+  async function promoteVoice(){
+    const room = lkRoom;
+    if(!room) return false;
+    try{
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/livekit-token', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ room: ROOM_ID, promote: true })
+      });
+      if(!resp.ok) return false;
+      const data = await resp.json();
+      if(data.promoted !== true) return false;          // an older function answers with a token instead: use the normal reconnect
+      // wait (at most 2 s) until this phone itself knows it is allowed to speak
+      for(let i = 0; i < 20 && lkRoom === room && !(room.localParticipant.permissions && room.localParticipant.permissions.canPublish); i++){
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if(lkRoom !== room || leavingRoom) return false;
+      await room.localParticipant.setMicrophoneEnabled(true);
+      if(lkRoom !== room) return false;
+      lkMode = 'speak';
+      micEnabled = true;
+      micSettled = true;
+      speakRefusals = 0;
+      syncMicBtn();
+      syncSeatVoiceUi();
+      return true;
+    }catch(err){
+      console.error('Voice upgrade failed, reconnecting instead:', err);
+      return false;
     }
   }
 
