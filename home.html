@@ -393,15 +393,47 @@
   .nav-ico svg{ width:31px; height:31px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); transition: width .28s ease, height .28s ease; }
   .nav-btn:active .nav-ico{ transform: scale(.9); }
   .nav-btn.active{ color:#fff; }
+  /* open tab: a slightly smaller bubble, ringed in gold, with three small butterflies on it and a shine that sweeps down every 2 s */
   .nav-btn.active .nav-ico{
-    width:54px; height:54px; margin-bottom:9px;
-    background: radial-gradient(circle at 32% 24%, #ffffff, #f2fff9 52%, color-mix(in srgb, var(--teal) 40%, #fff));
-    box-shadow: 0 0 0 3px #fff, 0 0 0 6px color-mix(in srgb, var(--teal) 70%, transparent), 0 10px 20px rgba(0,0,0,.35);
+    width:48px; height:48px; margin-bottom:11px;
+    background: radial-gradient(circle at 32% 24%, #ffffff, #fff8e1 55%, #ffe9a8);
+    box-shadow: 0 0 0 2px #fff6d6, 0 0 8px rgba(255,200,60,.45), 0 8px 18px rgba(0,0,0,.35);
     animation: navpop .5s cubic-bezier(.3,1.6,.5,1), navglow 2.4s ease-in-out .5s infinite;
   }
-  .nav-btn.active .nav-ico svg{ width:40px; height:40px; }
+  .nav-btn.active .nav-ico svg{ width:34px; height:34px; }
+  .nav-ico{ position:relative; }
+  .nav-btn.active .nav-ico::before{
+    content:''; position:absolute; inset:-7px; border-radius:50%; pointer-events:none;
+    background: conic-gradient(from 20deg, #fff1a8, #e0a21c, #fff6c4, #b87a0c, #ffe27a, #d9951a, #fff1a8);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.6px), #000 calc(100% - 3px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 3.6px), #000 calc(100% - 3px));
+    filter: drop-shadow(0 0 3px rgba(255,200,60,.7));
+    animation: navring .5s cubic-bezier(.3,1.4,.5,1) .12s both;
+  }
+  .nav-btn.active .nav-ico::after{
+    content:''; position:absolute; inset:-7px; border-radius:50%; pointer-events:none; z-index:3;
+    background: linear-gradient(165deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.95) 50%, rgba(255,255,255,0) 60%);
+    background-size: 100% 300%; background-position: 50% 100%; background-repeat: no-repeat;
+    opacity:0;
+    animation: navshine 2.2s ease-in-out 1s infinite;
+  }
   @keyframes navpop{ 0%{ transform: translateY(14px) scale(.6); } 100%{ transform: translateY(0) scale(1); } }
-  @keyframes navglow{ 0%,100%{ box-shadow: 0 0 0 3px #fff, 0 0 0 6px color-mix(in srgb, var(--teal) 70%, transparent), 0 10px 20px rgba(0,0,0,.35); } 50%{ box-shadow: 0 0 0 3px #fff, 0 0 0 9px color-mix(in srgb, var(--teal) 35%, transparent), 0 10px 24px rgba(0,0,0,.4); } }
+  @keyframes navring{ 0%{ transform: scale(.55); opacity:0; } 100%{ transform: scale(1); opacity:1; } }
+  @keyframes navglow{ 0%,100%{ box-shadow: 0 0 0 2px #fff6d6, 0 0 8px rgba(255,200,60,.45), 0 8px 18px rgba(0,0,0,.35); } 50%{ box-shadow: 0 0 0 2px #fff6d6, 0 0 16px rgba(255,200,60,.85), 0 8px 22px rgba(0,0,0,.35); } }
+  @keyframes navshine{ 0%{ background-position: 50% 100%; opacity:1; } 50%{ background-position: 50% 0%; opacity:1; } 50.1%,100%{ background-position: 50% 0%; opacity:0; } }
+  /* butterflies: fixed in place, only the wings beat */
+  .nv-fx{ display:none; position:absolute; inset:0; pointer-events:none; z-index:2; }
+  .nav-btn.active .nv-fx{ display:block; }
+  .nv-b{ position:absolute; width:11px; height:9.5px; opacity:0; transform: rotate(var(--r,0deg)) scale(.2);
+    animation: nvbin .4s cubic-bezier(.3,1.5,.5,1) .42s forwards; }
+  .nv-b svg{ display:block; width:100%; height:100%; overflow:visible; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+  .nv-b .bw{ transform-origin:12px 10px; animation: nvflap .32s ease-in-out infinite alternate; animation-delay: var(--fd,0s); }
+  .nv-b1{ left:0px; top:-6px; --r:-28deg; --fd:0s; }
+  .nv-b2{ left:48px; top:14px; --r:24deg; --fd:-.14s; }
+  .nv-b3{ left:30px; top:34px; width:9px; height:7.5px; --r:14deg; --fd:-.22s; }
+  @keyframes nvbin{ from{ opacity:0; transform: rotate(var(--r,0deg)) scale(.2); } to{ opacity:1; transform: rotate(var(--r,0deg)) scale(1); } }
+  @keyframes nvflap{ from{ transform: scaleX(1); } to{ transform: scaleX(.2); } }
+  .nav-btn:not(.active) .nav-ico svg{ opacity:.94; }
   .nav-avatar{
     width:31px; height:31px; border-radius:50%;
     background: linear-gradient(135deg, var(--teal), var(--teal-deep)); color:#fff;
@@ -410,10 +442,10 @@
     display:flex; align-items:center; justify-content:center; box-sizing:border-box;
     transition: width .28s ease, height .28s ease;
   }
-  .nav-btn.active .nav-avatar{ width:42px; height:42px; font-size:.9rem; }
+  .nav-btn.active .nav-avatar{ width:36px; height:36px; font-size:.85rem; }
   .nav-label{ font-size:0.68rem; font-weight:600; letter-spacing:.01em; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
-  .nav-btn.active .nav-label{ font-weight:800; }
-  @media (prefers-reduced-motion: reduce){ .nav-btn.active .nav-ico{ animation:none; } }
+  .nav-btn.active .nav-label{ font-weight:800; color:#ffe9a8; }
+  @media (prefers-reduced-motion: reduce){ .nav-btn.active .nav-ico, .nav-btn.active .nav-ico::before, .nav-btn.active .nav-ico::after, .nv-b, .nv-b .bw{ animation:none; } .nv-b{ opacity:1; transform: rotate(var(--r,0deg)); } }
 
 
   /* ---- wallet card on the You tab: short numbers, tap a tile for the full number ---- */
@@ -1236,6 +1268,27 @@
   // Game page 3-dots: opens the full Settings page (room to grow: more items can be added to it later)
   function openMenuPage(){ document.getElementById('menu-page').classList.add('show'); }
   function closeMenuPage(){ const m = document.getElementById('menu-page'); if(m) m.classList.remove('show'); }
+
+  // bottom-nav effects: three small butterflies per tab (only visible on the open tab) + a tiny tap vibration
+  (function initNavFx(){
+    const W = '<path d="M11.6 9C10 3.5 5 .8 2.2 2.6 .6 3.8 1.4 7 3.6 9c2.2 2 5.4 1.600 8 1Z" fill="url(#nvg1)" stroke="#0a3a8c" stroke-width=".7" stroke-linejoin="round"/>' +
+              '<path d="M11.6 10.4C8.6 10.200 4.600 11.400 4.200 14.600 3.900 17.200 6.800 18.600 8.800 16.600 10.400 15 11.400 12.800 11.600 10.400Z" fill="url(#nvg2)" stroke="#0a3a8c" stroke-width=".7" stroke-linejoin="round"/>' +
+              '<circle cx="4.800" cy="5.200" r=".9" fill="#fff" fill-opacity=".85"/><circle cx="7.200" cy="15.200" r=".7" fill="#fff" fill-opacity=".85"/>';
+    const BF = '<svg viewBox="0 0 24 20" aria-hidden="true"><g class="bw">' + W + '</g><g class="bw"><g transform="matrix(-1 0 0 1 24 0)">' + W + '</g></g>' +
+               '<ellipse cx="12" cy="10" rx="1.200" ry="5.600" fill="#1b1030"/><path d="M11.400 4.800Q9.500 1.500 8 1.200M12.600 4.800Q14.500 1.500 16 1.200" stroke="#1b1030" fill="none" stroke-width=".7" stroke-linecap="round"/></svg>';
+    if(!document.getElementById('nv-defs')){
+      document.body.insertAdjacentHTML('beforeend', '<svg id="nv-defs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
+        '<linearGradient id="nvg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe9ff"/><stop offset="1" stop-color="#2f7dff"/></linearGradient>' +
+        '<linearGradient id="nvg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6cd0ff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient></defs></svg>');
+    }
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      const ico = btn.querySelector('.nav-ico');
+      if(ico && !ico.querySelector('.nv-fx')){
+        ico.insertAdjacentHTML('beforeend', '<span class="nv-fx" aria-hidden="true"><span class="nv-b nv-b1">' + BF + '</span><span class="nv-b nv-b2">' + BF + '</span><span class="nv-b nv-b3">' + BF + '</span></span>');
+      }
+      btn.addEventListener('click', () => { try{ if(navigator.vibrate) navigator.vibrate(8); }catch(err){} });
+    });
+  })();
 
   function showScreen(name){
     closeMenuPage();

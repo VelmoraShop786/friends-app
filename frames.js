@@ -19,7 +19,7 @@
 (function(root){
   'use strict';
   var KEYS = ['classic', 'gold', 'aurora', 'royal', 'flame', 'legend', 'gold_wings', 'crown_wings'];
-  var IMG = { gold_wings: 1, crown_wings: 1 };     // frames that are a picture (<key>_256.webp and _512.webp in the repo root) instead of a code ring
+  var IMG = { gold_wings: 1, crown_wings: 1 };     // frames that are a picture (frames/<key>_256.webp and _512.webp) instead of a code ring
   var STALE_MS = 5 * 60 * 1000;
 
   function sb(){ return (typeof supabaseClient !== 'undefined') ? supabaseClient : null; }   // top-level const in supabase-config.js
@@ -82,16 +82,29 @@
       /* ---- picture frames (gold_wings, crown_wings): a painted frame that reaches outside the photo, with a shine that sweeps over it ---- */
       '@keyframes frsweep{0%{background-position:160% 0}55%,100%{background-position:-70% 0}}' +
       '@keyframes frglow{from{filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)) drop-shadow(0 0 3px rgba(255,214,90,.35))}to{filter:drop-shadow(0 2px 4px rgba(0,0,0,.35)) drop-shadow(0 0 9px rgba(255,214,90,.85))}}' +
-      '.fr.fr-i::after{inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);border-radius:0;-webkit-mask:none;mask:none;background:var(--fr-img) center/100% 100% no-repeat;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}' +
+      '.fr.fr-i::after{inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);border-radius:0;-webkit-mask:none;mask:none;background:var(--fr-body) center/100% 100% no-repeat;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}' +
       '.fr.fr-i::before{inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);border-radius:0;box-shadow:none;background:none;-webkit-mask:var(--fr-img) center/100% 100% no-repeat;mask:var(--fr-img) center/100% 100% no-repeat}' +
       '.fr.fr-i.fr-live::before{background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.9) 50%,transparent 60%) 160% 0/260% 100% no-repeat;animation:frsweep 3.8s ease-in-out infinite}' +
       '.fr.fr-i.fr-live::after{animation:frglow 2.4s ease-in-out infinite alternate}' +
-      '.fr-gold_wings{--fr-img:url(/gold_wings_256.webp)}.fr-gold_wings.fr-live{--fr-img:url(/gold_wings_512.webp)}' +
-      '.fr-crown_wings{--fr-img:url(/crown_wings_256.webp)}.fr-crown_wings.fr-live{--fr-img:url(/crown_wings_512.webp)}' +
+      '.fr-gold_wings{--fr-img:url(/gold_wings_256.webp);--fr-body:url(/gold_wings_body.webp);--fr-wl:url(/gold_wings_wl.webp);--fr-wr:url(/gold_wings_wr.webp);--fr-oy:77.7%;--fl-sx:1.025;--fl-sy:1.045;--fl-r:1.6deg}.fr-gold_wings.fr-live{--fr-img:url(/gold_wings_512.webp)}' +
+      '.fr-crown_wings{--fr-img:url(/crown_wings_256.webp);--fr-body:url(/crown_wings_body.webp);--fr-wl:url(/crown_wings_wl.webp);--fr-wr:url(/crown_wings_wr.webp);--fr-oy:65.4%;--fl-sx:1.035;--fl-sy:1.07;--fl-r:2.5deg}.fr-crown_wings.fr-live{--fr-img:url(/crown_wings_512.webp)}' +
+      /* the two wings are their own layers (made by splitting the picture): they open and close like a bird, hinged where the wing meets the ring */
+      '@keyframes frflapl{0%,100%{transform:none}34%{transform:scale(var(--fl-sx),var(--fl-sy)) rotate(calc(var(--fl-r) * -1))}68%{transform:none}}' +
+      '@keyframes frflapr{0%,100%{transform:none}34%{transform:scale(var(--fl-sx),var(--fl-sy)) rotate(var(--fl-r))}68%{transform:none}}' +
+      '@keyframes frember{0%{opacity:0;transform:translate(0,0) scale(.45)}14%{opacity:1}100%{opacity:0;transform:translate(var(--dx,0),-620%) scale(.12)}}' +
+      '@keyframes frtw{0%,100%{opacity:0;transform:scale(.3) rotate(0deg)}45%{opacity:1;transform:scale(1.05) rotate(45deg)}70%{opacity:.15;transform:scale(.5) rotate(70deg)}}' +
+      '.fr-i>.fr-wl,.fr-i>.fr-wr{position:absolute;inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);z-index:3;pointer-events:none;background-size:100% 100%;background-repeat:no-repeat;will-change:transform;animation-duration:2.5s;animation-timing-function:cubic-bezier(.45,.05,.35,1);animation-iteration-count:infinite}' +
+      '.fr-i>.fr-wl{background-image:var(--fr-wl);transform-origin:21.1% var(--fr-oy);animation-name:frflapl}' +
+      '.fr-i>.fr-wr{background-image:var(--fr-wr);transform-origin:78.9% var(--fr-oy);animation-name:frflapr}' +
+      '.fr-i>.fr-sp{position:absolute;inset:calc((1 - var(--fr-s,1.9)) / 2 * 100%);z-index:6;pointer-events:none}' +
+      '.fr-i.fr-sm>.fr-sp i.fr-e{display:none}' +
+      '.fr-sp i{position:absolute;display:block;pointer-events:none}' +
+      '.fr-sp i.fr-e{width:4.6%;height:4.6%;margin:-2.3% 0 0 -2.3%;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffe68a 28%,#ff9c1a 56%,rgba(255,110,0,0) 72%);opacity:0;animation:frember 2.9s ease-out infinite;animation-delay:var(--d,0s)}' +
+      '.fr-sp i.fr-t{width:11%;height:11%;margin:-5.5% 0 0 -5.5%;background:radial-gradient(circle,#fff 0 16%,rgba(255,255,255,0) 56%),linear-gradient(#fff,#fff) center/9% 100% no-repeat,linear-gradient(#fff,#fff) center/100% 9% no-repeat;-webkit-mask:radial-gradient(circle,#000 22%,transparent 68%);mask:radial-gradient(circle,#000 22%,transparent 68%);opacity:0;animation:frtw 2.4s ease-in-out infinite;animation-delay:var(--d,0s)}' +
       '.you-avatar.fr-i{margin:34px 0 36px}' +
       '.frp-big.fr-i{margin:30px 14px 30px 30px}.frp-photo .frp-big.fr-i{margin:58px 0 40px}' +
       '.frp-grid{padding-top:8px}.frp-tile:has(.fr-i){margin-bottom:26px}.frp-tile:has(.fr-i) .frp-t-av{margin-top:22px}' +
-      '@media (prefers-reduced-motion:reduce){.fr-live::before,.fr-live::after{animation:none!important}}' +
+      '@media (prefers-reduced-motion:reduce){.fr-live::before,.fr-live::after,.fr-i>.fr-wl,.fr-i>.fr-wr,.fr-sp i{animation:none!important}.fr-sp i{display:none!important}}' +
 
       /* ---- the picker popup ---- */
       '.frp-back{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box}' +
@@ -136,6 +149,36 @@
   function eff(e){ if(!e) return null; if(e.k && e.x && Date.parse(e.x) <= Date.now()) return 'classic'; return e.k; }
   function keyOf(uid){ return eff(cache[uid]); }
 
+  // ember positions (percent of the frame box) around the wings + glints on the jewels, per picture frame
+  var SPARKS = {
+    crown_wings: { e: [[13,30],[19,46],[9,50],[16,22]], t: [[50.2,13.7],[50,79]] },
+    gold_wings:  { e: [[14,36],[19,52],[12,24],[22,14]], t: [[50.3,7.4],[49.8,83]] }
+  };
+  function ensureKids(el, key){
+    var have = el.getAttribute('data-fr-kids');
+    var ok = have === key && el.querySelector(':scope > .fr-wl') && el.querySelector(':scope > .fr-wr') && el.querySelector(':scope > .fr-sp');
+    if(ok) return;
+    removeKids(el);
+    var cfg = SPARKS[key]; if(!cfg) return;
+    var h = '<span class="fr-wl"></span><span class="fr-wr"></span><span class="fr-sp">';
+    for(var i = 0; i < cfg.e.length; i++){
+      var p = cfg.e[i];
+      h += '<i class="fr-e" style="left:' + p[0] + '%;top:' + p[1] + '%;--dx:-170%;--d:' + (i * 0.7).toFixed(1) + 's"></i>';
+      h += '<i class="fr-e" style="left:' + (100 - p[0]) + '%;top:' + p[1] + '%;--dx:170%;--d:' + (i * 0.7 + 0.35).toFixed(2) + 's"></i>';
+    }
+    for(var j = 0; j < cfg.t.length; j++){
+      h += '<i class="fr-t" style="left:' + cfg.t[j][0] + '%;top:' + cfg.t[j][1] + '%;--d:' + (j * 1.1).toFixed(1) + 's"></i>';
+    }
+    h += '</span>';
+    el.insertAdjacentHTML('beforeend', h);
+    el.setAttribute('data-fr-kids', key);
+  }
+  function removeKids(el){
+    var k = el.querySelectorAll(':scope > .fr-wl, :scope > .fr-wr, :scope > .fr-sp');
+    for(var i = 0; i < k.length; i++) k[i].parentNode.removeChild(k[i]);
+    el.removeAttribute('data-fr-kids');
+  }
+
   function apply(el){
     var key = el.getAttribute('data-fr-key');
     if(!key){
@@ -146,7 +189,8 @@
     var ok = key && KEYS.indexOf(key) >= 0;
     for(var i = 0; i < KEYS.length; i++) el.classList.remove('fr-' + KEYS[i]);
     if(!ok){
-      el.classList.remove('fr', 'fr-live', 'fr-i');
+      el.classList.remove('fr', 'fr-live', 'fr-i', 'fr-sm');
+      if(el.hasAttribute('data-fr-kids')) removeKids(el);
       if(el.hasAttribute('data-fr-ov')){ var ov0 = el.getAttribute('data-fr-ov'); el.style.overflow = (ov0 === '-') ? '' : ov0; el.removeAttribute('data-fr-ov'); el.style.removeProperty('--fr-s'); }
       return;
     }
@@ -165,9 +209,12 @@
       el.style.setProperty('--fr-s', w >= 96 ? '1.9' : (w >= 56 ? '1.7' : '1.5'));
       if(!el.hasAttribute('data-fr-ov')){ el.setAttribute('data-fr-ov', el.style.overflow || '-'); }
       el.style.overflow = 'visible';
+      el.classList.toggle('fr-sm', w < 56);
+      ensureKids(el, key);
     } else if(el.hasAttribute('data-fr-ov')){
       var ov = el.getAttribute('data-fr-ov'); el.style.overflow = (ov === '-') ? '' : ov; el.removeAttribute('data-fr-ov'); el.style.removeProperty('--fr-s');
     }
+    if(!isImg){ el.classList.remove('fr-sm'); if(el.hasAttribute('data-fr-kids')) removeKids(el); }
   }
 
   function scan(){
@@ -186,7 +233,8 @@
     var stale = document.querySelectorAll('.fr:not([data-fr]):not([data-fr-key])');
     for(var j = 0; j < stale.length; j++){
       for(var q = 0; q < KEYS.length; q++) stale[j].classList.remove('fr-' + KEYS[q]);
-      stale[j].classList.remove('fr', 'fr-live', 'fr-i');
+      stale[j].classList.remove('fr', 'fr-live', 'fr-i', 'fr-sm');
+      if(stale[j].hasAttribute('data-fr-kids')) removeKids(stale[j]);
     }
     if(need.length) load(need);
   }
