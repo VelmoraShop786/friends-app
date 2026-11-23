@@ -31,7 +31,7 @@
   *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body{ min-height:100%; }
   body{ font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); display:flex; justify-content:center; user-select:none; -webkit-user-select:none; }
-  .phone{ width:100%; max-width:420px; min-height:100vh; background:var(--card); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  .phone{ width:100%; max-width:420px; min-height:100vh; background:var(--bg); position:relative; overflow:hidden; display:flex; flex-direction:column; }
   [hidden]{ display:none !important; }
   .scr{ flex:1; display:flex; flex-direction:column; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
 
@@ -131,7 +131,7 @@
   .dbox.mine{ --ds:52px; }
   .dbox.ghost{ visibility:hidden; }
   .dbox.go{ cursor:pointer; animation:pl 1s ease-in-out infinite; filter:drop-shadow(0 0 7px rgba(255,214,120,.95)); }
-  .dice3d{ width:100%; height:100%; perspective:280px; }
+  .dice3d{ width:100%; height:100%; perspective:1100px; }
   .dwob{ width:100%; height:100%; }
   .cube3d{ width:100%; height:100%; position:relative; transform-style:preserve-3d; }
   .cface{ position:absolute; inset:0; border-radius:20%; background:#fff; border:2px solid #cfd8d5; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:13%; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
@@ -145,10 +145,16 @@
   .cface.f2{ transform:rotateX(-90deg) translateZ(calc(var(--ds) / 2)); }
   .dice-royal .cface{ background:linear-gradient(145deg,#3a3a42,#0c0c10); border:2px solid #e0b050; box-shadow:inset 0 0 8px rgba(255,255,255,.14); }
   .dice-royal .cface i.on{ background:radial-gradient(circle at 35% 30%,#fff3b8,#e0b050 60%,#8a5a14); }
-  .tumble .cube3d{ animation:spin3d .42s linear infinite; }
-  .tumble .dwob{ animation:wob .2s ease-in-out infinite; }
-  .dice3d.tumble{ filter:blur(1.8px) brightness(1.05); }
-  @keyframes spin3d{ from{ transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg); } to{ transform:rotateX(1080deg) rotateY(720deg) rotateZ(540deg); } }
+  .tumble .cube3d{ animation:spin3d .75s linear infinite; }
+  /* the cube sits half its size behind the screen plane, so the face you look at is exactly the die size (no growing while it turns) */
+  @keyframes spin3d{ from{ transform:translateZ(calc(var(--ds) / -2)) rotate3d(1,.7,.3,0deg); } to{ transform:translateZ(calc(var(--ds) / -2)) rotate3d(1,.7,.3,360deg); } }
+  /* the 6 side of the die shows the Fesgo Fun celebration card */
+  .cface.fesgo{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0; overflow:hidden; text-align:center; line-height:.95; font-family:'Inter',system-ui,sans-serif; font-weight:900;
+    background:linear-gradient(155deg,#8a45ff 0%,#4a22b8 55%,#241166 100%); border:2px solid #ffd24a; box-shadow:inset 0 0 0 1px #b5760f; }
+  .cface.fesgo .fg-crown{ width:38%; height:auto; margin-bottom:3%; filter:drop-shadow(0 1px 1px rgba(0,0,0,.45)); }
+  .cface.fesgo .fg-t1{ font-size:calc(var(--ds) * .135); color:#fff; letter-spacing:-.02em; text-shadow:0 1px 0 #2b0f7a; }
+  .cface.fesgo .fg-t2{ font-size:calc(var(--ds) * .21); color:#ffcf3a; letter-spacing:-.02em; text-shadow:0 1px 0 #a55a00; margin-top:3%; }
+  .cface.fesgo .fg-six{ position:absolute; right:3%; bottom:3%; width:22%; height:22%; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff3b8,#ffc21f 60%,#c27a06); color:#5a2c00; font-size:calc(var(--ds) * .14); display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 1px #fff; }
   @keyframes wob{ 0%{ transform:translate(0,0) rotate(0deg); } 25%{ transform:translate(8px,-7px) rotate(9deg); } 50%{ transform:translate(-7px,3px) rotate(-7deg); } 75%{ transform:translate(6px,6px) rotate(6deg); } 100%{ transform:translate(0,0) rotate(0deg); } }
 
   /* ---- stored numbers ---- */
@@ -179,7 +185,7 @@
   @keyframes spbob{ to{ transform:translateY(calc(var(--u) * -2)) rotate(4deg); } }
   @keyframes spheart{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(calc(var(--u) * -5)) scale(1.2); } }
   @keyframes spconf{ 0%{ opacity:0; transform:translate(-50%,-50%) scale(.3); } 12%{ opacity:1; } 100%{ opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(1); } }
-  @media (prefers-reduced-motion:reduce){ .sixpop .sp-rays{ animation:none; } .tumble .cube3d, .tumble .dwob{ animation-duration:1.6s; } }
+  @media (prefers-reduced-motion:reduce){ .sixpop .sp-rays{ animation:none; } .tumble .cube3d{ animation-duration:1.6s; } }
 
   /* ---- live voice ---- */
   .pslot{ position:relative; }
@@ -286,6 +292,21 @@
   .dlg p{ color:var(--ink-soft); font-size:.9rem; line-height:1.45; margin-bottom:14px; }
   .dlg .row{ flex-direction:column; }
   .big{ font-size:2.4rem; }
+  /* invite friends */
+  .ivsheet{ position:absolute; inset:0; z-index:55; background:rgba(0,0,0,.5); display:flex; align-items:flex-end; }
+  .ivsheet[hidden]{ display:none; }
+  .ivbox{ width:100%; max-height:84%; background:#fff; border-radius:20px 20px 0 0; display:flex; flex-direction:column; padding:16px 14px calc(14px + env(safe-area-inset-bottom,0px)); }
+  .ivhead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font:700 1.05rem 'Inter',sans-serif; }
+  .ivhead button{ border:none; background:var(--teal-soft); color:var(--teal-deep); width:30px; height:30px; border-radius:50%; font-size:.9rem; cursor:pointer; }
+  .ivlist{ overflow-y:auto; flex:1; min-height:120px; margin:4px 0 10px; }
+  .ivrow{ display:flex; align-items:center; gap:10px; padding:9px 8px; border-radius:12px; cursor:pointer; }
+  .ivrow.on{ background:var(--teal-soft); }
+  .ivav{ width:40px; height:40px; border-radius:50%; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:linear-gradient(135deg,var(--teal-deep),var(--teal)); }
+  .ivav img{ width:100%; height:100%; object-fit:cover; }
+  .ivnm{ flex:1; min-width:0; font-weight:600; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ivtick{ width:24px; height:24px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:.8rem; color:#fff; }
+  .ivrow.on .ivtick{ background:var(--teal-deep); border-color:var(--teal-deep); }
+  .btn:disabled{ opacity:.5; cursor:default; }
   .toast{ position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:rgba(20,30,28,.92); color:#fff; padding:10px 16px; border-radius:12px; font-size:.86rem; font-weight:600; z-index:80; max-width:88%; text-align:center; }
 </style>
 <link rel="stylesheet" href="pro.css">
@@ -336,6 +357,7 @@
         <div class="wheel-wrap"><div class="wheel-band"></div><div class="wheel" id="wheel"></div></div>
         <div class="hint" id="bet-hint"></div>
         <button class="btn" id="btn-quick" style="width:100%">Find match</button>
+        <button class="btn alt" id="btn-invite" style="width:100%; margin-top:8px">Invite friends to play</button>
       </div>
       <h3>Practice (free, no coins)</h3>
       <div class="card">
@@ -350,11 +372,12 @@
   <div class="scr" id="scr-wait" hidden>
     <div class="wait">
       <div class="spin"></div>
-      <h2>Finding players...</h2>
+      <h2 id="wait-title">Finding players...</h2>
       <div id="wait-info" class="hint"></div>
       <div class="row">
+        <button class="btn" id="btn-start" hidden disabled onclick="startInvite()">Start game</button>
         <button class="btn alt" id="btn-bots" hidden onclick="waitToBots()">Play with bots instead</button>
-        <button class="btn red" onclick="cancelWait()">Cancel (bet returned)</button>
+        <button class="btn red" id="btn-cancel" onclick="cancelWait()">Cancel (bet returned)</button>
       </div>
     </div>
   </div>
@@ -377,6 +400,15 @@
   </div>
 
   <div class="ov" id="ov-result" hidden><div class="dlg" id="dlg-result"></div></div>
+  <div class="ivsheet" id="iv-sheet" hidden>
+    <div class="ivbox">
+      <div class="ivhead"><span>Invite friends</span><button onclick="closeInvite()" aria-label="Close">&#10005;</button></div>
+      <div class="seg" id="iv-seg"><button data-n="2">2 players &middot; 1 friend</button><button data-n="4">4 players &middot; 3 friends</button></div>
+      <div class="hint" id="iv-sub" style="margin-top:8px"></div>
+      <div class="ivlist" id="iv-list"></div>
+      <button class="btn" id="iv-send" disabled onclick="sendInvite()">Send invitation</button>
+    </div>
+  </div>
   <div class="ov" id="ov-leave" hidden>
     <div class="dlg"><h2>Leave the game?</h2><p id="leave-txt"></p>
       <div class="row"><button class="btn red" onclick="doLeave()">Yes, leave</button><button class="btn alt" onclick="document.getElementById('ov-leave').hidden=true">Keep playing</button></div></div>
@@ -481,8 +513,7 @@
   (async function init(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session){ location.replace('index.html'); return; }
-    me = session.user; selfId = me.id; spToken = session.access_token;
-    setInterval(() => { try{ supabaseClient.auth.getSession().then(r => { if(r && r.data && r.data.session) spToken = r.data.session.access_token; }); }catch(e){} }, 240000);
+    me = session.user; selfId = me.id;
     try{ $('eyeico').innerHTML = EYE; }catch(e){}
     try{ Wallet.onChange(w => { const h = Wallet.chips(); ['lobby-wallet', 'game-wallet'].forEach(id => { if($(id)) $(id).innerHTML = h; }); renderBets(); }); Wallet.start(me.id); }catch(e){}
     applyThemeClass();
@@ -494,6 +525,7 @@
       const qs = new URLSearchParams(location.search);
       if(a && a.game_id){ await openGame(a.game_id); }
       else if(qs.get('watch')){ await spectate(qs.get('watch'), qs.get('follow')); }
+      else if(qs.get('invite')){ setSeats(2); openInvite(qs.get('invite')); }
     }catch(e){ console.error(e); }
     rkReveal();
   })();
@@ -505,6 +537,13 @@
       selSeats = +b.dataset.n; document.querySelectorAll('#seg-seats button').forEach(x => x.classList.toggle('on', x === b)); renderBets();
     });
     $('btn-quick').onclick = quick;
+    $('btn-invite').onclick = () => openInvite(null);
+    document.querySelectorAll('#iv-seg button').forEach(b => b.onclick = () => { setSeats(+b.dataset.n); paintIv(); });
+    renderBets();
+  }
+  function setSeats(n){
+    selSeats = n;
+    document.querySelectorAll('#seg-seats button').forEach(x => x.classList.toggle('on', +x.dataset.n === n));
     renderBets();
   }
   // bet roller (wheel): the amounts are fixed; the one in the middle band is the bet
@@ -538,6 +577,68 @@
       ? '<b style="color:#b1362f">Not enough coins for this bet.</b> You have ' + Wallet.short(w.coins) + ' coins.'
       : '';
     $('btn-quick').disabled = w.coins < selBet;
+    $('btn-invite').disabled = w.coins < selBet;
+  }
+
+  // ---------------------------------------------------------------- invite friends
+  let ivFriends = [], ivSel = new Set(), ivBusy = false;
+  async function openInvite(pre){
+    ivSel = new Set(); ivBusy = false;
+    $('iv-sheet').hidden = false;
+    $('iv-list').innerHTML = '<div class="hint">Loading your friends...</div>';
+    paintIv();
+    try{
+      await loadBlocked();
+      const { data: rows } = await supabaseClient.from('friend_requests')
+        .select('from_user, to_user, from_profile:from_user(id, name, avatar_url), to_profile:to_user(id, name, avatar_url)')
+        .eq('status', 'accepted').or('from_user.eq.' + me.id + ',to_user.eq.' + me.id);
+      const seen = new Set();
+      ivFriends = (rows || []).map(r => (r.from_user === me.id ? r.to_profile : r.from_profile))
+        .filter(p => p && p.id && !seen.has(p.id) && seen.add(p.id) && !blockedIds.has(String(p.id)))
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    }catch(e){ ivFriends = []; }
+    if(pre && ivFriends.some(p => p.id === pre)) ivSel.add(pre);
+    paintIv();
+  }
+  function closeInvite(){ $('iv-sheet').hidden = true; }
+  function toggleIv(id){
+    if(ivSel.has(id)){ ivSel.delete(id); }
+    else if(ivSel.size >= selSeats - 1){ toast(selSeats === 2 ? 'Choose 1 friend, or switch to 4 players.' : 'You can choose 3 friends.'); return; }
+    else ivSel.add(id);
+    paintIv();
+  }
+  function paintIv(){
+    const need = selSeats - 1;
+    while(ivSel.size > need) ivSel.delete([...ivSel].pop());
+    document.querySelectorAll('#iv-seg button').forEach(b => b.classList.toggle('on', +b.dataset.n === selSeats));
+    $('iv-sub').innerHTML = 'Choose <b>' + need + '</b> friend' + (need > 1 ? 's' : '') + '. Bet: <b>' + Wallet.short(selBet) + '</b> coins each, taken from you when you send the invitation.';
+    $('iv-list').innerHTML = ivFriends.length ? ivFriends.map(p => {
+      const nm = esc(p.name || 'Friend');
+      const av = p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : esc((window.TextPolicy ? TextPolicy.initial(p.name) : (p.name || '?').charAt(0).toUpperCase()));
+      return '<div class="ivrow' + (ivSel.has(p.id) ? ' on' : '') + '" onclick="toggleIv(\'' + esc(p.id) + '\')"><div class="ivav">' + av + '</div><div class="ivnm">' + nm + '</div><div class="ivtick">&#10003;</div></div>';
+    }).join('') : '<div class="hint">You have no friends to invite yet. Add friends first.</div>';
+    const b = $('iv-send');
+    b.disabled = ivBusy || ivSel.size !== need;
+    b.textContent = ivBusy ? 'Sending...' : 'Send invitation (' + ivSel.size + '/' + need + ')';
+  }
+  async function sendInvite(){
+    if(ivBusy || ivSel.size !== selSeats - 1) return;
+    ivBusy = true; paintIv();
+    try{
+      const ids = [...ivSel];
+      const r = await rpc('ludo_invite_create', { p_bet: selBet, p_friends: ids });
+      const content = TextPolicy.ludoInviteText(r.game_id);
+      const results = await Promise.all(ids.map(id => supabaseClient.from('direct_messages').insert({ sender_id: me.id, receiver_id: id, content: content }).then(x => !x.error, () => false)));
+      const failed = results.filter(x => !x).length;
+      closeInvite();
+      await openGame(r.game_id); Wallet.refresh();
+      toast(failed ? 'Could not reach ' + failed + ' of ' + ids.length + ' friends' : 'Invitation sent');
+    }catch(e){ ivBusy = false; paintIv(); toast(errText(e)); }
+  }
+  async function startInvite(){
+    const b = $('btn-start'); b.disabled = true;
+    try{ ingest(await rpc('ludo_invite_start', { p_game: gameId })); }
+    catch(e){ toast(errText(e)); b.disabled = false; }
   }
   async function quick(){
     $('btn-quick').disabled = true;
@@ -601,7 +702,7 @@
   async function present(prev, st){
     if(st.status === 'waiting'){ show('wait'); renderWait(st); return; }
     if(st.status === 'cancelled' && (!prev || prev.status === 'waiting')){
-      toast(prev ? 'No players found. Your bet was returned.' : 'That game has ended.'); Wallet.refresh(); leaveToLobby(); return;
+      toast(prev ? (st.invite_only ? 'The game was cancelled. Your bet was returned.' : 'No players found. Your bet was returned.') : 'That game has ended.'); Wallet.refresh(); leaveToLobby(); return;
     }
     show('game');
     if(!boardBuilt) buildBoard(st);
@@ -636,6 +737,18 @@
   }
   function renderWait(st){
     const n = st.players.length;
+    if(st.invite_only){            // a game with invited friends: the host presses Start when everybody is here
+      const host = st.host_user === me.id;
+      $('wait-title').textContent = host ? 'Waiting for your friends' : 'Waiting for the host to start';
+      $('wait-info').innerHTML = 'Players here: <b>' + n + ' / ' + st.seats + '</b><br>' + st.players.map(p => esc(p.name)).join(', ') +
+        '<br>Bet: <b>' + Wallet.short(st.bet) + '</b> coins each.' +
+        (host ? (n < st.seats ? '<br>The Start button turns on when all invited friends have joined.' : '<br>Everybody is here. Press Start!') : '');
+      $('btn-bots').hidden = true;
+      $('btn-start').hidden = !host; $('btn-start').disabled = n < st.seats;
+      $('btn-cancel').textContent = host ? 'Cancel game (bets returned)' : 'Leave (bet returned)';
+      return;
+    }
+    $('wait-title').textContent = 'Finding players...'; $('btn-start').hidden = true; $('btn-cancel').textContent = 'Cancel (bet returned)';
     $('wait-info').innerHTML = 'Players found: <b>' + n + ' / ' + st.seats + '</b><br>Bet: <b>' + Wallet.short(st.bet) + '</b> coins each. The game starts when everyone is here.';
     if(!waitSince) waitSince = Date.now();
     $('btn-bots').hidden = (Date.now() - waitSince) < 15000;
@@ -691,7 +804,6 @@
   // ---------------------------------------------------------------- spectators and the two chats
   // 'game' chat = the players talk (spectators can only read). 'spec' chat = spectators and players talk (opened with the eye).
   // Both chats are shown only from the moment this person came in, and they are wiped when the game ends.
-  let spToken = null;
   let selfId = null, chatT = null, chatBusy = false, gcLast = 0, spLast = 0, specOpen = false, lastSpecCount = -1;
   let gcMsgs = [], spMsgs = [];
   const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>';
@@ -820,7 +932,7 @@
       if(typeof LivekitClient === 'undefined') throw new Error('Voice library did not load');
       await loadBlocked();
       const { data: { session } } = await supabaseClient.auth.getSession();
-      const resp = await fetch(SUPABASE_URL + '/functions/v1/livekit-token', {
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/hyper-service', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
         body: JSON.stringify({ game: id })
@@ -931,16 +1043,7 @@
     clearTimeout(voiceTimer); if(pending) voiceTimer = setTimeout(paintVoice, 1300);
   }
   document.addEventListener('click', () => { try{ if(lkRoom) lkRoom.startAudio(); }catch(e){} });
-  window.addEventListener('pagehide', () => {
-    try{ if(lkRoom) lkRoom.disconnect(); }catch(e){}
-    // a spectator who closes the page must stop counting as "watching" at once (the request is allowed to finish after the page is gone)
-    try{
-      if(G && G.watching && gameId && spToken){
-        fetch(SUPABASE_URL + '/rest/v1/rpc/ludo_spectate_leave', { method: 'POST', keepalive: true,
-          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + spToken }, body: JSON.stringify({ p_game: gameId }) });
-      }
-    }catch(e){}
-  });
+  window.addEventListener('pagehide', () => { try{ if(lkRoom) lkRoom.disconnect(); }catch(e){} });
 
   // ---------------------------------------------------------------- the board
   // ---------------------------------------------------------------- themes (each person sees the board in the theme he chose; saved on this phone)
@@ -1052,40 +1155,43 @@
   }
   // ---------------------------------------------------------------- 3D dice
   // front face is the 6 when idle; each number has a turn that brings its face to the front
-  const FACE_ROT = { 6:'rotateX(0deg) rotateY(0deg)', 1:'rotateX(0deg) rotateY(180deg)', 3:'rotateX(0deg) rotateY(-90deg)', 4:'rotateX(0deg) rotateY(90deg)', 5:'rotateX(-90deg) rotateY(0deg)', 2:'rotateX(90deg) rotateY(0deg)' };
+  const ZB = 'translateZ(calc(var(--ds) / -2)) ';       // keeps the front face at exactly the die size
+  const FACE_ROT = { 6: ZB + 'rotateX(0deg) rotateY(0deg)', 1: ZB + 'rotateX(0deg) rotateY(180deg)', 3: ZB + 'rotateX(0deg) rotateY(-90deg)', 4: ZB + 'rotateX(0deg) rotateY(90deg)', 5: ZB + 'rotateX(-90deg) rotateY(0deg)', 2: ZB + 'rotateX(90deg) rotateY(0deg)' };
+  const CROWN_SVG = '<svg viewBox="0 0 36 30" aria-hidden="true"><path d="M3 10l8 7 7-13 7 13 8-7-3 18H6z" fill="#ffd24a" stroke="#b5760f" stroke-width="1.6" stroke-linejoin="round"/><circle cx="18" cy="21" r="2.4" fill="#ff5fa8"/><circle cx="10" cy="22" r="1.7" fill="#4fd1ff"/><circle cx="26" cy="22" r="1.7" fill="#7dff9b"/></svg>';
   function cubeHtml(face, tumble){
-    const faces = [6, 1, 3, 4, 5, 2].map(n => '<div class="cface f' + n + '">' + Array.from({ length: 9 }, (_, i) => '<i class="' + (PIPS[n].includes(i) ? 'on' : '') + '"></i>').join('') + '</div>').join('');
+    const fesgo = '<div class="cface f6 fesgo">' + CROWN_SVG.replace('<svg ', '<svg class="fg-crown" ') + '<div class="fg-t1">FESGO</div><div class="fg-t2">FUN</div><div class="fg-six">6</div></div>';
+    const faces = [6, 1, 3, 4, 5, 2].map(n => n === 6 ? fesgo : '<div class="cface f' + n + '">' + Array.from({ length: 9 }, (_, i) => '<i class="' + (PIPS[n].includes(i) ? 'on' : '') + '"></i>').join('') + '</div>').join('');
     return '<div class="dice3d' + (tumble ? ' tumble' : '') + '"><div class="dwob"><div class="cube3d" style="transform:' + FACE_ROT[face || 6] + '">' + faces + '</div></div></div>';
   }
   function paintDie(seat, face, tumble){ const el = $('die-' + seat); if(el){ el.innerHTML = cubeHtml(face, tumble); el.classList.remove('go'); } }
   function dieSettle(seat, value){          // from wherever it is spinning, turn smoothly to the real number and bounce once
     const box = $('die-' + seat); if(!box) return;
-    const root = box.querySelector('.dice3d'), cube = box.querySelector('.cube3d'), wob = box.querySelector('.dwob');
+    const root = box.querySelector('.dice3d'), cube = box.querySelector('.cube3d');
     if(!cube) return;
     const from = getComputedStyle(cube).transform, to = FACE_ROT[value] || FACE_ROT[6];
     root.classList.remove('tumble');
     cube.style.transform = to;
-    try{ cube.animate([{ transform: (from && from !== 'none') ? from : to }, { transform: to }], { duration: 520, easing: 'cubic-bezier(.2,.8,.3,1)' }); }catch(e){}
-    try{ wob.animate([{ transform: 'translateY(-12px) scale(1.12)' }, { transform: 'translateY(0) scale(1)' }], { duration: 400, easing: 'cubic-bezier(.3,1.6,.5,1)' }); }catch(e){}
+    try{ cube.animate([{ transform: (from && from !== 'none') ? from : to }, { transform: to }], { duration: 400, easing: 'cubic-bezier(.2,.8,.3,1)' }); }catch(e){}      // a smooth turn onto the number: no jump, no growing
   }
   async function rollAnim(seat, value, forfeit){
     if(rolling[seat] !== true){ rolling[seat] = true; rollStart[seat] = Date.now(); paintDie(seat, 6, true); }      // somebody else's throw: start tumbling now
     const spent = Date.now() - (rollStart[seat] || Date.now());
-    await sleep(Math.max(250, 1400 - spent));                                                                         // always tumble a little, even if the answer came fast
+    await sleep(Math.max(150, 620 - spent));                                                                         // always tumble a little, even if the answer came fast
     dieSettle(seat, value);
     rolling[seat] = false; lastDice[seat] = value;
-    await sleep(520);
+    await sleep(400);
     const six = value === 6 && !forfeit;
     if(six) sixPop(seat);
-    await sleep(six ? 650 : 160);
+    await sleep(six ? 560 : 120);
   }
   function sixPop(seat){          // advert-style celebration above the dice of whoever threw the 6, seen by everybody
     const box = $('die-' + seat); if(!box) return;
     const r = box.getBoundingClientRect(); if(!r.width) return;
-    const size = Math.round(Math.max(96, r.width * 2));
     const ph = document.querySelector('.phone').getBoundingClientRect();
-    const left = Math.max(ph.left + 4, Math.min(r.left + r.width / 2 - size / 2, ph.right - size - 4));
-    const top = Math.max(4, r.top - size - 4);
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;           // exact centre of the die
+    const room = 2 * Math.min(cx - ph.left, ph.right - cx, cy, window.innerHeight - cy) - 6;     // stay on the screen
+    const size = Math.round(Math.max(r.width * 1.3, Math.min(Math.max(96, r.width * 2), room)));
+    const left = Math.round(cx - size / 2), top = Math.round(cy - size / 2);
     const cols = ['#ff5fa8', '#ffd24a', '#4fd1ff', '#7dff9b', '#ffffff', '#ff8a3d'];
     let conf = '';
     for(let i = 0; i < 16; i++){

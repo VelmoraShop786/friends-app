@@ -2819,7 +2819,7 @@ html, body{ overscroll-behavior-y: contain; }
 
   async function getLiveKitToken(){
     const { data: { session } } = await supabaseClient.auth.getSession();
-    const resp = await fetch(SUPABASE_URL + '/functions/v1/livekit-token', {
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/hyper-service', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + session.access_token,
@@ -2870,7 +2870,7 @@ html, body{ overscroll-behavior-y: contain; }
     if(!room) return false;
     try{
       const { data: { session } } = await supabaseClient.auth.getSession();
-      const resp = await fetch(SUPABASE_URL + '/functions/v1/livekit-token', {
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/hyper-service', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
         body: JSON.stringify({ room: ROOM_ID, promote: true })
@@ -2954,7 +2954,12 @@ html, body{ overscroll-behavior-y: contain; }
       console.error('LiveKit connect failed:', err);
       lkRoom = null; lkMode = null; micEnabled = false; syncMicBtn();
       voiceFailures++;
-      if(voiceFailures === 1 || voiceFailures === 3) showToast('Voice connect failed');
+      if(voiceFailures === 1 || voiceFailures === 3){
+        // show the real reason (e.g. "Invalid JWT", "Function not found") so a wrong setting on the server can be found at once
+        let why = String((err && err.message) || err || '').replace(/^Token request failed:\s*/i, '').replace(/\s+/g, ' ').trim();
+        if(why.length > 90) why = why.slice(0, 90) + '...';
+        showToast('Voice connect failed' + (why ? ': ' + why : ''));
+      }
       if(voiceFailures < 3 && !leavingRoom) setTimeout(syncVoice, 4000 * voiceFailures);
     }
   }

@@ -174,6 +174,14 @@
 
   // A shared room travels inside a normal message as [[ROOM:id]]; screens turn it into a room card.
   var ROOM_SHARE_RE = /^\[\[ROOM:([A-Za-z0-9_-]{1,40})\]\]$/;
+  // A Ludo game invitation travels as [[LUDO:<game id>]]; screens turn it into an invitation card.
+  var LUDO_RE = /^\[\[LUDO:([0-9a-fA-F-]{36})\]\]$/;
+  function ludoInviteId(text){ var m = LUDO_RE.exec(String(text == null ? '' : text).trim()); return m ? m[1] : null; }
+  function ludoInviteText(id){ return '[[LUDO:' + String(id) + ']]'; }
+  // A photo travels as [[IMG:<photo id>]]; the picture itself is in the private chat-photos bucket and disappears after 7 days.
+  var IMG_RE = /^\[\[IMG:([0-9a-fA-F-]{36})\]\]$/;
+  function imageId(text){ var m = IMG_RE.exec(String(text == null ? '' : text).trim()); return m ? m[1] : null; }
+  function imageText(id){ return '[[IMG:' + String(id) + ']]'; }
   function roomShareId(text){ var m = ROOM_SHARE_RE.exec(String(text == null ? '' : text).trim()); return m ? m[1] : null; }
   function roomShareText(id){ return '[[ROOM:' + String(id) + ']]'; }
   // A voice message travels as [[VOICE:path|seconds]]
@@ -182,6 +190,8 @@
   function voiceText(path, secs){ return '[[VOICE:' + String(path) + '|' + Math.max(0, Math.round(secs || 0)) + ']]'; }
   function preview(text){
     if(roomShareId(text)) return '\uD83C\uDFE0 Room invitation';
+    if(ludoInviteId(text)) return '\uD83C\uDFB2 Ludo invitation';
+    if(imageId(text)) return '\uD83D\uDCF7 Photo';
     var v = voiceParse(text);
     if(v) return '\uD83C\uDFA4 Voice message (' + Math.floor(v.secs / 60) + ':' + ('0' + (v.secs % 60)).slice(-2) + ')';
     return text;
@@ -190,6 +200,10 @@
   root.TextPolicy = {
     roomShareId: roomShareId,
     roomShareText: roomShareText,
+    ludoInviteId: ludoInviteId,
+    ludoInviteText: ludoInviteText,
+    imageId: imageId,
+    imageText: imageText,
     voiceParse: voiceParse,
     voiceText: voiceText,
     preview: preview,

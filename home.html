@@ -424,13 +424,13 @@
   /* butterflies: fixed in place, only the wings beat */
   .nv-fx{ display:none; position:absolute; inset:0; pointer-events:none; z-index:2; }
   .nav-btn.active .nv-fx{ display:block; }
-  .nv-b{ position:absolute; width:11px; height:9.5px; opacity:0; transform: rotate(var(--r,0deg)) scale(.2);
+  .nv-b{ position:absolute; width:9px; height:7.7px; opacity:0; transform: rotate(var(--r,0deg)) scale(.2);
     animation: nvbin .4s cubic-bezier(.3,1.5,.5,1) .42s forwards; }
-  .nv-b svg{ display:block; width:100%; height:100%; overflow:visible; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+  .nv-b svg{ display:block; width:100%; height:100%; overflow:visible; filter: drop-shadow(0 .5px .8px rgba(60,35,0,.55)); }
   .nv-b .bw{ transform-origin:12px 10px; animation: nvflap .32s ease-in-out infinite alternate; animation-delay: var(--fd,0s); }
-  .nv-b1{ left:0px; top:-6px; --r:-28deg; --fd:0s; }
-  .nv-b2{ left:48px; top:14px; --r:24deg; --fd:-.14s; }
-  .nv-b3{ left:30px; top:34px; width:9px; height:7.5px; --r:14deg; --fd:-.22s; }
+  .nv-b1{ left:2px; top:2.5px; --r:-38deg; --fd:0s; }
+  .nv-b2{ left:42px; top:9.5px; --r:26deg; --fd:-.14s; }
+  .nv-b3{ left:28px; top:30px; width:7px; height:6px; --r:16deg; --fd:-.22s; }
   @keyframes nvbin{ from{ opacity:0; transform: rotate(var(--r,0deg)) scale(.2); } to{ opacity:1; transform: rotate(var(--r,0deg)) scale(1); } }
   @keyframes nvflap{ from{ transform: scaleX(1); } to{ transform: scaleX(.2); } }
   .nav-btn:not(.active) .nav-ico svg{ opacity:.94; }
@@ -1271,15 +1271,15 @@
 
   // bottom-nav effects: three small butterflies per tab (only visible on the open tab) + a tiny tap vibration
   (function initNavFx(){
-    const W = '<path d="M11.6 9C10 3.5 5 .8 2.2 2.6 .6 3.8 1.4 7 3.6 9c2.2 2 5.4 1.600 8 1Z" fill="url(#nvg1)" stroke="#0a3a8c" stroke-width=".7" stroke-linejoin="round"/>' +
-              '<path d="M11.6 10.4C8.6 10.200 4.600 11.400 4.200 14.600 3.900 17.200 6.800 18.600 8.800 16.600 10.400 15 11.400 12.800 11.600 10.400Z" fill="url(#nvg2)" stroke="#0a3a8c" stroke-width=".7" stroke-linejoin="round"/>' +
-              '<circle cx="4.800" cy="5.200" r=".9" fill="#fff" fill-opacity=".85"/><circle cx="7.200" cy="15.200" r=".7" fill="#fff" fill-opacity=".85"/>';
+    const W = '<path d="M11.6 9C10 3.5 5 .8 2.2 2.6 .6 3.8 1.4 7 3.6 9c2.2 2 5.4 1.600 8 1Z" fill="url(#nvg1)" stroke="#8a5408" stroke-width=".7" stroke-linejoin="round"/>' +
+              '<path d="M11.6 10.4C8.6 10.200 4.600 11.400 4.200 14.600 3.900 17.200 6.800 18.600 8.800 16.600 10.400 15 11.400 12.800 11.600 10.400Z" fill="url(#nvg2)" stroke="#8a5408" stroke-width=".7" stroke-linejoin="round"/>' +
+              '<circle cx="4.800" cy="5.200" r=".9" fill="#fffbe0" fill-opacity=".95"/><circle cx="7.200" cy="15.200" r=".7" fill="#fffbe0" fill-opacity=".95"/>';
     const BF = '<svg viewBox="0 0 24 20" aria-hidden="true"><g class="bw">' + W + '</g><g class="bw"><g transform="matrix(-1 0 0 1 24 0)">' + W + '</g></g>' +
-               '<ellipse cx="12" cy="10" rx="1.200" ry="5.600" fill="#1b1030"/><path d="M11.400 4.800Q9.500 1.500 8 1.200M12.600 4.800Q14.500 1.500 16 1.200" stroke="#1b1030" fill="none" stroke-width=".7" stroke-linecap="round"/></svg>';
+               '<ellipse cx="12" cy="10" rx="1.200" ry="5.600" fill="#5a3606"/><path d="M11.400 4.800Q9.500 1.500 8 1.200M12.600 4.800Q14.500 1.500 16 1.200" stroke="#5a3606" fill="none" stroke-width=".7" stroke-linecap="round"/></svg>';
     if(!document.getElementById('nv-defs')){
       document.body.insertAdjacentHTML('beforeend', '<svg id="nv-defs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
-        '<linearGradient id="nvg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe9ff"/><stop offset="1" stop-color="#2f7dff"/></linearGradient>' +
-        '<linearGradient id="nvg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6cd0ff"/><stop offset="1" stop-color="#8a5cff"/></linearGradient></defs></svg>');
+        '<linearGradient id="nvg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1a6"/><stop offset="1" stop-color="#e9a313"/></linearGradient>' +
+        '<linearGradient id="nvg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#c98408"/></linearGradient></defs></svg>');
     }
     document.querySelectorAll('.nav-btn').forEach(btn => {
       const ico = btn.querySelector('.nav-ico');

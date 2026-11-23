@@ -253,6 +253,25 @@ html, body{ overscroll-behavior-y: contain; }
   .rsc-tap{ display:flex; align-items:center; gap:7px; margin-top:9px; font-size:0.82rem; font-weight:600; color:#7d8e89; }
   .rsc-hand{ width:22px; height:22px; border-radius:50%; background:#0fa77f; display:flex; align-items:center; justify-content:center; font-size:0.7rem; }
   .bubble-row .bubble.room-card .bubble-time{ color:#8a9b96; opacity:1; }
+  /* Ludo invitation card */
+  .bubble-row .bubble.ludo-card{ background:linear-gradient(160deg,#ffffff 0%,#f1fbf7 100%); color:#16302a; padding:12px 12px 8px; width:268px; max-width:80%; border-radius:16px; box-shadow:0 1px 5px rgba(0,0,0,0.16); border:1px solid #cfeadf; }
+  .lgc-top{ display:flex; align-items:center; gap:10px; }
+  .lgc-ico{ width:46px; height:46px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.7rem; background:linear-gradient(135deg,#ffe27a,#f0a81c); box-shadow:inset 0 -2px 0 rgba(0,0,0,.12); }
+  .lgc-ttl{ font-weight:800; font-size:.98rem; line-height:1.2; }
+  .lgc-sub{ font-size:.8rem; color:#5d7a72; margin-top:2px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; }
+  .lgc-chips{ display:flex; gap:6px; margin:10px 0 9px; flex-wrap:wrap; }
+  .lgc-chip{ background:#e4f5ee; color:#0b6b52; font-weight:700; font-size:.76rem; padding:4px 9px; border-radius:20px; }
+  .lgc-btn{ width:100%; border:none; border-radius:12px; padding:11px; font:800 .92rem 'Inter',sans-serif; color:#fff; background:linear-gradient(180deg,#14b98d,#0b8f6c); box-shadow:0 2px 0 #086b50; cursor:pointer; }
+  .lgc-btn:active{ transform:translateY(1px); box-shadow:0 1px 0 #086b50; }
+  .lgc-note{ text-align:center; font-weight:700; font-size:.82rem; color:#8a9b96; padding:6px 0 2px; }
+  .bubble-row .bubble.ludo-card .bubble-time{ color:#8a9b96; opacity:1; }
+  .lc-back{ position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:24px; }
+  .lc-back.show{ display:flex; }
+  .lc-card{ width:100%; max-width:320px; background:#fff; border-radius:20px; padding:22px 20px 18px; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.35); }
+  .lc-card .lc-ico{ width:60px; height:60px; margin:0 auto 10px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; background:linear-gradient(135deg,#ffe27a,#f0a81c); }
+  .lc-card h3{ font-size:1.15rem; margin:0 0 6px; color:#16302a; }
+  .lc-card p{ font-size:.9rem; line-height:1.5; color:#5d7a72; margin:0 0 16px; }
+  .lc-card button{ width:100%; border:none; border-radius:12px; padding:12px; font:800 .95rem 'Inter',sans-serif; color:#fff; background:var(--teal-deep); cursor:pointer; }
   .bubble-row.me .vmsg{ --vm-ink: var(--teal-deep); }
   .bubble-row.them .vmsg{ --vm-ink: #fff; }
   .bubble img{
@@ -370,6 +389,44 @@ html, body{ overscroll-behavior-y: contain; }
     flex-shrink:0;
   }
   .send-btn:hover{ background:#046c56; }
+  .photo-btn{ background:var(--teal-soft); color:var(--teal-deep); margin-left:0; }
+  /* photo message */
+  .bubble-row .bubble.photo-card{ background:#fff; padding:4px 4px 6px; width:230px; max-width:78%; border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,0.16); cursor:pointer; }
+  .ph-wrap{ width:100%; border-radius:11px; overflow:hidden; background:#e6efec; }
+  .ph-wrap img{ width:100%; height:100%; object-fit:cover; display:block; -webkit-user-drag:none; user-select:none; pointer-events:none; }
+  .ph-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 6px 0; }
+  .ph-exp{ font-size:.68rem; font-weight:700; color:#7a8f89; }
+  .bubble-row .bubble.photo-card .bubble-time{ color:#8a9b96; opacity:1; margin:0; }
+  .bubble-row .bubble.photo-card.gone{ cursor:default; background:#f1f5f3; }
+  .ph-gone{ text-align:center; padding:22px 10px 12px; color:#6b817a; font-weight:700; font-size:.88rem; }
+  .ph-gone .ph-gico{ font-size:1.8rem; opacity:.6; margin-bottom:4px; }
+  .ph-gone small{ display:block; font-weight:500; font-size:.7rem; margin-top:3px; color:#8a9b96; }
+  /* photo editor + viewer */
+  body.pe-open{ overflow:hidden; }
+  .pe-back{ position:fixed; inset:0; z-index:300; background:#0b1512; display:flex; flex-direction:column; color:#fff; font-family:'Inter',sans-serif; }
+  .pe-back[hidden]{ display:none; }
+  .pe-top{ display:flex; align-items:center; justify-content:space-between; padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px; }
+  .pe-top b{ font-size:1rem; }
+  .pe-top button{ border:none; background:rgba(255,255,255,.12); color:#fff; border-radius:18px; padding:8px 14px; font:700 .85rem 'Inter',sans-serif; cursor:pointer; }
+  .pe-stage{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:8px; touch-action:none; }
+  .pe-stage canvas{ border-radius:10px; touch-action:none; box-shadow:0 0 0 1px rgba(255,255,255,.18); }
+  .pe-tools{ background:#12211c; padding:12px 14px 6px; }
+  .pe-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .pe-chips{ overflow-x:auto; }
+  .pe-chip{ flex-shrink:0; border:none; border-radius:16px; padding:7px 13px; background:rgba(255,255,255,.1); color:#cfe5de; font:700 .8rem 'Inter',sans-serif; cursor:pointer; }
+  .pe-chip.on{ background:#14b98d; color:#06251d; }
+  .pe-ico{ flex-shrink:0; width:38px; height:38px; border:none; border-radius:50%; background:rgba(255,255,255,.12); color:#fff; font-size:1.15rem; cursor:pointer; }
+  .pe-row label{ font-size:.74rem; color:#9fbdb3; width:52px; flex-shrink:0; }
+  .pe-row input[type=range]{ flex:1; min-width:0; accent-color:#14b98d; }
+  .pe-bottom{ background:#12211c; padding:4px 14px calc(14px + env(safe-area-inset-bottom,0px)); }
+  .pe-send{ width:100%; border:none; border-radius:14px; padding:14px; background:linear-gradient(180deg,#14b98d,#0b8f6c); color:#fff; font:800 1rem 'Inter',sans-serif; cursor:pointer; }
+  .pe-send:disabled{ opacity:.6; }
+  .pe-note{ text-align:center; font-size:.72rem; color:#8aa89e; margin-top:7px; }
+  .pv-back{ position:fixed; inset:0; z-index:310; background:#000; display:flex; align-items:center; justify-content:center; touch-action:none; }
+  .pv-back[hidden]{ display:none; }
+  .pv-back img{ max-width:100%; max-height:100%; object-fit:contain; transition:transform .2s; user-select:none; -webkit-user-drag:none; }
+  .pv-close{ position:absolute; top:calc(12px + env(safe-area-inset-top,0px)); left:12px; z-index:2; width:40px; height:40px; border:none; border-radius:50%; background:rgba(255,255,255,.16); color:#fff; font-size:1.1rem; cursor:pointer; }
+  .pv-info{ position:absolute; left:0; right:0; bottom:calc(14px + env(safe-area-inset-bottom,0px)); text-align:center; color:#cfe5de; font:600 .78rem 'Inter',sans-serif; text-shadow:0 1px 3px #000; }
 
   .attach-menu{
     position:absolute;
@@ -588,10 +645,27 @@ html, body{ overscroll-behavior-y: contain; }
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22"/></svg>
       </button>
       <button class="send-btn" id="send-btn" onclick="sendText()" style="display:none" aria-label="Send"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21.5 12 3.4 3.6l-.1 6.5 12.9 1.9-12.9 1.9z"/></svg></button>
+      <button class="attach-btn photo-btn" id="photo-btn" type="button" aria-label="Send a photo" onclick="document.getElementById('file-input-image').click()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8.5 8.5"/></svg>
+      </button>
     </div>
   </div>
 
   <input type="file" id="file-input-image" accept="image/*" style="display:none">
+
+  <div class="pe-back" id="pe-back" hidden>
+    <div class="pe-top"><button type="button" id="pe-close">&#10005; Cancel</button><b>Edit photo</b><button type="button" id="pe-reset">Reset</button></div>
+    <div class="pe-stage" id="pe-stage"><canvas id="pe-canvas"></canvas></div>
+    <div class="pe-tools">
+      <div class="pe-row pe-chips" id="pe-aspects">
+        <button type="button" class="pe-chip on" data-a="0">Original</button><button type="button" class="pe-chip" data-a="1">1:1</button><button type="button" class="pe-chip" data-a="0.8">4:5</button><button type="button" class="pe-chip" data-a="1.3333">4:3</button><button type="button" class="pe-chip" data-a="1.7778">16:9</button>
+      </div>
+      <div class="pe-row"><button type="button" class="pe-ico" id="pe-rl" aria-label="Rotate left">&#8634;</button><input type="range" id="pe-zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom"><button type="button" class="pe-ico" id="pe-rr" aria-label="Rotate right">&#8635;</button></div>
+      <div class="pe-row"><label>Light</label><input type="range" id="pe-bri" min="70" max="130" value="100"><label>Contrast</label><input type="range" id="pe-con" min="70" max="130" value="100"></div>
+    </div>
+    <div class="pe-bottom"><button type="button" class="pe-send" id="pe-send">Send photo</button><div class="pe-note">Private &middot; the photo disappears after 7 days</div></div>
+  </div>
+  <div class="pv-back" id="pv-back" hidden><button type="button" class="pv-close" onclick="closePhoto()" aria-label="Close">&#10005;</button><img id="pv-img" alt="Photo"><div class="pv-info" id="pv-info"></div></div>
 
   <div class="profile-modal" id="profile-modal">
     <div class="profile-modal-header">
@@ -657,6 +731,7 @@ html, body{ overscroll-behavior-y: contain; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<div class="lc-back" id="lc-back"><div class="lc-card"><div class="lc-ico">🪙</div><h3>Not enough coins</h3><p id="lc-text"></p><button onclick="closeCoinsModal()">OK</button></div></div>
 <script src="text-policy.js"></script>
 <script src="profile-extras.js"></script>
 <script src="safety.js"></script>
@@ -760,7 +835,7 @@ html, body{ overscroll-behavior-y: contain; }
   }
 
   // the game button next to the message box opens the same Ludo lobby as Play on the Game page
-  function openGameLobby(){ location.href = 'ludo.html'; }
+  function openGameLobby(){ location.href = 'ludo.html' + (currentChatId ? '?invite=' + encodeURIComponent(currentChatId) : ''); }
 
   function paintTrackBar(){
     const bar = document.getElementById('track-bar');
@@ -950,11 +1025,15 @@ html, body{ overscroll-behavior-y: contain; }
       from: m.sender_id === currentUser.id ? 'me' : 'them',
       text: TextPolicy.preview(TextPolicy.clean(m.content, 'message')),   // older rows may predate the policy
       roomId: TextPolicy.roomShareId(TextPolicy.clean(m.content, 'message')),
+      ludoId: TextPolicy.ludoInviteId(TextPolicy.clean(m.content, 'message')),
+      imgId: TextPolicy.imageId(TextPolicy.clean(m.content, 'message')),
       voice: TextPolicy.voiceParse(TextPolicy.clean(m.content, 'message')),
       time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       replyTo: null
     }));
     await loadSharedRooms(messages);
+    await loadLudoCards(messages);
+    await loadPhotoCards(messages);
     renderMessages();
   }
 
@@ -994,6 +1073,65 @@ html, body{ overscroll-behavior-y: contain; }
       <div class="rsc-tap"><span class="rsc-hand">👆</span>Tap to enter the room</div>
       <div class="bubble-time">${m.time}</div></div>`;
   }
+  // ---------- Ludo invitation cards ----------
+  const ludoCache = {};   // game id -> info from the server (null = no longer available)
+  let ludoBusy = false;
+  function shortCoins(n){
+    n = Number(n) || 0;
+    const f = (v, u) => (Math.round(v * 10) / 10).toString().replace(/\.0$/, '') + u;
+    return n >= 1e6 ? f(n / 1e6, 'M') : n >= 1e3 ? f(n / 1e3, 'K') : String(n);
+  }
+  async function loadLudoCards(list){
+    const ids = [...new Set(list.filter(m => m.ludoId).map(m => m.ludoId))].slice(-12);
+    if(!ids.length) return;
+    await Promise.all(ids.map(async id => {
+      try{ const { data, error } = await supabaseClient.rpc('ludo_invite_info', { p_game: id }); ludoCache[id] = error ? null : (data || null); }
+      catch(e){ ludoCache[id] = null; }
+    }));
+  }
+  function ludoCardHtml(m){
+    const i = ludoCache[m.ludoId];
+    let sub, chips = '', action;
+    if(!i){
+      sub = 'This invitation is no longer available.';
+      action = '<div class="lgc-note">Invitation ended</div>';
+    } else {
+      sub = i.is_host ? 'You invited friends to play' : escapeHtml(i.host_name || 'A friend') + ' invited you to play';
+      chips = '<span class="lgc-chip">' + i.seats + ' players</span><span class="lgc-chip">Bet ' + shortCoins(i.bet) + '</span><span class="lgc-chip">' + i.players + '/' + i.seats + ' joined</span>';
+      if(i.status === 'waiting' && i.joined) action = '<button class="lgc-btn" onclick="ludoCardPlay(\'' + escapeHtml(m.ludoId) + '\')">Open game</button>';
+      else if(i.status === 'waiting' && i.invited && i.players < i.seats) action = '<button class="lgc-btn" onclick="ludoCardPlay(\'' + escapeHtml(m.ludoId) + '\')">Play</button>';
+      else if(i.status === 'waiting') action = '<div class="lgc-note">Game is full</div>';
+      else if(i.status === 'playing') action = i.joined ? '<button class="lgc-btn" onclick="ludoCardPlay(\'' + escapeHtml(m.ludoId) + '\')">Open game</button>' : '<div class="lgc-note">Game already started</div>';
+      else action = '<div class="lgc-note">Invitation ended</div>';
+    }
+    return `<div class="bubble ludo-card">
+      <div class="lgc-top"><div class="lgc-ico">🎲</div><div style="min-width:0"><div class="lgc-ttl">Ludo invitation</div><div class="lgc-sub" dir="auto">${sub}</div></div></div>
+      <div class="lgc-chips">${chips}</div>${action}
+      <div class="bubble-time">${m.time}</div></div>`;
+  }
+  async function ludoCardPlay(id){
+    if(rsSuppress){ rsSuppress = false; return; }
+    if(ludoBusy) return;
+    const info = ludoCache[id];
+    if(info && info.joined){ location.href = 'ludo.html'; return; }
+    ludoBusy = true;
+    const { error } = await supabaseClient.rpc('ludo_invite_join', { p_game: id });
+    ludoBusy = false;
+    if(error){
+      const msg = String(error.message || '');
+      if(/not enough coins/i.test(msg)) showCoinsModal(info ? info.bet : 0);
+      else showToast(msg.replace(/^.*?:\s*/, '') || 'Could not join the game.');
+      if(currentChatId !== null) loadMessages(currentChatId);
+      return;
+    }
+    location.href = 'ludo.html';
+  }
+  function showCoinsModal(bet){
+    document.getElementById('lc-text').innerHTML = 'You need <b>' + shortCoins(bet) + '</b> coins to join this game. Add coins to your wallet and try again.';
+    document.getElementById('lc-back').classList.add('show');
+  }
+  function closeCoinsModal(){ document.getElementById('lc-back').classList.remove('show'); }
+
   function openSharedRoom(id){
     if(rsSuppress){ rsSuppress = false; return; }
     if(!roomCache[id]){ showToast('This room is no longer available.'); return; }
@@ -1014,7 +1152,7 @@ html, body{ overscroll-behavior-y: contain; }
     return `<div class="bubble-row ${m.from === 'me' ? 'me' : 'them'}" data-index="${i}" data-name="${escapeHtml(senderName)}" data-text="${escapeHtml(m.text)}">
       <div class="bubble-row-inner">
         <div class="reply-icon">↩</div>
-        ${m.roomId ? roomCardHtml(m) : m.voice ? `<div class="bubble">${VoiceMsg.bubbleHtml(m.voice.path, m.voice.secs)}<div class="bubble-time">${m.time}</div></div>` : `<div class="bubble">${quoted}${escapeHtml(m.text)}<div class="bubble-time">${m.time}</div></div>`}
+        ${m.roomId ? roomCardHtml(m) : m.ludoId ? ludoCardHtml(m) : m.imgId ? photoCardHtml(m) : m.voice ? `<div class="bubble">${VoiceMsg.bubbleHtml(m.voice.path, m.voice.secs)}<div class="bubble-time">${m.time}</div></div>` : `<div class="bubble">${quoted}${escapeHtml(m.text)}<div class="bubble-time">${m.time}</div></div>`}
       </div>
     </div>`;
   }
@@ -1134,6 +1272,7 @@ html, body{ overscroll-behavior-y: contain; }
     closeDeleteMsgDialog();
     if(error){ showToast(error.message || 'Could not delete the message.'); return; }
     if(m.voice && m.from === 'me'){ try{ supabaseClient.storage.from('voice-messages').remove([m.voice.path]); }catch(err){} }
+    if(m.imgId && m.from === 'me'){ deleteMyPhoto(m.imgId); }
     messages = messages.filter(x => x.id !== m.id);
     renderMessages();
     showToast('Message deleted');
@@ -1213,8 +1352,176 @@ html, body{ overscroll-behavior-y: contain; }
   });
 
   document.getElementById('file-input-image').addEventListener('change', function(){
-    showToast('Sending photos is coming soon');
+    const f = this.files && this.files[0]; this.value = '';
+    if(f) peOpen(f);
   });
+
+  // =====================================================================
+  // PHOTOS: pick -> edit (crop / zoom / rotate / light) -> private bucket -> card in the chat. Every photo disappears after 7 days.
+  // =====================================================================
+  const PHOTO_BUCKET = 'chat-photos';
+  const photoCache = {};     // photo id -> { row, thumbUrl, at }
+
+  function photoIsLive(row){ return !!row && !row.deleted_at && new Date(row.expires_at) > new Date(); }
+  function photoLeftText(row){
+    const ms = new Date(row.expires_at) - Date.now();
+    const d = Math.ceil(ms / 86400000);
+    return ms <= 0 ? 'Expired' : d <= 1 ? 'Disappears today' : 'Disappears in ' + d + ' days';
+  }
+  async function loadPhotoCards(list){
+    const ids = [...new Set(list.filter(m => m.imgId).map(m => m.imgId))].slice(-30);
+    const need = ids.filter(id => !photoCache[id] || Date.now() - photoCache[id].at > 50 * 60 * 1000);
+    if(!need.length) return;
+    try{
+      const { data: rows } = await supabaseClient.from('chat_photos').select('id, path, thumb_path, width, height, expires_at, deleted_at').in('id', need);
+      const byId = {}; (rows || []).forEach(r => { byId[r.id] = r; });
+      const live = need.filter(id => photoIsLive(byId[id]));
+      const urls = {};
+      if(live.length){
+        const { data: signed } = await supabaseClient.storage.from(PHOTO_BUCKET).createSignedUrls(live.map(id => byId[id].thumb_path), 3600);
+        (signed || []).forEach(x => { if(x && x.signedUrl && x.path) urls[x.path] = x.signedUrl; });
+      }
+      need.forEach(id => { const r = byId[id] || null; photoCache[id] = { row: r, thumbUrl: r ? (urls[r.thumb_path] || null) : null, at: Date.now() }; });
+    }catch(e){ need.forEach(id => { if(!photoCache[id]) photoCache[id] = { row: null, thumbUrl: null, at: Date.now() - 49 * 60 * 1000 }; }); }
+  }
+  function photoCardHtml(m){
+    const c = photoCache[m.imgId], r = c && c.row;
+    if(!(photoIsLive(r) && c.thumbUrl)){
+      return `<div class="bubble photo-card gone"><div class="ph-gone"><div class="ph-gico">📷</div><div>Photo expired</div><small>Photos disappear after 7 days</small></div><div class="ph-foot"><span></span><span class="bubble-time">${m.time}</span></div></div>`;
+    }
+    const ar = (r.width && r.height) ? Math.min(Math.max(r.width / r.height, 0.6), 1.8) : 1;
+    return `<div class="bubble photo-card" onclick="openPhoto('${escapeHtml(m.imgId)}')"><div class="ph-wrap" style="aspect-ratio:${ar.toFixed(3)}"><img src="${escapeHtml(c.thumbUrl)}" alt="Photo" draggable="false"></div><div class="ph-foot"><span class="ph-exp">⏳ ${photoLeftText(r)}</span><span class="bubble-time">${m.time}</span></div></div>`;
+  }
+  async function openPhoto(id){
+    const c = photoCache[id]; if(!c || !photoIsLive(c.row)) return;
+    const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).createSignedUrl(c.row.path, 600);
+    if(error || !data) { showToast('Could not open the photo'); return; }
+    const img = document.getElementById('pv-img');
+    img.style.transform = ''; img.dataset.z = '0'; img.src = data.signedUrl;
+    document.getElementById('pv-info').textContent = photoLeftText(c.row);
+    document.getElementById('pv-back').hidden = false; document.body.classList.add('pe-open');
+  }
+  function closePhoto(){ document.getElementById('pv-back').hidden = true; document.getElementById('pv-img').removeAttribute('src'); document.body.classList.remove('pe-open'); }
+  document.getElementById('pv-img').addEventListener('dblclick', function(){ const z = this.dataset.z === '1'; this.dataset.z = z ? '0' : '1'; this.style.transform = z ? '' : 'scale(2.2)'; });
+  async function deleteMyPhoto(id){
+    const c = photoCache[id], r = c && c.row; if(!r) return;
+    try{ await supabaseClient.storage.from(PHOTO_BUCKET).remove([r.path, r.thumb_path]); await supabaseClient.from('chat_photos').delete().eq('id', id); }catch(e){}
+    delete photoCache[id];
+  }
+
+  // ---------- the editor ----------
+  const PE = { img: null, rot: 0, aspect: 0, zoom: 1, px: 0, py: 0, bri: 100, con: 100, cw: 0, ch: 0, busy: false, to: null, ptr: new Map(), pinch: 0 };
+  const $pe = id => document.getElementById(id);
+  function peDims(){ const odd = PE.rot % 2 === 1; return { iw: odd ? PE.img.height : PE.img.width, ih: odd ? PE.img.width : PE.img.height }; }
+  function peScale(){ const d = peDims(); return Math.max(PE.cw / d.iw, PE.ch / d.ih) * PE.zoom; }
+  function peClamp(){
+    const d = peDims(), sc = peScale();
+    const mx = Math.max(0, (d.iw * sc - PE.cw) / 2), my = Math.max(0, (d.ih * sc - PE.ch) / 2);
+    PE.px = Math.max(-mx, Math.min(mx, PE.px)); PE.py = Math.max(-my, Math.min(my, PE.py));
+  }
+  function peLayout(){
+    const stage = $pe('pe-stage'), d = peDims();
+    const aw = Math.max(120, stage.clientWidth - 16), ah = Math.max(120, stage.clientHeight - 16);
+    const ar = PE.aspect || d.iw / d.ih;
+    let cw = aw, ch = cw / ar; if(ch > ah){ ch = ah; cw = ch * ar; }
+    PE.cw = Math.round(cw); PE.ch = Math.round(ch);
+    const cv = $pe('pe-canvas'), dpr = window.devicePixelRatio || 1;
+    cv.style.width = PE.cw + 'px'; cv.style.height = PE.ch + 'px'; cv.width = Math.round(PE.cw * dpr); cv.height = Math.round(PE.ch * dpr);
+    peClamp();
+  }
+  function peDrawTo(ctx, k){
+    const sc = peScale() * k;
+    ctx.save();
+    if('filter' in ctx) ctx.filter = 'brightness(' + PE.bri + '%) contrast(' + PE.con + '%)';
+    ctx.translate(PE.cw * k / 2 + PE.px * k, PE.ch * k / 2 + PE.py * k);
+    ctx.rotate(PE.rot * Math.PI / 2); ctx.scale(sc, sc);
+    ctx.drawImage(PE.img, -PE.img.width / 2, -PE.img.height / 2);
+    ctx.restore();
+  }
+  function peDraw(){
+    if(!PE.img) return;
+    const cv = $pe('pe-canvas'), ctx = cv.getContext('2d'), dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    peDrawTo(ctx, 1);
+  }
+  function peSync(){
+    $pe('pe-zoom').value = PE.zoom; $pe('pe-bri').value = PE.bri; $pe('pe-con').value = PE.con;
+    document.querySelectorAll('#pe-aspects .pe-chip').forEach(b => b.classList.toggle('on', Math.abs(parseFloat(b.dataset.a) - PE.aspect) < 0.001));
+  }
+  async function peOpen(file){
+    if(currentChatId === null) return;
+    if(!/^image\//.test(file.type || '')){ showToast('Please choose a photo'); return; }
+    let bmp; try{ bmp = await createImageBitmap(file); }catch(e){ showToast('Could not open this photo'); return; }
+    Object.assign(PE, { img: bmp, rot: 0, aspect: 0, zoom: 1, px: 0, py: 0, bri: 100, con: 100, busy: false, to: currentChatId });
+    $pe('pe-send').disabled = false; $pe('pe-send').textContent = 'Send photo';
+    $pe('pe-back').hidden = false; document.body.classList.add('pe-open');
+    peSync(); peLayout(); peDraw();
+  }
+  function peClose(){ if(PE.busy) return; $pe('pe-back').hidden = true; document.body.classList.remove('pe-open'); if(PE.img && PE.img.close) PE.img.close(); PE.img = null; }
+  function peRender(maxSide, quality){
+    const k = Math.min(maxSide / Math.max(PE.cw, PE.ch), 1 / peScale());          // never blow the photo up beyond its real pixels
+    const w = Math.max(1, Math.round(PE.cw * k)), h = Math.max(1, Math.round(PE.ch * k));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+    peDrawTo(ctx, w / PE.cw);
+    return new Promise(res => cv.toBlob(b => res({ blob: b, w: w, h: h }), 'image/jpeg', quality));
+  }
+  async function peSend(){
+    if(PE.busy || !PE.img) return;
+    if(currentChatId !== PE.to){ showToast('Open the same chat to send this photo'); return; }
+    PE.busy = true; const btn = $pe('pe-send'); btn.disabled = true; btn.textContent = 'Sending...';
+    const to = PE.to, uid = currentUser.id;
+    let id = null, path = null, tpath = null;
+    try{
+      let full = await peRender(1280, 0.8);
+      if(full.blob && full.blob.size > 900 * 1024) full = await peRender(1280, 0.62);
+      const thumb = await peRender(320, 0.72);
+      if(!full.blob || !thumb.blob) throw new Error('render');
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+      path = uid + '/' + id + '.jpg'; tpath = uid + '/' + id + '_t.jpg';
+      const st = supabaseClient.storage.from(PHOTO_BUCKET);
+      let r = await st.upload(path, full.blob, { contentType: 'image/jpeg', upsert: false }); if(r.error) throw r.error;
+      r = await st.upload(tpath, thumb.blob, { contentType: 'image/jpeg', upsert: false }); if(r.error) throw r.error;
+      const ins = await supabaseClient.from('chat_photos').insert({ id: id, receiver_id: to, path: path, thumb_path: tpath, width: full.w, height: full.h });
+      if(ins.error) throw ins.error;
+      const ok = await sendRaw(TextPolicy.imageText(id));
+      if(!ok) throw new Error('send');
+      PE.busy = false; peClose();
+    }catch(err){
+      try{ if(path) await supabaseClient.storage.from(PHOTO_BUCKET).remove([path, tpath].filter(Boolean)); if(id) await supabaseClient.from('chat_photos').delete().eq('id', id); }catch(e2){}
+      const msg = String((err && err.message) || '');
+      if(msg !== 'send') showToast(/row-level|violates|policy/i.test(msg) ? 'You can only send photos to friends.' : /size|large|exceed/i.test(msg) ? 'This photo is too big.' : 'Could not send the photo. Try again.');
+      PE.busy = false; btn.disabled = false; btn.textContent = 'Send photo';
+    }
+  }
+  (function peWire(){
+    $pe('pe-close').onclick = peClose;
+    $pe('pe-send').onclick = peSend;
+    $pe('pe-reset').onclick = () => { Object.assign(PE, { rot: 0, aspect: 0, zoom: 1, px: 0, py: 0, bri: 100, con: 100 }); peSync(); peLayout(); peDraw(); };
+    $pe('pe-rl').onclick = () => { PE.rot = (PE.rot + 3) % 4; PE.px = PE.py = 0; peLayout(); peDraw(); };
+    $pe('pe-rr').onclick = () => { PE.rot = (PE.rot + 1) % 4; PE.px = PE.py = 0; peLayout(); peDraw(); };
+    document.querySelectorAll('#pe-aspects .pe-chip').forEach(b => b.onclick = () => { PE.aspect = parseFloat(b.dataset.a); PE.px = PE.py = 0; peSync(); peLayout(); peDraw(); });
+    $pe('pe-zoom').oninput = function(){ PE.zoom = parseFloat(this.value); peClamp(); peDraw(); };
+    $pe('pe-bri').oninput = function(){ PE.bri = parseInt(this.value, 10); peDraw(); };
+    $pe('pe-con').oninput = function(){ PE.con = parseInt(this.value, 10); peDraw(); };
+    const cv = $pe('pe-canvas');
+    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); PE.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY }); PE.pinch = 0; });
+    cv.addEventListener('pointermove', e => {
+      if(!PE.ptr.has(e.pointerId) || !PE.img) return;
+      const prev = PE.ptr.get(e.pointerId); PE.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if(PE.ptr.size === 1){ PE.px += e.clientX - prev.x; PE.py += e.clientY - prev.y; }
+      else if(PE.ptr.size === 2){
+        const [a, b] = [...PE.ptr.values()], dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if(PE.pinch) PE.zoom = Math.max(1, Math.min(4, PE.zoom * dist / PE.pinch));
+        PE.pinch = dist; $pe('pe-zoom').value = PE.zoom;
+      }
+      peClamp(); peDraw();
+    });
+    const up = e => { PE.ptr.delete(e.pointerId); PE.pinch = 0; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    window.addEventListener('resize', () => { if(PE.img && !$pe('pe-back').hidden){ peLayout(); peDraw(); } });
+  })();
 
   function copyText(text, label){
     navigator.clipboard?.writeText(text);
