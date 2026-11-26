@@ -691,6 +691,7 @@
   }
 </style>
 <link rel="stylesheet" href="pro.css">
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div id="rk-boot"><div class="rk-boot-spin"></div><div id="rk-boot-text">Loading...</div></div>
@@ -769,6 +770,7 @@
       <button type="button" class="rp-tab" id="rp-tab-suspended" onclick="showReportTab('suspended')">Suspended</button>
     </div>
     <div id="rp-list"><p class="hint">Loading...</p></div>
+    <div id="owner-theme-off" style="display:none">
     <div class="section-title" style="margin-top:24px;">App theme</div>
     <p class="hint" style="margin-bottom:16px;">Common App Theme — applies across Home, Inbox, Login/Signup, Profile, Search, Friends, Settings. Room themes and profile pictures are separate and unaffected.</p>
 
@@ -792,6 +794,7 @@
 
     <button class="submit-btn" onclick="saveAppTheme()">Save theme</button>
     <button class="submit-btn" style="background:var(--ink-soft); margin-top:10px;" onclick="resetAppTheme()">Reset to default</button>
+    </div>
 
     <div class="section-title" style="margin-top:30px;">Default room theme</div>
     <p class="hint" style="margin-bottom:12px;">Every user-created room shows this picture until its owner buys a different theme. The Official Room is not affected.</p>
@@ -2359,7 +2362,7 @@
       loadHomeFriends();
       try{ Track.start(); }catch(err){}
       renderRequestLists();
-      loadAppTheme();
+      try{ localStorage.removeItem('app-theme-cache'); }catch(err){}      // the theme is fixed in theme.css now
       // Profile (live) and theme (at least cached) are on screen now — safe to reveal the real page.
       rkReveal();
 

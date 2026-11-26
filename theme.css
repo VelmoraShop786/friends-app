@@ -1,0 +1,66 @@
+/* =====================================================================
+   Fesgo Fun - gold palace theme. It lives in the code (no database, no Owner Panel), so every page opens
+   already dressed and the colours never flash or fall back. Pictures: th-header, th-tile, th-bar, th-lamp, ic-*.
+   ===================================================================== */
+:root{
+  --teal-deep:#b07a12;      /* main gold (buttons, accents) */
+  --teal:#f0c24a;           /* bright gold */
+  --teal-soft:#3a2b14;      /* soft dark chips */
+  --blue:#e3b94c;
+  --bg:#1a1209;
+  --card:#2a2014;
+  --ink:#f8ecd0;
+  --ink-soft:#c4ab78;
+  --line:#4b3a20;
+}
+html, body{ background:#0d0905; }
+.phone{
+  background:#1a1209 url(th-tile.webp) top left / 280px 280px repeat;
+  color:var(--ink);
+}
+/* the palace arch at the top of every screen (stays put, the content scrolls over it) */
+.phone::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:min(54vw, 225px); z-index:0; pointer-events:none;
+  background:url(th-header.webp) center top / 100% auto no-repeat;
+  -webkit-mask-image:linear-gradient(#000 40%, transparent 98%); mask-image:linear-gradient(#000 40%, transparent 98%);
+}
+.screen{ position:relative; z-index:1; }
+.you-name, .section-title, h1, h2, h3{ color:var(--ink); }
+.you-name{ text-shadow:0 2px 6px rgba(0,0,0,.55); }
+
+/* cards and inputs follow the dark gold look */
+.search-box input, .ep-field input[type="text"], .ep-field select, .dialog input{ background:#1f160b; color:var(--ink); border-color:var(--line); }
+.search-box input:focus, .ep-field input[type="text"]:focus, .ep-field select:focus, .dialog input:focus{ background:#26190c; border-color:var(--teal); }
+.dialog, .modal-card, .sheet{ background:var(--card); color:var(--ink); }
+button.submit-btn, .submit-btn, .btn{ color:#2a1804; background:linear-gradient(180deg,#ffd978,#d9a021); box-shadow:0 2px 0 #8a5a08; }
+
+/* ---------------- bottom navigation: the gold plate, picture icons, hanging lamp on the open tab ---------------- */
+.bottom-nav{ height:calc(96px + env(safe-area-inset-bottom,0px)); padding:0 4px env(safe-area-inset-bottom,0px); }
+.bottom-nav::before{
+  height:calc(70px + env(safe-area-inset-bottom,0px)); border-radius:0;
+  background:url(th-bar.webp) center / 100% 100% no-repeat;
+  box-shadow:0 -6px 18px rgba(0,0,0,.5);
+}
+.nav-btn{ padding:0 2px 8px; color:#4a2f06; }
+.nav-ico, .nav-btn.active .nav-ico{
+  width:42px; height:42px; margin-bottom:2px; border-radius:0; background:transparent no-repeat center / contain; box-shadow:none; animation:none;
+  filter:drop-shadow(0 2px 2px rgba(60,30,0,.45));
+}
+.nav-ico svg, .nav-avatar, .nv-fx{ display:none !important; }
+#nav-you .nav-ico{ background-image:url(ic-you.webp); }
+#nav-game .nav-ico{ background-image:url(ic-game.webp); }
+#nav-chat .nav-ico{ background-image:url(ic-chat.webp); }
+#nav-social .nav-ico{ background-image:url(ic-social.webp); }
+.nav-btn.active .nav-ico{ width:48px; height:48px; margin-bottom:4px; animation:thfloat 3.2s ease-in-out infinite; }
+.nav-btn.active .nav-ico::before, .nav-btn.active .nav-ico::after{ display:none; }
+.nav-label{ font-weight:800; font-size:.72rem; letter-spacing:.01em; color:#2a1602; text-shadow:0 0 3px #ffe9a8, 0 0 3px #ffe9a8, 0 0 6px rgba(255,233,168,.9), 0 1px 0 #ffe9a8; }
+.nav-btn.active .nav-label{ color:#2a1602; text-shadow:none; }
+/* the lamp: a glowing pale panel hanging from two thin chains, with a small crescent each side */
+.nav-btn.active::before{
+  content:''; position:absolute; z-index:-1; left:50%; bottom:5px; width:84px; height:80px; transform:translateX(-50%);
+  background:url(th-lamp.webp) center bottom / 100% 100% no-repeat;
+  filter:drop-shadow(0 0 7px rgba(255,214,120,.65)); animation:thglow 2.8s ease-in-out infinite;
+}
+@keyframes thfloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2px); } }
+@keyframes thglow{ 0%,100%{ filter:drop-shadow(0 0 6px rgba(255,214,120,.55)) brightness(1); } 50%{ filter:drop-shadow(0 0 12px rgba(255,214,120,.95)) brightness(1.1); } }
+@media (prefers-reduced-motion:reduce){ .nav-btn.active .nav-ico, .nav-btn.active::before{ animation:none; } }

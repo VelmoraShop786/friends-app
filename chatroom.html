@@ -774,8 +774,7 @@ html, body{ overscroll-behavior-y: contain; }
   .emoji-item .em-sp{ width:58px; height:58px; }
   .emoji-tab .em-sp{ width:34px; height:34px; margin:0 auto; }
   .seat-circle{ position:relative; }
-  .seat-circle.has-emoji > *:not(.seat-emoji):not(.seat-muted-badge){ visibility:hidden; }      /* the picture steps aside while the emoji plays */
-  .seat-circle.has-emoji{ color:transparent; text-shadow:none; }                                   /* also a letter shown instead of a picture */
+  /* the picture (DP) stays where it is: the emoji plays ON TOP of it (nothing is hidden while an emoji plays) */
   .seat-emoji{ position:absolute; z-index:8; pointer-events:none;
     display:flex; align-items:center; justify-content:center; will-change:transform,opacity; }
   .seat-emoji .em-glow{ position:absolute; inset:4%; border-radius:50%; filter:blur(9px); opacity:0; }
@@ -3051,7 +3050,7 @@ html, body{ overscroll-behavior-y: contain; }
     // faces and reactions
     { k:'kiss_right',    n:'Kiss Right',   t:1, m:'kissR',  g:'#ffd34d', fx:{ c:['❤️','💗','💕'], n:6, mode:'up' } },
     { k:'kiss_left',     n:'Kiss Left',    t:1, m:'kissL',  g:'#ffd34d', fx:{ c:['❤️','💗','💕'], n:6, mode:'up' } },
-    { k:'heart_eyes',    n:'Heart Eyes',   t:1, m:'heartbeat', g:'#ff6b8b', fx:{ c:['❤️','💗'], n:6, mode:'burst' } },
+    { k:'heart_eyes',    n:'Heart Eyes',   t:1, m:'bounce', g:'#ff6b8b', fx:{ c:['❤️','💗'], n:6, mode:'burst' }, a:{ f:'emoji-anim-heart_eyes.webp', n:9, fps:16 } },
     { k:'laugh',         n:'Laugh',        t:1, m:'bounce', g:'#ffd34d', fx:{ c:['💧'], n:4, mode:'burst' }, a:{ f:'emoji-anim-laugh.webp', n:9, fps:12 } },
     { k:'laugh_tilt',    n:'Laugh Tilt',   t:1, m:'laugh',  g:'#ffd34d', fx:{ c:['💧','✨'], n:4, mode:'burst' } },
     { k:'cool',          n:'Cool',         t:1, m:'bounce', g:'#7fd8ff', fx:{ c:['✨','⭐'], n:5, mode:'burst' } },
