@@ -738,6 +738,7 @@
 
 
 <div class="phone">
+<div class="th-palms" aria-hidden="true"><div class="th-palm th-palm-l"><i></i></div><div class="th-palm th-palm-r"><i></i></div></div>
 
   <!-- YOU -->
   <div class="screen" id="screen-you">
@@ -2182,12 +2183,14 @@
 
   function roomCardHtml(room, countryCode, count){
     return `
+    <div class="rc-wrap">
     <div class="rc-card" onclick="goRoom('${escapeAttr(room.id)}')">
       <div class="rc-pic">${roomPicHtml(room)}<span class="rc-count" data-room="${escapeHtml(room.id)}">${BARS_SVG}<b>${count}</b></span></div>
       <div class="rc-info">
         <div class="rc-title">${flagHtml(countryCode)}<span class="rc-name" dir="auto">${escapeHtml(room.name)}</span></div>
         <div class="rc-sub" dir="auto">${escapeHtml(roomSubText(room))}</div>
       </div>
+    </div>${room.is_official ? '<div class="rc-offrib" aria-hidden="true"><span>Official</span></div>' : ''}
     </div>`;
   }
 

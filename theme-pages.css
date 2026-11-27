@@ -1,0 +1,74 @@
+/* =====================================================================
+   Fesgo Fun - gold palace theme for the other pages. A class on <body> says which page it is:
+   th-inbox (chat), th-ludo (lobby), th-login (login / signup), th-room (voice room: only the colours, the room keeps its own picture).
+   ===================================================================== */
+:root{
+  --teal-deep:#b07a12; --teal:#f0c24a; --blue:#c98a12;
+}
+body.th-inbox, body.th-ludo, body.th-login{
+  --teal-soft:#3a2b14; --bg:#1a1209; --card:#241a0e; --ink:#f8ecd0; --ink-soft:#c4ab78; --line:#4b3a20; --bubble-them:#2f2415;
+}
+html:has(body.th-inbox), html:has(body.th-ludo), html:has(body.th-login){ background:#0d0905; }
+body.th-inbox, body.th-ludo, body.th-login{ background:#0d0905; color:var(--ink); }
+body.th-inbox .phone, body.th-ludo .phone, body.th-login .phone-wrap{
+  background:#1a1209 url(th-tile.webp) top left / 280px 280px repeat;
+}
+body.th-inbox .messages{ background:transparent; }
+button.btn, .btn, .send-btn, .submit-btn{ color:#2a1602; }
+
+/* ---------------- inbox (the chat) ---------------- */
+body.th-inbox .chat-header{ background:linear-gradient(180deg,#3a2a12,#241a0e); border-bottom:1px solid rgba(240,194,74,.45); box-shadow:0 3px 10px rgba(0,0,0,.45); }
+body.th-inbox .composer{ background:linear-gradient(180deg,#241a0e,#1a1209); border-top:1px solid rgba(240,194,74,.35); }
+body.th-inbox .composer input[type=text]{ background:#140d05; color:var(--ink); border-color:var(--line); }
+body.th-inbox .composer input[type=text]:focus{ background:#1b1208; border-color:var(--teal); }
+body.th-inbox .composer input::placeholder{ color:#8f7a4e; }
+body.th-inbox .bubble-row.me .bubble{ background:linear-gradient(180deg,#f0c24a,#c98a12); color:#2a1602; box-shadow:0 1px 3px rgba(0,0,0,.45); }
+body.th-inbox .bubble-row.me .bubble .bubble-time{ color:rgba(42,22,2,.65); }
+body.th-inbox .bubble-row.them .bubble{ background:var(--bubble-them); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.45); }
+body.th-inbox .bubble-row .bubble.room-card, body.th-inbox .bubble-row .bubble.ludo-card, body.th-inbox .bubble-row .bubble.photo-card{
+  background:linear-gradient(160deg,#33261234,#2a2014); background-color:#2a2014; color:var(--ink); border:1px solid rgba(240,194,74,.4);
+}
+body.th-inbox .bubble-row .bubble.photo-card.gone{ background:#241a0e; }
+body.th-inbox .lgc-ttl, body.th-inbox .lgc-sub{ color:var(--ink); }
+body.th-inbox .lgc-sub{ color:var(--ink-soft); }
+body.th-inbox .lgc-chip{ background:#3a2b14; color:#f0c24a; }
+body.th-inbox .lgc-btn{ background:linear-gradient(180deg,#ffd978,#d9a021); color:#2a1602; box-shadow:0 2px 0 #8a5a08; }
+body.th-inbox .lgc-note, body.th-inbox .ph-exp, body.th-inbox .ph-gone, body.th-inbox .ph-gone small, body.th-inbox .bubble-time{ color:#b79f6a; }
+body.th-inbox .ph-wrap{ background:#140d05; }
+body.th-inbox .msg-menu, body.th-inbox .attach-menu, body.th-inbox .lc-card{ background:var(--card); color:var(--ink); border:1px solid var(--line); }
+body.th-inbox .lc-card h3{ color:var(--ink); } body.th-inbox .lc-card p{ color:var(--ink-soft); }
+body.th-inbox .lc-card button{ background:linear-gradient(180deg,#ffd978,#d9a021); color:#2a1602; }
+body.th-inbox .reply-preview-bar{ background:#2e2210; }
+body.th-inbox .attach-btn{ background:#3a2b14; color:#f0c24a; }
+body.th-inbox .send-btn{ background:linear-gradient(180deg,#ffd978,#d9a021); }
+body.th-inbox .send-btn:hover{ background:linear-gradient(180deg,#ffe08c,#e0a623); }
+
+/* ---------------- ludo lobby (the game board itself keeps its own colours) ---------------- */
+body.th-ludo .bet{ background:#2a2014; color:var(--ink); border-color:var(--line); }
+body.th-ludo .bet.on, body.th-ludo .bet.sel{ background:linear-gradient(180deg,#f0c24a,#c98a12); color:#2a1602; border-color:#fff1b8; }
+body.th-ludo .seg{ background:#140d05; border-color:var(--line); }
+body.th-ludo .seg button{ color:#c4ab78; }
+body.th-ludo .seg button.on{ background:linear-gradient(180deg,#f0c24a,#c98a12); color:#2a1602; }
+body.th-ludo .dlg, body.th-ludo .ivbox{ background:var(--card); color:var(--ink); border:1px solid var(--line); }
+body.th-ludo .ivhead button{ background:#3a2b14; color:#f0c24a; }
+body.th-ludo .ivrow.on{ background:#3a2b14; }
+body.th-ludo .ivtick{ border-color:#6b5530; }
+body.th-ludo .ss-in input, body.th-ludo .gc-row input{ background:#140d05; color:var(--ink); }
+body.th-ludo .btn.alt{ background:#3a2b14; color:#f0c24a; box-shadow:none; }
+body.th-ludo .hint{ color:var(--ink-soft); }
+
+/* ---------------- login / signup ---------------- */
+body.th-login input, body.th-login select, body.th-login textarea{ background:#140d05; color:var(--ink); border-color:var(--line); }
+body.th-login input:focus, body.th-login select:focus{ background:#1b1208; border-color:var(--teal); }
+body.th-login input::placeholder{ color:#8f7a4e; }
+body.th-login .seg button{ background:#140d05; color:var(--ink-soft); border-color:var(--line); }
+body.th-login .status.error{ background:#3a1612; color:#ffb3a8; }
+body.th-login .status.success{ background:#13301f; color:#9be6bd; }
+body.th-login button.primary, body.th-login .btn-primary{ background:linear-gradient(180deg,#ffd978,#d9a021); color:#2a1602; }
+
+/* ---------------- small fixes found while testing ---------------- */
+body.th-ludo .wheel-wrap::before{ background:linear-gradient(#241a0e, rgba(36,26,14,0)); }
+body.th-ludo .wheel-wrap::after{ background:linear-gradient(rgba(36,26,14,0), #241a0e); }
+body.th-ludo .wheel-band{ background:#3a2b14; border-color:#f0c24a; }
+body.th-inbox .mic-btn:not(.on):not(.cancel){ background:linear-gradient(180deg,#ffd978,#d9a021); color:#2a1602; }
+body.th-inbox .bubble-row .bubble.photo-card.gone .bubble-time{ color:#b79f6a; }
